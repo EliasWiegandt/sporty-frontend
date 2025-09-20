@@ -35,8 +35,8 @@ jobs:
           command: >
             deploy
             --env test
-            --var RENDER_URL="${{ vars.RENDER_URL }}"
-            --var STRIPE_PUBLIC_KEY="${{ vars.STRIPE_PUBLIC_KEY }}"
+            --var RENDER_URL:"${{ vars.RENDER_URL }}"
+            --var STRIPE_PUBLIC_KEY:"${{ vars.STRIPE_PUBLIC_KEY }}"
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
 
