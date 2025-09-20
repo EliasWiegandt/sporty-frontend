@@ -27,9 +27,6 @@ jobs:
         with:
           ref: ${{ inputs.ref || '' }}
 
-      - name: Install Wrangler
-        run: npm install wrangler@4.38.0
-
       # Option A: set secrets in CF before deploy (persist as Worker secrets)
       - name: Put Worker secrets in Cloudflare
         uses: cloudflare/wrangler-action@v3
@@ -63,9 +60,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Wrangler
-        run: npm install wrangler@4.38.0
-
       - name: Set Worker secrets in Cloudflare (test)
         uses: cloudflare/wrangler-action@v3
         with:
@@ -95,8 +89,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Wrangler
-        run: npm install wrangler@4.38.0
 
       - name: Set Worker secrets in Cloudflare (production)
         uses: cloudflare/wrangler-action@v3
