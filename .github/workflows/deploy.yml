@@ -35,39 +35,31 @@ jobs:
           command: >
             deploy
             --env test
-            --var RENDER_URL=${{ vars.RENDER_URL }}
-            --var STRIPE_PUBLIC_KEY=${{ vars.STRIPE_PUBLIC_KEY }}
+            --var RENDER_URL="${{ vars.RENDER_URL }}"
+            --var STRIPE_PUBLIC_KEY="${{ vars.STRIPE_PUBLIC_KEY }}"
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+
 
   deploy-production:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Wrangler
-        run: npm install wrangler@4.38.0
-        working-directory: frontend
-
-      - name: Set Worker secrets in Cloudflare (production)
+      - uses: actions/checkout@v4      
+      - name: Deploy to production (sets secrets + deploy)
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          environment: production
+          wranglerVersion: "4.38.0"
           secrets: |
             RENDER_API_KEY
-        env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-
-      - name: Deploy to production
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: >
             deploy
             --env production
             --var RENDER_URL=${{ vars.RENDER_URL }}
             --var STRIPE_PUBLIC_KEY=${{ vars.STRIPE_PUBLIC_KEY }}
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
