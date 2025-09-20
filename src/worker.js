@@ -5,18 +5,44 @@ export default {
     const reqId = request.headers.get("X-Request-Id") || crypto.randomUUID();
 
     // Proxy: POST /api/recommend-adult-free -> backend /recommend-adult-free
-    if (request.method === "POST" && url.pathname === "/api/recommend-adult-free") {
+    if (
+      request.method === "POST" &&
+      url.pathname === "/api/recommend-adult-free"
+    ) {
       const body = await request.text();
 
       const backendUrl = env.RENDER_URL;
       const apiKey = env.RENDER_API_KEY;
 
-      if (!backendUrl || !apiKey) {
+      // Check backend URL first
+      if (!backendUrl) {
         return new Response(
           JSON.stringify({
-            detail: "Server not configured: missing RENDER_URL or API key",
+            detail: "Server not configured: missing RENDER_URL",
           }),
-          { status: 500, headers: { "Content-Type": "application/json" } }
+          {
+            status: 500,
+            headers: {
+              "Content-Type": "application/json",
+              "X-Request-Id": reqId,
+            },
+          }
+        );
+      }
+
+      // Then check API key
+      if (!apiKey) {
+        return new Response(
+          JSON.stringify({
+            detail: "Server not configured: missing API key",
+          }),
+          {
+            status: 500,
+            headers: {
+              "Content-Type": "application/json",
+              "X-Request-Id": reqId,
+            },
+          }
         );
       }
 
