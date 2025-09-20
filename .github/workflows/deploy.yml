@@ -15,10 +15,6 @@ jobs:
       - name: Debug vars (test)
         run: echo "::notice::RENDER_URL=${{ vars.RENDER_URL }}"
 
-      - name: Install Wrangler
-        run: npm install wrangler@4.38.0
-        working-directory: frontend
-
       - name: Set Worker secrets in Cloudflare (test)
         uses: cloudflare/wrangler-action@v3
         with:
@@ -46,10 +42,6 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Wrangler
-        run: npm install wrangler@4.38.0
-        working-directory: frontend
 
       - name: Set Worker secrets in Cloudflare (production)
         uses: cloudflare/wrangler-action@v3
