@@ -22,28 +22,23 @@ jobs:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        
-
-      - name: Set Worker secrets in Cloudflare (test)
+      
+      - name: Deploy to test (sets secrets + deploy)
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          environment: test
+          wranglerVersion: "4.38.0"
           secrets: |
             RENDER_API_KEY
-        env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-
-      - name: Deploy to test
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: >
             deploy
             --env test
             --var RENDER_URL=${{ vars.RENDER_URL }}
             --var STRIPE_PUBLIC_KEY=${{ vars.STRIPE_PUBLIC_KEY }}
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
 
   deploy-production:
     if: github.ref == 'refs/heads/main'
