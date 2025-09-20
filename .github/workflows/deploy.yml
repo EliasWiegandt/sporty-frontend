@@ -11,15 +11,24 @@ jobs:
     environment: test
     steps:
       - uses: actions/checkout@v4
+
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # this targets your wrangler --env "test" env
           command: >
             deploy
             --env test
             --var RENDER_URL=${{ vars.RENDER_URL }}
             --var STRIPE_PUBLIC_KEY=${{ vars.STRIPE_PUBLIC_KEY }}
+          environment: test
+          # names of secrets to set in this Worker env
+          secrets: |
+            RENDER_API_KEY
+        # map GitHub secret -> env var consumed by the action
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
 
   # Auto-deploy on push to main
   production:
