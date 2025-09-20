@@ -36,7 +36,6 @@ jobs:
           # These become Worker secrets (encrypted) in the selected env
           secrets: |
             RENDER_API_KEY
-            STRIPE_SECRET_KEY
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
 
@@ -68,7 +67,6 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           secrets: |
             RENDER_API_KEY
-            STRIPE_SECRET_KEY
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
 
@@ -98,10 +96,9 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           secrets: |
             RENDER_API_KEY
-            STRIPE_SECRET_KEY
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          
+
       - name: Deploy to production
         uses: cloudflare/wrangler-action@v3
         with:
