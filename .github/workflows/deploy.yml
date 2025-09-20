@@ -39,10 +39,9 @@ jobs:
             STRIPE_SECRET_KEY
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          STRIPE_SECRET_KEY: ${{ vars.STRIPE_SECRET_KEY }}
 
       # Deploy with per-env plain vars (RENDER_URL etc.)
-      - name: Deploy (env: ${{ inputs.target }})
+      - name: Deploy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -52,7 +51,7 @@ jobs:
             deploy
             --env ${{ inputs.target }}
             --var RENDER_URL=${{ vars.RENDER_URL }}
-            --var STRIPE_PUBLIC_KEY=${{ secrets.STRIPE_PUBLIC_KEY }}
+            --var STRIPE_PUBLIC_KEY=${{ vars.STRIPE_PUBLIC_KEY }}
 
   # Auto-deploy on push to test branch
   test:
@@ -72,7 +71,6 @@ jobs:
             STRIPE_SECRET_KEY
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
 
       - name: Deploy to test
         uses: cloudflare/wrangler-action@v3
@@ -103,8 +101,7 @@ jobs:
             STRIPE_SECRET_KEY
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-
+          
       - name: Deploy to production
         uses: cloudflare/wrangler-action@v3
         with:
