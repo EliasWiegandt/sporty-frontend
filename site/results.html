@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sporty — Your Matches</title>
+  <meta name="description" content="Review the sport matches Sporty generated for your body." />
+  <link rel="icon" href="data:," />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/css/main.css" />
+  <style>
+    .result-header {
+      max-width: var(--max-width);
+      margin: clamp(2rem, 4vw, 3.5rem) auto clamp(1rem, 3vw, 2.5rem);
+      display: grid;
+      gap: 1rem;
+      padding: 0 clamp(1.5rem, 5vw, 3rem);
+    }
+    .cta-inline {
+      display: inline-flex;
+      gap: 0.75rem;
+      align-items: center;
+      font-size: 0.95rem;
+      color: var(--color-muted);
+    }
+    .cta-inline a {
+      font-weight: 600;
+    }
+    .empty-state {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 2rem;
+      text-align: center;
+      background: rgba(148, 163, 184, 0.12);
+      border-radius: 20px;
+      border: 1px dashed rgba(148, 163, 184, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav-container" aria-label="Primary">
+      <a class="logo" href="/">Sporty</a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/intake.html">Try again</a>
+        <a href="/">Plans</a>
+      </div>
+      <a class="button--ghost" href="/intake.html">Run another match</a>
+    </nav>
+  </header>
+
+  <header class="result-header">
+    <h1 class="section__title" style="margin:0;">Your sport matches</h1>
+    <p class="lead-copy">Here’s how your body lines up with pro-informed sport profiles. Each card shows why the sport fits you today and what to explore next.</p>
+    <p class="cta-inline">Want to save these results? <a href="#">Join the waitlist</a> for the paid tier.</p>
+  </header>
+
+  <main class="section" style="margin-top:0;">
+    <div class="result-grid" data-results></div>
+    <div class="empty-state" data-empty-state hidden>
+      <h2>No matches yet</h2>
+      <p>We couldn’t find any stored results. Run a new recommendation and we’ll populate this page automatically.</p>
+      <div class="button-row" style="justify-content:center; margin-top:1.5rem;">
+        <a class="button" href="/intake.html">Start a new match</a>
+      </div>
+    </div>
+  </main>
+
+  <section class="section section--narrow" id="whats-next">
+    <h2 class="section__title">Next steps</h2>
+    <div class="grid-cards">
+      <article class="card">
+        <h3>Share with a coach or friend</h3>
+        <p>Show them how your body stacks up and discuss drills or clubs to explore.</p>
+      </article>
+      <article class="card">
+        <h3>Track progress</h3>
+        <p>Jot down how the suggested sports feel. Paid accounts arriving soon will let you store reflections beside each match.</p>
+      </article>
+      <article class="card">
+        <h3>Expand the analysis</h3>
+        <p>Upgrade for deeper adult insights and child forecasts as soon as credits launch.</p>
+      </article>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <strong>Something off?</strong>
+        <p class="lead-copy">Email hello@sporty.test with feedback. Every suggestion helps us fine-tune the matching engine.</p>
+      </div>
+      <nav class="footer-nav">
+        <a href="/intake.html">Try again</a>
+        <a href="#whats-next">Next steps</a>
+        <a href="/">Landing</a>
+      </nav>
+      <small>© <span id="year">2025</span> Sporty</small>
+    </div>
+  </footer>
+
+  <script src="/assets/js/results.js" defer></script>
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

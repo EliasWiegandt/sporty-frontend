@@ -4,7 +4,7 @@ Purpose: help agents collaborate across `sporty-frontend` (Cloudflare Worker + s
 
 ## Goals
 - Serve the static UI via a Cloudflare Worker.
-- Proxy `POST /api/submit` from the Worker to the backend `POST /recommend`.
+- Proxy `POST /api/recommend-adult-free` from the Worker to the backend `POST /recommend-adult-free`.
 - Keep the API key secret by injecting `X-API-Key` in the Worker.
 
 ## Status (Now)
@@ -48,7 +48,7 @@ Full vision: `docs/product/VISION.md`.
   - `src/worker.js`: Worker entry; should proxy to backend.
   - `wrangler.toml`: Worker config and routes.
 - Backend:
-  - `app/main.py`: FastAPI app with `/recommend` endpoint.
+  - `app/main.py`: FastAPI app with `/recommend-adult-free` endpoint.
 
 ## Env Vars
 - Worker secrets:

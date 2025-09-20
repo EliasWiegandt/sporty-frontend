@@ -3,190 +3,173 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sporty — Find the right sport</title>
-  <meta name="description" content="Find the right sport for your child’s future body. Personalized recommendations grounded in growth patterns and play preferences." />
+  <title>Sporty — Discover sports that fit your body</title>
+  <meta name="description" content="Free sport recommendations based on your body today, with optional paid deep analysis and child forecasts." />
   <link rel="icon" href="data:," />
-  <style>
-    :root { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    :root { --accent: #14b8a6; --accent-dark: #0ea5a5; --tint: #f0fdfa; --panel: #f8fafc; }
-    html { scroll-behavior: smooth; }
-    body { margin: 0; color: #111; }
-    header, main, footer { max-width: 1080px; margin: 0 auto; padding: 1rem; }
-    nav a { color: inherit; text-decoration: none; }
-    nav a:hover, a.button:hover { text-decoration: underline; }
-    .button { font: inherit; padding: .8rem 1.05rem; border-radius: .6rem; border: 1px solid var(--accent-dark); background: var(--accent); color: white; display: inline-block; box-shadow: 0 6px 18px rgba(20,184,166,0.25); transition: transform .15s ease, filter .15s ease, box-shadow .15s ease; }
-    .button:hover { filter: brightness(1.03); transform: translateY(-1px); box-shadow: 0 8px 26px rgba(20,184,166,0.32); }
-    .ghost { background: transparent; border: none; color: #0f172a; text-decoration: underline; box-shadow: none; }
-    .muted { color: #475569; }
-    .hero { display: grid; gap: 1.25rem; align-items: center; grid-template-columns: 1.2fr 1fr; padding: 2.25rem 1.25rem; background: radial-gradient(1200px 380px at 70% 0%, var(--tint), transparent); border-radius: 1rem; }
-    .hero img { width: 100%; height: auto; border-radius: .5rem; }
-    .hero h1 { font-size: clamp(2.1rem, 3.8vw + 1rem, 3rem); line-height: 1.15; margin: 0 0 .5rem; }
-    .hero p { margin: 0 0 1rem; font-size: 1.1rem; }
-    .steps { padding: 2rem 1rem; }
-    .steps h2 { margin: 0 0 1rem; }
-    .grid-3 { display: grid; gap: 1rem; grid-template-columns: repeat(3, 1fr); }
-    .card { border: 1px solid #e5e7eb; border-radius: .75rem; padding: 1rem; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 8px 20px rgba(2,6,23,.05); transition: transform .15s ease, box-shadow .15s ease; }
-    .card:hover { transform: translateY(-2px); box-shadow: 0 2px 4px rgba(0,0,0,.06), 0 12px 28px rgba(2,6,23,.08); }
-    .card img { width: 100%; height: auto; border-radius: .5rem; }
-    .samples { padding: 2rem 1rem; }
-    .samples .cards { display: grid; gap: 1rem; grid-template-columns: repeat(2, 1fr); }
-    .faq { padding: 2rem 1rem; }
-    .faq details { border: 1px solid #e5e7eb; border-radius: .5rem; padding: .75rem 1rem; background: #fff; }
-    .why { padding: 2rem 1rem; text-align: center; }
-    footer { padding: 2rem 1rem; }
-    .footer-strip { width: 100%; height: auto; border-radius: .5rem; }
-    .section-tint { background: var(--panel); border-radius: 1rem; }
-    .chip { display:inline-block; padding:.2rem .55rem; border-radius:999px; background:#e6fffb; color:#0b766a; font-size:.85rem; margin-right:.3rem; }
-    .badges { display:inline-block; padding:1rem 1.25rem; border-radius:.75rem; background: var(--panel); margin: 1rem auto; }
-    .values { display:grid; gap: 1rem; grid-template-columns: repeat(3, 1fr); max-width: 920px; margin: 1rem auto 0; text-align: left; }
-    .values li { list-style:none; background:#fff; border:1px solid #e5e7eb; border-radius:.75rem; padding:.8rem 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 6px 14px rgba(2,6,23,.04); }
-    .values li strong { color:#0f172a; }
-    .values li:before { content:"✓ "; color: var(--accent); font-weight:700; }
-    /* simple reveal */
-    .reveal { opacity: 0; transform: translateY(8px); animation: fadeUp .35s ease forwards; }
-    .reveal.d1 { animation-delay: .05s; } .reveal.d2 { animation-delay: .1s; } .reveal.d3 { animation-delay: .15s; }
-    @keyframes fadeUp { to { opacity: 1; transform: none; } }
-    /* sticky CTA */
-    .sticky-cta { position: fixed; right: 1rem; bottom: 1rem; z-index: 50; display:none; }
-    .sticky-cta.show { display: inline-block; }
-    @media (max-width: 900px) {
-      .hero { grid-template-columns: 1fr; }
-      .grid-3 { grid-template-columns: 1fr; }
-      .samples .cards { grid-template-columns: 1fr; }
-    }
-  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/css/main.css" />
 </head>
 <body>
-  <header>
-    <nav style="margin-bottom:1rem">
-      <a href="/">Home</a>
-      &nbsp;·&nbsp;
-      <a href="/intake.html">Intake</a>
-      &nbsp;·&nbsp;
-      <a href="/result.html">Results</a>
+  <header class="site-header">
+    <nav class="nav-container" aria-label="Primary">
+      <a class="logo" href="/">Sporty</a>
+      <div class="nav-links">
+        <a href="#how-it-works">How it works</a>
+        <a href="#tiers">Plans</a>
+        <a href="#faq">FAQ</a>
+      </div>
+      <a class="button" href="/intake.html">Start free</a>
     </nav>
-    <section class="hero" aria-label="Hero">
-      <div>
-        <h1>Find the right sport for your child’s future body.</h1>
-        <p class="muted">Personalized recommendations grounded in growth patterns and play preferences.</p>
-        <p>
-          <a class="button" aria-label="Try Sporty" href="/intake.html">Try Sporty →</a>
-          &nbsp;
-          <a class="button ghost" aria-label="How it works" href="#how-it-works">How it works</a>
-        </p>
-      </div>
-      <div>
-        <img src="/images/hero_kids_playing.jpeg" alt="Illustration of diverse children happily playing different sports" loading="eager" />
-      </div>
-    </section>
   </header>
 
   <main>
-    <section id="how-it-works" class="steps section-tint" aria-label="How it works">
-      <h2>Three simple steps to your child’s sport matches.</h2>
-      <div class="grid-3">
-        <div class="card reveal">
-          <img src="/images/howitworks_step1.jpeg" alt="Icon of a form for entering child details" loading="lazy" />
-          <h3>Tell us about your child</h3>
-          <p class="muted">Age, height, weight and play preferences.</p>
-        </div>
-        <div class="card reveal d1">
-          <img src="/images/howitworks_step2.jpeg" alt="Icon representing prediction of growth and strengths" loading="lazy" />
-          <h3>We predict growth & strengths</h3>
-          <p class="muted">Our model estimates fit across key movement patterns.</p>
-        </div>
-        <div class="card reveal d2">
-          <img src="/images/howitworks_step3.jpeg" alt="Icon representing personalized sport matches" loading="lazy" />
-          <h3>Get personalized sport matches</h3>
-          <p class="muted">See sports that fit now—and as your child grows.</p>
+    <section class="section hero" id="hero">
+      <div>
+        <span class="hero__badge">New · Free body-fit matches</span>
+        <h1 class="hero__headline">Find the sport that fits your body today—no login required.</h1>
+        <p class="hero__copy">Sporty compares your measurements against pro-informed body profiles to surface sports where you’re naturally set up to thrive. Get instant, free matches for adults, and unlock deeper guidance plus child forecasts with our paid tier.</p>
+        <div class="button-row" role="group" aria-label="Primary calls to action">
+          <a class="button" href="/intake.html">Start the free match</a>
+          <a class="button--ghost" href="#tiers">Explore paid options</a>
         </div>
       </div>
-      <p class="muted" style="margin-top: .75rem">No account needed · Takes under 1 minute</p>
+      <figure class="image-placeholder" aria-label="Placeholder illustration of diverse adults enjoying multiple sports">
+        <span>Hero image placeholder — illustration of adults with varied body types playing basketball, swimming, running.</span>
+      </figure>
     </section>
 
-    <section class="samples" aria-label="Sample results">
-      <h2>See an example result</h2>
-      <div class="cards">
-        <div class="card reveal">
-          <img src="/images/sample_card_anna.jpeg" alt="Young girl trying gymnastics" loading="lazy" />
-          <h3>For Anna (7)</h3>
-          <p>
-            <span class="chip">Gymnastics</span>
-            <span class="chip">Swimming</span>
-            <span class="chip">Climbing</span>
-          </p>
-          <ul>
-            <li>Great strength-to-weight ratio for her age</li>
-            <li>Low joint load, full-body coordination</li>
-            <li>Enjoys focused, skill-based play</li>
-          </ul>
-        </div>
-        <div class="card reveal d1">
-          <img src="/images/sample_card_leo.jpeg" alt="Young boy playing basketball outside" loading="lazy" />
-          <h3>For Leo (9)</h3>
-          <p>
-            <span class="chip">Basketball</span>
-            <span class="chip">Rowing</span>
-            <span class="chip">Judo</span>
-          </p>
-          <ul>
-            <li>Developing reach and leg power</li>
-            <li>Team dynamics suit his energy</li>
-            <li>Good skill progression curve</li>
-          </ul>
-        </div>
+    <section class="section" id="how-it-works">
+      <h2 class="section__title">Three quick steps</h2>
+      <p class="section__subtitle">We only need a few key measurements to return your top sport matches.</p>
+      <div class="grid-cards">
+        <article class="card">
+          <div class="step-number">1</div>
+          <h3>Measure</h3>
+          <p>Enter height, weight, and optional limb measurements. Adults only for the free flow.</p>
+        </article>
+        <article class="card">
+          <div class="step-number">2</div>
+          <h3>Match</h3>
+          <p>We compare you against optimal body profiles across dozens of sports—built with expert input and synthetic testing.</p>
+        </article>
+        <article class="card">
+          <div class="step-number">3</div>
+          <h3>Explore</h3>
+          <p>Review your top three fits with rationale, famous athletes with similar builds, and guidance on next steps.</p>
+        </article>
       </div>
-      <p style="margin-top:1rem"><a class="button" href="/intake.html">Try Sporty →</a></p>
     </section>
 
-    <section class="why section-tint" aria-label="Why Sporty">
-      <h2>Why Sporty?</h2>
-      <p class="muted" style="max-width:720px; margin:0 auto">
-        Every child is unique. Sporty offers playful, science‑informed suggestions so you can discover
-        activities where your child is likely to thrive—balancing physical fit, skill development, and fun.
-      </p>
-      <ul class="values">
-        <li><strong>Science‑informed:</strong> grounded in growth patterns and movement principles.</li>
-        <li><strong>Privacy‑first:</strong> no account required; requests go through a secure proxy.</li>
-        <li><strong>Made for ages 4–12:</strong> guidance tailored to early development stages.</li>
-      </ul>
-      <div class="badges"><img src="/images/trust_badges.jpeg" alt="Three badges: care, science-informed, ages 4–12" loading="lazy" style="max-width:420px; width:100%; height:auto; display:block; margin:0 auto;" /></div>
-      <p class="muted" style="font-size:.9rem">General guidance only; not medical advice.</p>
+    <section class="section" id="tiers">
+      <h2 class="section__title">Choose the depth you need</h2>
+      <p class="lead-copy">Sporty starts free for every adult. Upgrade when you want richer analysis or forecasts for children.</p>
+      <div class="grid-cards">
+        <article class="card card--highlight" aria-label="Free plan details">
+          <h3>Free · Adult Quick Match</h3>
+          <ul class="feature-list">
+            <li><strong>Body-only scoring</strong> — instant matches from today’s measurements.</li>
+            <li><strong>No login required</strong> — we don’t store anything yet.</li>
+            <li><strong>Top three sports</strong> — see why they fit you and what to explore first.</li>
+          </ul>
+          <div class="button-row" style="margin-top:1.5rem;">
+            <a class="button" href="/intake.html">Try it now</a>
+          </div>
+        </article>
+        <article class="card" aria-label="Paid plan overview">
+          <h3>$5 · Pro Analysis (coming soon)</h3>
+          <ul class="feature-list">
+            <li><strong>Detailed adult intake</strong> — preferences, injuries, goals, past sports.</li>
+            <li><strong>Child forecasts</strong> — invite another guardian, project future body metrics, and get child-specific sport pathways.</li>
+            <li><strong>Stored history</strong> — save profiles, track analyses, and revisit recommendations anytime.</li>
+          </ul>
+          <div class="button-row" style="margin-top:1.5rem;">
+            <a class="button--ghost" href="#waitlist">Join the waitlist</a>
+          </div>
+        </article>
+      </div>
     </section>
 
-    <section class="faq" aria-label="FAQ">
-      <h2>FAQ</h2>
-      <details>
-        <summary>What information do I need?</summary>
-        <p>Age, height, weight and play preferences. No signup required.</p>
-      </details>
-      <br />
-      <details>
-        <summary>Is this a medical assessment?</summary>
-        <p>No. It’s general guidance to help you explore options.</p>
-      </details>
-      <br />
-      <details>
-        <summary>Which sports do you cover?</summary>
-        <p>From swimming and gymnastics to team and racket sports.</p>
-      </details>
+    <section class="section" id="sample-results">
+      <h2 class="section__title">What your free results look like</h2>
+      <div class="grid-cards">
+        <article class="card">
+          <figure class="image-placeholder" aria-label="Placeholder sport card illustration for a free result">
+            <span>Result card image placeholder — collage of recommended sports.</span>
+          </figure>
+          <h3>Top three matches</h3>
+          <p>Each card explains why your body aligns with a sport, highlights standout measurements, and lists athletes with similar builds.</p>
+        </article>
+        <article class="card">
+          <figure class="image-placeholder" aria-label="Placeholder graphic depicting metric comparison chart">
+            <span>Graphic placeholder — bar chart showing how your metrics fall inside optimal ranges.</span>
+          </figure>
+          <h3>Measurement breakdown</h3>
+          <p>See where you’re right in the sweet spot and where training can bridge the gap.</p>
+        </article>
+        <article class="card">
+          <figure class="image-placeholder" aria-label="Placeholder graphic for next steps callout">
+            <span>Graphic placeholder — checklist of next steps like clubs to try, drills to explore.</span>
+          </figure>
+          <h3>Actionable next steps</h3>
+          <p>We suggest starter drills, leagues, and areas to focus on so you can try a sport with confidence.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section section--narrow" id="why">
+      <h2 class="section__title">Why body fit matters</h2>
+      <p class="lead-copy">When your frame matches the demands of a sport, skills stick faster and training feels better. Sporty uses anonymized athlete data, expert heuristics, and a growing knowledge base to line up your body with the sports that reward it.</p>
+      <blockquote class="testimonial" aria-label="Founders quote placeholder">
+        “Sporty helps demystify the path into movement. Whether you’re rediscovering sport as an adult or guiding a child, we highlight the activities that honor your body’s strengths.”
+        <footer>— Sporty Founders (quote placeholder)</footer>
+      </blockquote>
+    </section>
+
+    <section class="section" id="faq">
+      <h2 class="section__title">Questions, answered</h2>
+      <div class="grid-cards">
+        <article class="card">
+          <h3>Is the free version really free?</h3>
+          <p>Yes. You can generate as many quick matches as you like. We don’t store your data until Supabase consent flows ship.</p>
+        </article>
+        <article class="card">
+          <h3>What measurements do I need?</h3>
+          <p>At minimum: birthday (for age), height, and weight. Optional measurements—arm span, leg inseam, shoulder, hip, hand, foot-length—boost accuracy.</p>
+        </article>
+        <article class="card">
+          <h3>When do paid features arrive?</h3>
+          <p>We’re finalizing Stripe Checkout now. Paid adult analysis and child forecasts launch soon after, with email waitlist rolling out first.</p>
+        </article>
+        <article class="card">
+          <h3>How do child forecasts work?</h3>
+          <p>Two guardians consent, share the child’s measurements, and optionally include parent data. Sporty projects the child’s future body metrics to recommend sports that support long-term development.</p>
+        </article>
+      </div>
     </section>
   </main>
 
-  <footer>
-    <img class="footer-strip" src="/images/footer_family.jpeg" alt="Family preparing for exercise together" loading="lazy" />
-    <p style="margin-top:1rem" class="muted">Ready to discover your child’s best fit? <a href="/intake.html">Start now →</a></p>
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <strong>Sporty</strong>
+        <p class="lead-copy">Helping every body find their sport. Free adult matches today, deeper analysis and child support tomorrow.</p>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <a href="/intake.html">Start free</a>
+        <a href="#tiers">Plans</a>
+        <a href="#faq">FAQ</a>
+        <a href="#">Privacy (draft)</a>
+        <a href="#">Terms (draft)</a>
+        <a href="mailto:hello@sporty.test">Contact</a>
+      </nav>
+      <small>© <span id="year">2025</span> Sporty. All rights reserved.</small>
+    </div>
   </footer>
-  <a href="/intake.html" class="button sticky-cta" id="sticky-cta" aria-label="Start intake">Try Sporty →</a>
+
   <script>
-    // Show sticky CTA after scrolling past hero
-    const sticky = document.getElementById('sticky-cta');
-    const hero = document.querySelector('.hero');
-    const observer = new IntersectionObserver(([e]) => {
-      if (!e.isIntersecting) sticky.classList.add('show');
-      else sticky.classList.remove('show');
-    }, { threshold: 0.01 });
-    if (hero) observer.observe(hero);
+    document.getElementById('year').textContent = new Date().getFullYear();
   </script>
 </body>
 </html>

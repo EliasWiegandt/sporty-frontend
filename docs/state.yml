@@ -3,29 +3,46 @@ frontend:
     name: sporty
     assets_dir: site
     main: src/worker.js
-    scope: adult_only
+    scope: adults_free + logged_in + paid_child
     staging:
       workers_dev: true
     production:
       route: sporty.plyml.com/*
       zone: plyml.com
     secrets:
-      - BACKEND_URL   # e.g. http://127.0.0.1:8000 (dev) or Render URL
+      - BACKEND_URL
       - BACKEND_API_KEY
+      - STRIPE_PUBLIC_KEY
+      - SUPABASE_URL
+      - SUPABASE_PUBLISHABLE_KEY
 backend:
   service: sporty-backend (Render)
   entry: app.main:app
   start: uvicorn app.main:app --host 0.0.0.0 --port $PORT
   env:
-    - API_KEY        # must match BACKEND_API_KEY
+    - API_KEY
+    - SUPABASE_URL
+    - SUPABASE_SECRET_KEY
+    - SUPABASE_URL_TEST
+    - SUPABASE_SECRET_KEY_TEST
+    - STRIPE_SECRET_KEY_TEST
+    - STRIPE_SECRET_KEY_LIVE
+    - STRIPE_WEBHOOK_SECRET_TEST
+    - STRIPE_WEBHOOK_SECRET_LIVE
   test_data:
     synthetic_optimal_bodies: in_progress
 api:
-  worker_endpoint: POST /api/submit
+  worker_recommend: POST /api/recommend-adult-free
   worker_health: GET /api/healthz
-  backend_endpoint: POST /recommend
-  contract: docs/architecture.md
+  backend_recommend: POST /recommend-adult-free
+  backend_checkout: POST /create-checkout-session (planned)
+  backend_webhook: POST /stripe-webhook (planned)
+  contract_doc: docs/architecture.md
 next:
   supabase:
-    auth_and_storage: planned
+    auth_and_storage: in_progress
     consent_required_before_persist: true
+  payments:
+    stripe_checkout: in_progress
+    analysis_credits: planned
+    billing_products_catalog: seeded_via_taxonomy

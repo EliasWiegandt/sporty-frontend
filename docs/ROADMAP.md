@@ -1,39 +1,34 @@
 # Roadmap
 
-Phase 0 — Running Skeleton (now)
-- Frontend served by Cloudflare Worker; backend on Render.
-- Adult-only flow: single POST `/recommend` returns a dummy suggestion.
-- Worker `GET /api/healthz` is available for quick checks (does not call backend).
+## Phase 1 — Free Experience (now)
+- Ship front page + free suggestion flow using body-only `/recommend-adult-free`.
+- Polish measurement form, validation, and result display.
+- Ensure Worker proxy + health check paths are stable.
 
-Phase 1 — Solid MVP (adult-only)
-- Implement/verify Worker proxy for `POST /api/submit` → backend `/recommend` with `X-API-Key`.
-- Add basic input validation and UX polish on `site/index.html`.
-- Add `site/result.html` and friendly error handling.
-- Document API contract and example payloads.
+## Phase 2 — Accounts & Saved Measurements
+- Integrate Supabase Auth (email + OAuth providers).
+- Add consent UX before persisting any data.
+- Build “Saved measurements” dashboard for logged-in adults.
+- Coordinate with backend on Supabase schema for measurements and basic results.
 
-Phase 2 — Supabase (Next)
-- Add Supabase Auth (email/OAuth) and Postgres.
-- Add explicit consent UX and privacy copy; persist adult intake + results only after consent.
-- Define initial schemas (adult profiles, submissions, results). Exclude child-related fields for now.
- - Implement RLS policies; route writes via backend with service role.
+## Phase 3 — Payments & Credits
+- Implement purchase page with Stripe Checkout (adult / child options).
+- Handle success/cancel return routes and update UI with available credits.
+- Surface credit counts and recent analyses in the account area.
 
-Phase 3 — Data Foundations & Scoring
-- Define sports taxonomy and attributes.
-- Continue backend generation of synthetic/test data for “optimal body by sport”; use to seed examples.
-- Implement simple scoring combining measurements + preferences; return ranked list with reasons.
- - Import optimal_bodies dataset from `../sporty-backend/data/optimal_bodies/generated_gpt-5-mini.jsonl` into Supabase.
+## Phase 4 — Detailed Adult Analysis
+- Extend intake to capture preferences, injuries, goals when an adult credit exists.
+- Display richer analysis results (factors, suggested sports, next steps).
 
-Phase 4 — Child + Parents (Prototype, later)
-- Lightweight projection model: height/weight curves + parental influence (transparent assumptions).
-- Dedicated intake view with parent/guardian consent and appropriate safeguards.
- - Add child tables and guardianships; expand RLS.
+## Phase 5 — Child Forecast Flow
+- Add child management UI (create child, invite/link second parent, approve requests).
+- Collect child measurements and optional parent data (with consent).
+- Display forecasted adult metrics and child-specific recommendations when a child credit is redeemed.
 
-Phase 5 — Payment & Hardening (Prep)
-- Stripe checkout stubs: pay-per-analysis; feature flags to gate pages.
-- Add rate limiting, logging, and error boundaries.
-- Production deploy playbook and monitoring.
+## Phase 6 — Hardening & Growth
+- Instrument analytics (event tracking) with privacy in mind.
+- Add loading/error states for payment flows.
+- Align marketing copy with paid tiers and child capabilities.
+- Enhance accessibility and internationalization where needed.
 
-Always On
-- Track decisions in `docs/DECISIONS.md`.
-- Keep `docs/state.yml` updated with current endpoints/secrets names (no secrets).
- - Keep `docs/supabase/SCHEMA.md` authoritative for schema/policy changes.
+Keep roadmap synchronized with backend `docs/ROADMAP.md` and adjust phases as discovery continues.

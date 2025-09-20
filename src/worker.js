@@ -4,23 +4,23 @@ export default {
     const url = new URL(request.url);
     const reqId = request.headers.get("X-Request-Id") || crypto.randomUUID();
 
-    // Proxy: POST /api/submit -> BACKEND_URL/recommend with X-API-Key
-    if (request.method === "POST" && url.pathname === "/api/submit") {
+    // Proxy: POST /api/recommend-adult-free -> backend /recommend-adult-free
+    if (request.method === "POST" && url.pathname === "/api/recommend-adult-free") {
       const body = await request.text();
 
-      const backendUrl = env.BACKEND_URL;
-      const apiKey = env.BACKEND_API_KEY;
+      const backendUrl = env.RENDER_URL;
+      const apiKey = env.RENDER_API_KEY;
 
       if (!backendUrl || !apiKey) {
         return new Response(
           JSON.stringify({
-            detail: "Server not configured: missing BACKEND_URL or API key",
+            detail: "Server not configured: missing RENDER_URL or API key",
           }),
           { status: 500, headers: { "Content-Type": "application/json" } }
         );
       }
 
-      const upstream = new URL("/recommend", backendUrl);
+      const upstream = new URL("/recommend-adult-free", backendUrl);
       try {
         const resp = await fetch(upstream.toString(), {
           method: "POST",
@@ -37,14 +37,24 @@ export default {
         return new Response(text, {
           status: resp.status,
           headers: {
-            "Content-Type": resp.headers.get("Content-Type") || "application/json",
+            "Content-Type":
+              resp.headers.get("Content-Type") || "application/json",
             "X-Request-Id": reqId,
           },
         });
       } catch (err) {
         return new Response(
-          JSON.stringify({ detail: "Upstream unavailable. Please try again in a moment.", request_id: reqId }),
-          { status: 502, headers: { "Content-Type": "application/json", "X-Request-Id": reqId } }
+          JSON.stringify({
+            detail: "Upstream unavailable. Please try again in a moment.",
+            request_id: reqId,
+          }),
+          {
+            status: 502,
+            headers: {
+              "Content-Type": "application/json",
+              "X-Request-Id": reqId,
+            },
+          }
         );
       }
     }

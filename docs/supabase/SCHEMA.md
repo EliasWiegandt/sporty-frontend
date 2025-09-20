@@ -6,6 +6,7 @@ Auth
 - Use Supabase Auth (email/password, optional OAuth) with `auth.users` as the authority.
 - Frontend uses `SUPABASE_URL` + `SUPABASE_PUBLISHABLE_KEY` (public client key).
 - Backend uses `SUPABASE_SECRET_KEY` for server-side operations; never expose to clients.
+- In the Supabase dashboard go to **Settings → API → Data API**, add `public` (alongside `api`) to **Exposed schemas**, and include `public` in **Extra search path**. Otherwise the Data API returns `PGRST106` when REST clients (such as the taxonomy seeding script) target tables in the `public` schema.
 
 Tables
 
@@ -136,33 +137,49 @@ Tables
 
 13) sports
 - id: uuid PK default gen_random_uuid()
-- name: text not null unique
-- category: text null
-- tags: text[] not null default '{}'
+- slug: text unique (generated from taxonomy ids)
+- name: text not null
+- description: text null
 
 14) roles
 - id: uuid PK default gen_random_uuid()
-- sport_id: uuid not null references sports(id)
-- name: text not null
+- slug: text unique not null (concatenated hierarchy, e.g. `swimming-freestyle-sprint`)
+- sport_slug: text not null references sports(slug)
+- category: jsonb not null default '{}'::jsonb (contains nested `id`/`name`/`description` for each taxonomy level; the top-level sport entry is included)
+- created_at: timestamptz default now()
 
 15) optimal_bodies  (import of backend data)
 - id: bigint generated always as identity primary key
+- sport_slug: text not null references sports(slug)
+- category_slug: text null references roles(slug)
+- cohorts: jsonb not null (e.g. `{ "sex": "female", "level": "elite" }`)
+- spec: jsonb not null (body ranges, rationale, example athletes, etc.)
 - model: text not null
-- sport: text not null
-- category_path: text[] not null
-- cohorts: jsonb not null
-- spec: jsonb not null
 - source: text not null default 'backend_generated'
+- version: int not null default 1
+- is_current: boolean not null default true (only one current row per sport/category/cohort)
+- replaced_by: bigint null (links superseded rows)
+- replaced_at: timestamptz null
+- created_at / updated_at: timestamptz default now()
 
 RLS Policies (high-level)
 - profiles: owner-only (auth.uid() = id).
 - measurements/preferences/health_injuries/goals/past_sports: owner-only for adults; for children, allow if `auth.uid()` is in guardianships for the row’s child.
 - submissions/recommendations/recommendation_items: owner-only (auth.uid() = user_id).
 - consents: owner-only; for child consents, the guardian creating them can read.
-- sports/roles/optimal_bodies: readable by all (SELECT), write restricted to service role.
+- sports/roles/optimal_bodies: readable by all (SELECT), writes restricted to backend using the Supabase secret key.
 - guardian_invites: readable by inviter, invited user, and active guardians of the child; writes via RPCs only.
 
-NOTE: Backend using service role can bypass RLS; prefer using RLS with anon+user JWTs when practical for client reads. All writes should go through backend endpoints for validation and auditing.
+Billing tables
+- `billing_products(id, name, description, credit_type, stripe_price_id_test, stripe_price_id_live, is_active, metadata)`
+  - Public SELECT so the frontend can present offerings.
+  - Writes restricted to backend using the Supabase secret key.
+- `purchases(id, user_id, product_id, stripe_price_id, stripe_mode, amount, currency, quantity, status, paid_at, raw)`
+  - Links Supabase users to Stripe Checkout sessions and the product purchased.
+- `analysis_credits(id, user_id, product_id, credit_type, remaining, source_purchase_id, subject_child_id, consumed_at, metadata)`
+  - Tracks remaining credits and which child (if any) they are reserved for.
+
+NOTE: Backend requests that require elevated privileges must use the Supabase secret key; prefer RLS with anon/user JWTs for client reads. All writes go through backend endpoints or vetted RPCs for validation and auditing.
 
 Import Plan (optimal_bodies)
 - Parse `../sporty-backend/data/optimal_bodies/generated_gpt-5-mini.jsonl`.

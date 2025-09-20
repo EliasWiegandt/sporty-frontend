@@ -1,57 +1,117 @@
 name: Deploy Cloudflare Worker (Sporty)
 
 on:
-  pull_request:
-    branches: ["main"] # staging on PRs
   push:
-    branches: ["main"] # production on main
-  workflow_dispatch: # manual run from the UI
+    branches: ["test", "main"]
+  workflow_dispatch:
     inputs:
       target:
         description: "Where to deploy?"
         required: true
         type: choice
-        options: ["staging", "production"]
-        default: "staging"
+        options: ["test", "production"]
+        default: "test"
       ref:
         description: "Git ref (branch/tag/SHA). Leave empty for default."
         required: false
         type: string
 
 jobs:
+  # Manual button in Actions UI
   manual:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    environment: ${{ inputs.target }}    # picks env-specific secrets
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || '' }}
 
-      - uses: cloudflare/wrangler-action@v3
+      # Option A: set secrets in CF before deploy (persist as Worker secrets)
+      - name: Set Worker secrets in Cloudflare (env: ${{ inputs.target }})
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --env ${{ inputs.target }}
+          # These become Worker secrets (encrypted) in the selected env
+          secrets: |
+            RENDER_API_KEY
+            STRIPE_SECRET_KEY
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          STRIPE_SECRET_KEY: ${{ vars.STRIPE_SECRET_KEY }}
 
-  staging:
-    if: github.event_name == 'pull_request'
+      # Deploy with per-env plain vars (RENDER_URL etc.)
+      - name: Deploy (env: ${{ inputs.target }})
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # Pass non-secret vars inline; secrets come from previous step
+          command: >
+            deploy
+            --env ${{ inputs.target }}
+            --var RENDER_URL=${{ vars.RENDER_URL }}
+            --var STRIPE_PUBLIC_KEY=${{ secrets.STRIPE_PUBLIC_KEY }}
+
+  # Auto-deploy on push to test branch
+  test:
+    if: github.ref == 'refs/heads/test'
     runs-on: ubuntu-latest
+    environment: test
     steps:
       - uses: actions/checkout@v4
-      - uses: cloudflare/wrangler-action@v3
+
+      - name: Set Worker secrets in Cloudflare (test)
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --env staging
+          secrets: |
+            RENDER_API_KEY
+            STRIPE_SECRET_KEY
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
 
+      - name: Deploy to test
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: >
+            deploy
+            --env test
+            --var RENDER_URL=${{ vars.RENDER_URL }}
+            --var STRIPE_PUBLIC_KEY=${{ vars.STRIPE_PUBLIC_KEY }}
+
+  # Auto-deploy on push to main
   production:
-    if: github.event_name == 'push'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
     steps:
       - uses: actions/checkout@v4
-      - uses: cloudflare/wrangler-action@v3
+
+      - name: Set Worker secrets in Cloudflare (production)
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --env production
+          secrets: |
+            RENDER_API_KEY
+            STRIPE_SECRET_KEY
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+
+      - name: Deploy to production
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: >
+            deploy
+            --env production
+            --var RENDER_URL=${{ vars.RENDER_URL }}
+            --var STRIPE_PUBLIC_KEY=${{ vars.STRIPE_PUBLIC_KEY }}

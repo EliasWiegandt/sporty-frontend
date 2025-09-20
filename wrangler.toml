@@ -1,7 +1,7 @@
 # wrangler.toml — Sporty
 name = "sporty"
 main = "src/worker.js"
-compatibility_date = "2025-09-07"
+compatibility_date = "2025-09-16"
 account_id = "3163c47e268d21d781c4fd86a71964cb"
 
 assets = { directory = "./site" }
@@ -9,10 +9,12 @@ assets = { directory = "./site" }
 # --- Default/local (wrangler dev) ---
 workers_dev = true  # enables local + a workers.dev preview when not using a specific env
 
-# --- Staging (preview env) ---
-[env.staging]
-workers_dev = true   # get a workers.dev URL on deploy (no custom domain)
-# Secrets (e.g., BACKEND_URL, BACKEND_API_KEY) should be set via `wrangler secret`
+# --- Test (preview env) ---
+[env.test]
+routes = [
+  { pattern = "sporty-test.plyml.com/*", zone_name = "plyml.com" }
+]
+# Vars & secrets still injected via GitHub Actions for env=test
 
 # --- Production ---
 [env.production]
@@ -20,4 +22,4 @@ workers_dev = true   # get a workers.dev URL on deploy (no custom domain)
 routes = [
   { pattern = "sporty.plyml.com/*", zone_name = "plyml.com" }
 ]
-# Secrets (e.g., BACKEND_URL, BACKEND_API_KEY) should be set via `wrangler secret`
+

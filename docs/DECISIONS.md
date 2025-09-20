@@ -1,41 +1,43 @@
 # Decisions (ADR-style)
 
-ADR-001 — Frontend on Cloudflare Worker
-Status: Accepted
-Rationale: Simple static hosting + edge proxy for injecting API key and centralizing requests.
+## ADR-001 — Frontend on Cloudflare Worker
+- **Status:** Accepted
+- **Why:** Serves static site, handles routing, and injects backend API key at the edge.
 
-ADR-002 — Backend on Render (FastAPI)
-Status: Accepted
-Rationale: Quick to deploy; suits Python; simple env var management.
+## ADR-002 — Backend on Render (FastAPI)
+- **Status:** Accepted
+- **Why:** Simple Python hosting with environment management; aligns with current stack.
 
-ADR-003 — Auth with Supabase (Planned)
-Status: Accepted (Next)
-Rationale: Managed Postgres + auth; easy JS SDK for frontend. Will be used to authenticate users and persist adult intake submissions and generated results with explicit consent.
+## ADR-003 — Auth & Storage via Supabase
+- **Status:** Accepted (in progress)
+- **Why:** Managed Postgres plus authentication; tight integration with JS SDK; supports guardianship relations and RLS.
 
-ADR-004 — Payments with Stripe (Planned)
-Status: Proposed
-Rationale: Standard, reliable checkout for later monetization.
+## ADR-004 — Payments via Stripe Checkout
+- **Status:** Accepted
+- **Why:** One-time $5 purchases (adult/child packages) are easy to model with Checkout + webhooks; avoids subscription complexity for MVP.
 
-ADR-005 — Worker ↔ Backend Auth via `X-API-Key`
-Status: Accepted
-Rationale: Keep key server-side; browser never sees it.
+## ADR-005 — Worker ↔ Backend Auth with `X-API-Key`
+- **Status:** Accepted
+- **Why:** Keeps API key out of the browser; Worker adds the header on every proxied request.
 
-ADR-006 — Data Store (Supabase Postgres) (Planned)
-Status: Accepted (Next)
-Rationale: Unified with auth; good for structured sports taxonomy and profiles; store submissions and results once consented.
+## ADR-006 — Rename Supabase “service role” → Secret Key
+- **Status:** Accepted
+- **Why:** Align with Supabase terminology change; environment variables use `SUPABASE_SECRET_KEY{_TEST}` everywhere.
 
-ADR-007 — Frontend Env Naming + Secrets Location
-Status: Accepted
-Rationale: Standardize on `BACKEND_API_KEY` as the only frontend variable name for the API key (avoid alias `API_KEY`) to reduce confusion across repos and docs. Treat `BACKEND_URL` as a Worker secret per environment to keep configuration out of git and align with privacy-by-default, even though the URL is not sensitive.
-Consequences: Update docs and examples to reference `BACKEND_API_KEY` only on the frontend; backend keeps using `API_KEY`. Remove `BACKEND_URL` from `wrangler.toml` env vars and set it via `wrangler secret` for staging/production and local dev (`.dev.vars`).
-Alternatives: Keep `BACKEND_URL` in `wrangler.toml` as a non-secret; allow `API_KEY` alias in the Worker. Rejected to avoid drift and ambiguous naming.
+## ADR-007 — Product Scope Includes Adults & Children from Day One Credits
+- **Status:** Accepted
+- **Why:** Front page stays adult-only and free, but paid flows must already accommodate child forecasts. Documentation and UI reflect both tracks even if some screens ship later.
 
-ADR-008 — Scope: Adult-only MVP first
-Status: Accepted
-Rationale: Ship a simple, private MVP quickly. Child + parents growth projection requires additional safeguards (parental consent, UX) and is deferred.
-Consequences: Intake and API are modeled for adults only. UIs and docs clearly state adult scope. Child-related inputs and storage are excluded for now.
+## ADR-008 — Credits Instead of Subscriptions
+- **Status:** Accepted
+- **Why:** One credit per analysis keeps pricing transparent, enables gifting later, and simplifies compliance. Stripe Checkout metadata tracks adult vs child credits.
 
-ADR-009 — Consent and Data Retention
-Status: Accepted (Next)
-Rationale: Before persisting any user data, present clear consent and allow opting out. For child data (later), require parent/guardian consent with appropriate auth and controls.
-Consequences: Implement consent UX and storage toggles with Supabase. Document data handling and retention clearly. Avoid storing PII until consented.
+## ADR-009 — Guardian Linking Required for Child Data
+- **Status:** Accepted
+- **Why:** Both parents/guardians must consent before their data is used for child forecasts. Implement invitations/approvals through Supabase RPCs and enforce via RLS.
+
+## ADR-010 — Product Catalog Stored in Supabase (`billing_products`)
+- **Status:** Accepted
+- **Why:** Keep the purchasable offerings in Supabase so frontend/worker code can read descriptions and availability without redeploying. Stripe price IDs stay in one place and are seeded from `taxonomies/products.yaml`.
+
+Future decisions should follow this format and stay consistent across repos.
