@@ -25,6 +25,7 @@ jobs:
             --env test
             --var RENDER_URL:"${{ vars.RENDER_URL }}"
             --var STRIPE_PUBLIC_KEY:"${{ vars.STRIPE_PUBLIC_KEY }}"
+            --var SUPABASE_STORAGE_URL:"${{ vars.SUPABASE_STORAGE_URL }}"
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
 
@@ -46,8 +47,9 @@ jobs:
             RENDER_API_KEY
           command: >
             deploy
-            --env test
+            --env production
             --var RENDER_URL:"${{ vars.RENDER_URL }}"
             --var STRIPE_PUBLIC_KEY:"${{ vars.STRIPE_PUBLIC_KEY }}"
+            --var SUPABASE_STORAGE_URL:"${{ vars.SUPABASE_STORAGE_URL }}"
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
