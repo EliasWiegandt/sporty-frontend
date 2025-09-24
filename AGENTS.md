@@ -5,19 +5,21 @@ Purpose: help agents collaborate across `sporty-frontend` (Cloudflare Worker + s
 ## Goals
 - Serve the static UI via a Cloudflare Worker.
 - Proxy `POST /api/recommend-adult-free` from the Worker to the backend `POST /recommend-adult-free`.
-- Keep the API key secret by injecting `X-API-Key` in the Worker.
+- Keep secrets out of the browser: Worker injects `X-API-Key` and exposes only public config via `/config.js`.
 
-## Status (Now)
-- Adult-only MVP: only adult intake and suggestions are in scope. Child + parents growth projection is deferred.
-- Backend is experimenting with synthetic/test data for optimal body profiles per sport to seed examples and shape scoring.
-- No persistence yet; next step is adding Supabase for auth + data storage.
+## Status (2025-09-24)
+- Adult-only MVP in scope; child/guardian flows deferred.
+- Results page now renders Supabase-hosted sport illustrations using `spec.media.card.path` + Worker-provided `SUPABASE_STORAGE_URL`.
+- Intake form trimmed to core measurements + consent; optional notes/tags removed.
+- Consent block styled as bordered callout.
+- No persistence yet; Supabase auth/storage is still the next milestone.
 
 ## Supabase Plan (Next)
-- Frontend uses `SUPABASE_URL` + `SUPABASE_PUBLISHABLE_KEY` (public) for auth.
-- Backend uses `SUPABASE_SECRET_KEY` (server-only) for DB writes; never expose to clients.
-- Implement RLS with owner-only access and guardian-based access for child data.
-- Import `optimal_bodies` dataset to support scoring and examples.
-- Schema and RLS details: `docs/supabase/SCHEMA.md`.
+- Frontend will use `SUPABASE_URL` + `SUPABASE_PUBLISHABLE_KEY` when auth/storage launches.
+- Backend keeps `SUPABASE_SECRET_KEY` private.
+- Worker now also needs `SUPABASE_STORAGE_URL` (public bucket base) to emit via `/config.js`.
+- Import `optimal_bodies` dataset (already includes media metadata) to support scoring + illustrations.
+- Schema/RLS reference: `docs/supabase/SCHEMA.md`.
 
 ## Guiding Principles
 - User-first: simple flows, fast feedback, clear errors.
@@ -50,15 +52,15 @@ Full vision: `docs/product/VISION.md`.
 - Backend:
   - `app/main.py`: FastAPI app with `/recommend-adult-free` endpoint.
 
-## Env Vars
-- Worker secrets:
-  - `BACKEND_URL`: Base URL for backend (e.g., `http://127.0.0.1:8000` or Render URL).
-  - `BACKEND_API_KEY`: API key to send as `X-API-Key`.
-  - Local dev: put these in `.dev.vars` (ignored by git). Example in `.dev.vars.example`.
-- Backend env:
-  - `API_KEY`: Must match `BACKEND_API_KEY`.
-
-Upcoming (not yet used): Supabase Project credentials for auth + Postgres. Add only when integrating auth/storage.
+## Env Vars / Secrets
+- Worker (per environment via GitHub Actions + Wrangler):
+  - `RENDER_URL` (var)
+  - `STRIPE_PUBLIC_KEY` (var)
+  - `SUPABASE_STORAGE_URL` (var; `https://<project>.supabase.co/storage/v1/object/public/sporty-media`)
+  - `RENDER_API_KEY` (secret; injected as `X-API-Key`)
+- Local dev: mirror these in `.dev.vars`.
+- Backend: `API_KEY` must match `RENDER_API_KEY`.
+- Supabase auth/storage credentials will be introduced when persistence launches.
 
 ## Local Dev Commands
 - Start backend:
@@ -80,8 +82,8 @@ Use VS Code task "Dev: Both (Worker + Backend)" to run both.
 - Define initial schemas for adult-only profiles and results; keep child-specific fields out until that phase.
 
 ## Deploy
-- Backend: Render.com (see `../sporty-backend/render.yaml`). Set `API_KEY`.
-- Frontend: Cloudflare Worker. Set secrets `BACKEND_URL`, `BACKEND_API_KEY` per environment.
+- Backend: Render.com (see `../sporty-backend/render.yaml`). Configure `API_KEY`, Supabase, and Stripe secrets.
+- Frontend: Cloudflare Worker deployed via `.github/workflows/deploy.yml`. Action injects `RENDER_API_KEY` and passes vars `RENDER_URL`, `STRIPE_PUBLIC_KEY`, `SUPABASE_STORAGE_URL` to Wrangler before `deploy`.
 
 ## Style & Conventions
 - Keep docs concise and colocated (`docs/` per repo).
