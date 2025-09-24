@@ -40,4 +40,8 @@
 - **Status:** Accepted
 - **Why:** Keep the purchasable offerings in Supabase so frontend/worker code can read descriptions and availability without redeploying. Stripe price IDs stay in one place and are seeded from `taxonomies/products.yaml`.
 
+## ADR-011 — Sport Illustrations Served from Supabase Storage
+- **Status:** Accepted
+- **Why:** Deterministic artwork per sport/cohort lives in the `sporty-media` bucket. The Worker exposes `SUPABASE_STORAGE_URL` via `/config.js`, letting static pages fetch images without bundling secrets.
+
 Future decisions should follow this format and stay consistent across repos.

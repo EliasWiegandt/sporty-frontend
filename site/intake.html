@@ -150,26 +150,13 @@
         </div>
       </div>
 
-      <div class="intake-grid" role="group" aria-labelledby="context-info">
-        <h2 id="context-info" class="section__subtitle" style="margin-bottom:0">Context (optional)</h2>
-        <label>
-          <span>Notes about goals, injuries, or preferences</span>
-          <textarea name="preferences" placeholder="e.g., loves team energy, returning from ankle sprain, wants endurance focus"></textarea>
-        </label>
-        <fieldset>
-          <legend class="privacy-note">Optional tags (pick any)</legend>
-          <label><input type="checkbox" name="tags" value="team" /> Team-focused</label>
-          <label><input type="checkbox" name="tags" value="solitary" /> Solo-friendly</label>
-          <label><input type="checkbox" name="tags" value="water" /> Water sports</label>
-          <label><input type="checkbox" name="tags" value="outdoor" /> Outdoor play</label>
-        </fieldset>
-      </div>
-
       <div class="intake-grid">
-        <label class="privacy-note" style="display:flex; gap:0.8rem; align-items:flex-start;">
-          <input type="checkbox" name="consent" />
-          <span>I consent to Sporty processing these details to generate a sport suggestion. I understand the free MVP does not store data yet; I’ll be asked for additional consent before any future storage.</span>
-        </label>
+        <div class="consent-confirm">
+          <input type="checkbox" name="consent" id="consent-checkbox" />
+          <label for="consent-checkbox">
+            I consent to Sporty processing these details to generate a sport suggestion. I understand the free MVP does not store data yet; I’ll be asked for additional consent before any future storage.
+          </label>
+        </div>
         <div data-status aria-live="polite"></div>
         <div class="button-row">
           <button class="button" type="submit" data-submit>See my matches</button>

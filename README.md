@@ -7,6 +7,7 @@ Cloudflare Worker + static site powering Sporty’s user experience. The Worker 
 Sporty suggests sports using body data today and richer signals for paid flows. The experience spans three tiers:
 
 - **Free (anonymous)** — Adults enter measurements on the front page and receive top-three body-only matches with sport/role context. Nothing is stored.
+- **Illustrated matches** — When sport artwork exists, results now include cohort-specific illustrations fetched from Supabase Storage via the Worker.
 - **Free (logged-in)** — Adults sign in with Supabase, save multiple measurement sets, and rerun the body-only suggestion without retyping.
 - **Paid credits ($5)**
   - **Adult Package** → detailed recommendation using preferences, injuries, goals.
@@ -38,6 +39,7 @@ BACKEND_API_KEY=dev-key-123
 SUPABASE_URL=https://<project>.supabase.co
 SUPABASE_PUBLISHABLE_KEY=your-public-key
 STRIPE_PUBLIC_KEY=pk_test_...
+SUPABASE_STORAGE_URL=https://<project>.supabase.co/storage/v1/object/public/sporty-media
 ```
 
 Ensure the backend is running locally (`make run-backend` in `../sporty-backend`). Submit the free form to confirm proxying works.
@@ -45,6 +47,7 @@ Ensure the backend is running locally (`make run-backend` in `../sporty-backend`
 ## Environment & Secrets
 
 - Configure GitHub environment variables for test/prod deploys: `RENDER_URL`, `RENDER_API_KEY`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `STRIPE_PUBLIC_KEY`.
+- Add `SUPABASE_STORAGE_URL` alongside the other Worker vars so `/config.js` can expose the public storage base to static pages.
 - Use `wrangler secret put` for per-environment secrets (staging/production).
 - See `docs/secrets.md` for the complete matrix across repos.
 

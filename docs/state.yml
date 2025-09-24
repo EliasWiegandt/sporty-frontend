@@ -15,6 +15,7 @@ frontend:
       - STRIPE_PUBLIC_KEY
       - SUPABASE_URL
       - SUPABASE_PUBLISHABLE_KEY
+      - SUPABASE_STORAGE_URL
 backend:
   service: sporty-backend (Render)
   entry: app.main:app

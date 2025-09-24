@@ -4,6 +4,20 @@ export default {
     const url = new URL(request.url);
     const reqId = request.headers.get("X-Request-Id") || crypto.randomUUID();
 
+    // Lightweight config file for static pages to read env-based URLs.
+    if (request.method === "GET" && url.pathname === "/config.js") {
+      const storageUrl = env.SUPABASE_STORAGE_URL || "";
+      const body = `self.SUPABASE_STORAGE_URL = ${JSON.stringify(storageUrl)};`;
+      return new Response(body, {
+        status: 200,
+        headers: {
+          "Content-Type": "application/javascript; charset=UTF-8",
+          "Cache-Control": "no-store",
+          "X-Request-Id": reqId,
+        },
+      });
+    }
+
     // Proxy: POST /api/recommend-adult-free -> backend /recommend-adult-free
     if (
       request.method === "POST" &&

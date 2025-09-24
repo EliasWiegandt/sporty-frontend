@@ -13,6 +13,7 @@ Configured as GitHub environment variables/secrets (`sporty` repo → Settings �
 - `STRIPE_PUBLIC_KEY` — Publishable Stripe key (test vs live) used by browser checkout helpers (if needed).
 - `SUPABASE_URL` — Supabase project URL.
 - `SUPABASE_PUBLISHABLE_KEY` — Browser-safe Supabase key.
+- `SUPABASE_STORAGE_URL` — Public base URL for Supabase Storage assets (e.g., `https://<project>.supabase.co/storage/v1/object/public/sporty-media`). Served to the browser via `/config.js` so results pages can fetch sport illustrations.
 
 Local dev: mirror these in `.dev.vars` for `wrangler dev`.
 
@@ -52,7 +53,7 @@ Worker references only the publishable key; backend uses the secret + webhook se
 
 | Component | Keys |
 |-----------|------|
-| Worker | `RENDER_URL`, `RENDER_API_KEY`, `STRIPE_PUBLIC_KEY`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` |
+| Worker | `RENDER_URL`, `RENDER_API_KEY`, `STRIPE_PUBLIC_KEY`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_STORAGE_URL` |
 | Backend | `API_KEY`, `SUPABASE_URL{_TEST}`, `SUPABASE_SECRET_KEY{_TEST}`, Stripe keys |
 | Local seeding scripts | `.env` entries for `SUPABASE_URL{_TEST}` + `SUPABASE_SECRET_KEY{_TEST}` |
 

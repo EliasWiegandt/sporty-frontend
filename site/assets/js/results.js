@@ -1,6 +1,7 @@
 (function () {
   const container = document.querySelector('[data-results]');
   const fallback = document.querySelector('[data-empty-state]');
+  const storageBase = resolveStorageBase();
 
   if (!container) return;
 
@@ -27,6 +28,9 @@
       const spec = body.spec || {};
       const sport = body.sport || {};
       const hierarchy = Array.isArray(body.category_hierarchy) ? body.category_hierarchy : [];
+      const cardMedia = spec.media && spec.media.card ? spec.media.card : null;
+      const imageUrl = resolveMediaUrl(cardMedia, storageBase);
+      const imageAlt = cardMedia && cardMedia.alt ? cardMedia.alt : 'Sports image';
 
       const roleNames = hierarchy
         .filter((level) => level.key !== 'sport' && level.name)
@@ -35,6 +39,10 @@
 
       const article = document.createElement('article');
       article.className = 'card result-card';
+      const mediaMarkup = imageUrl
+        ? `<img class="result-card__image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" loading="lazy" />`
+        : placeholderFigure(sport.name || body.sport_slug || 'sport');
+
       article.innerHTML = `
         <header class="result-card__header">
           <span class="result-card__rank">#${rank}</span>
@@ -43,11 +51,9 @@
             ${subtitle ? `<p class="result-card__roles">${escapeHtml(subtitle)}</p>` : ''}
           </div>
         </header>
-        <figure class="image-placeholder result-card__image" aria-label="Placeholder image for ${escapeHtml(sport.name || body.sport_slug || 'sport')}">
-          <span>Image placeholder — ${escapeHtml(sport.name || body.sport_slug || 'Sport')} in action.</span>
-        </figure>
-        ${renderHierarchyDetails(hierarchy)}
-        <p class="result-card__rationale">${escapeHtml(spec.rationale || spec.description || 'Description coming soon.')}</p>
+        ${mediaMarkup}
+        ${renderHierarchyDetails(hierarchy, sport.name || body.sport_slug)}
+        ${renderRationale(spec)}
         ${renderAthletes(spec.example_athletes)}
         ${renderMetrics(match.score_breakdown)}
       `;
@@ -62,12 +68,14 @@
     if (fallback) fallback.hidden = false;
   }
 
-  function renderHierarchyDetails(hierarchy) {
+  function renderHierarchyDetails(hierarchy, sportName) {
     if (!Array.isArray(hierarchy) || !hierarchy.length) {
       return '';
     }
 
-    const items = hierarchy
+    const ordered = orderHierarchy(hierarchy, sportName);
+
+    const items = ordered
       .filter((item) => item && (item.name || item.description))
       .map((item) => {
         const name = escapeHtml(item.name || '') || item.key;
@@ -81,9 +89,26 @@
       })
       .join('');
 
-    return items
-      ? `<section class="result-card__section result-card__details"><h4>Sport breakdown</h4>${items}</section>`
-      : '';
+    return items ? `<section class="result-card__section result-card__details">${items}</section>` : '';
+  }
+
+  function renderRationale(spec) {
+    const text = escapeHtml(spec.rationale || spec.description || 'Description coming soon.');
+    return `
+      <section class="result-card__section result-card__rationale">
+        <h4>Physical characteristics</h4>
+        <p>${text}</p>
+      </section>
+    `;
+  }
+
+  function placeholderFigure(label) {
+    const safeLabel = escapeHtml(label || 'sport');
+    return `
+      <figure class="image-placeholder result-card__image" aria-label="Placeholder image for ${safeLabel}">
+        <span>Image placeholder — ${safeLabel} in action.</span>
+      </figure>
+    `;
   }
 
   function renderAthletes(athletes) {
@@ -123,6 +148,24 @@
     `;
   }
 
+  function resolveStorageBase() {
+    if (typeof self !== 'undefined' && typeof self.SUPABASE_STORAGE_URL === 'string') {
+      return self.SUPABASE_STORAGE_URL.replace(/\/$/, '');
+    }
+    return '';
+  }
+
+  function resolveMediaUrl(card, base) {
+    if (!card) return null;
+    if (card.url) return card.url;
+    if (!card.path) return null;
+
+    const cleanedPath = card.path.replace(/^\/+/, '');
+    if (base) return `${base}/${cleanedPath}`;
+    if (/^https?:/i.test(card.path)) return card.path;
+    return null;
+  }
+
   function escapeHtml(value) {
     return (value || '')
       .toString()
@@ -154,5 +197,24 @@
       default:
         return metric;
     }
+  }
+
+  function orderHierarchy(hierarchy, sportName) {
+    const sportLevel = hierarchy.find((item) => item.key === 'sport');
+    const others = hierarchy.filter((item) => item.key !== 'sport');
+
+    if (!sportLevel && !sportName) {
+      return hierarchy;
+    }
+
+    const result = [];
+
+    if (sportLevel) {
+      result.push(sportLevel);
+    } else if (sportName) {
+      result.push({ key: 'sport', name: sportName, description: '' });
+    }
+
+    return result.concat(others);
   }
 })();

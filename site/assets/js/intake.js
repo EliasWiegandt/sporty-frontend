@@ -34,8 +34,6 @@
       hip_width_cm: fd.get('hip_width_cm') ? Number(fd.get('hip_width_cm')) : null,
       hand_length_cm: fd.get('hand_length_cm') ? Number(fd.get('hand_length_cm')) : null,
       foot_length_cm: fd.get('foot_length_cm') ? Number(fd.get('foot_length_cm')) : null,
-      preferences: (fd.get('preferences') || '').toString().trim(),
-      tags: fd.getAll('tags'),
     };
 
     if (!payload.birthday || !payload.height_cm || !payload.weight_kg) {
@@ -96,29 +94,12 @@
       hip_width_cm: 35,
       hand_length_cm: 19,
       foot_length_cm: 25,
-      preferences: 'Sprint freestyle swimmer — focused on explosive upper-body power and starts.',
-      tags: ['water', 'solitary'],
       consent: true,
     };
 
     Object.entries(preset).forEach(([key, value]) => {
       const field = form.elements.namedItem(key);
       if (!field) return;
-
-      if (key === 'preferences' && field instanceof HTMLTextAreaElement) {
-        field.value = value;
-        return;
-      }
-
-      if (key === 'tags' && Array.isArray(value)) {
-        value.forEach((tag) => {
-          const checkbox = form.querySelector(
-            `input[name="tags"][value="${cssEscape(tag)}"]`
-          );
-          if (checkbox) checkbox.checked = true;
-        });
-        return;
-      }
 
       if (field instanceof RadioNodeList) {
         field.value = value;
@@ -135,10 +116,4 @@
     });
   }
 
-  function cssEscape(value) {
-    if (window.CSS && typeof window.CSS.escape === 'function') {
-      return window.CSS.escape(value);
-    }
-    return String(value).replace(/"/g, '\\"');
-  }
 })();
