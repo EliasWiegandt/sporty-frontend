@@ -29,6 +29,10 @@ body {
   line-height: 1.6;
 }
 
+figure {
+  margin: 0;
+}
+
 a {
   color: var(--color-accent);
   text-decoration: none;
@@ -95,14 +99,63 @@ main {
 
 .hero {
   display: grid;
-  gap: 2rem;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: clamp(2rem, 4vw, 3rem);
+  grid-template-columns: minmax(320px, 1.25fr) minmax(280px, 0.85fr);
   align-items: center;
   background: var(--color-surface);
   border-radius: 24px;
   padding: clamp(2rem, 5vw, 4rem);
   box-shadow: var(--shadow-card);
 }
+
+@media (max-width: 860px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hero__visual {
+  display: grid;
+  gap: clamp(0.9rem, 2vw, 1.5rem);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-content: center;
+  justify-items: center;
+  align-self: center;
+  max-width: clamp(540px, 48vw, 660px);
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .hero__mosaic {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.image-tile {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+
+.image-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.hero__visual .image-tile {
+  width: 100%;
+  max-width: clamp(180px, 18vw, 220px);
+  margin: 0 auto;
+}
+
 
 .hero__badge {
   display: inline-flex;
@@ -231,6 +284,15 @@ main {
   display: grid;
   gap: 1.5rem;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  align-items: stretch;
+}
+
+.grid-cards--balanced {
+  grid-auto-rows: minmax(0, 1fr);
+}
+
+.grid-cards--balanced > .card {
+  height: 100%;
 }
 
 .card {
@@ -241,6 +303,7 @@ main {
   box-shadow: 0 20px 40px -32px rgba(15, 23, 42, 0.6);
   display: flex;
   flex-direction: column;
+  gap: 1.1rem;
 }
 
 .card--highlight {
@@ -276,12 +339,13 @@ main {
   position: relative;
   display: grid;
   place-items: center;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   background: repeating-linear-gradient(135deg, rgba(15, 23, 42, 0.08) 0 12px, rgba(148, 163, 184, 0.12) 12px 24px);
   border-radius: 20px;
-  min-height: clamp(220px, 35vw, 360px);
   color: rgba(15, 23, 42, 0.55);
   text-align: center;
-  padding: 1.5rem;
+  padding: clamp(1rem, 2vw, 1.5rem);
   border: 1px dashed rgba(148, 163, 184, 0.6);
 }
 
@@ -504,4 +568,13 @@ blockquote.testimonial footer {
   .card {
     padding: 1.35rem;
   }
+}
+
+.card .image-tile {
+  margin-bottom: 1.35rem;
+  box-shadow: 0 24px 36px -28px rgba(15, 23, 42, 0.35);
+}
+
+.card .image-tile img {
+  object-fit: cover;
 }

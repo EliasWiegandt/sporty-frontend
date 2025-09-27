@@ -51,6 +51,19 @@ Ensure the backend is running locally (`make run-backend` in `../sporty-backend`
 - Use `wrangler secret put` for per-environment secrets (staging/production).
 - See `docs/secrets.md` for the complete matrix across repos.
 
+
+
+## Image Pipeline (NanoBanana/Gemini)
+
+The landing page illustrations are generated programmatically so their prompts stay in sync with the product copy.
+
+1. **Catalog** — `docs/images/catalog.yaml` defines each tile with a stable key, alt text, prompt, and target Supabase Storage path. Only entries with `status: planned`/`in-progress` are considered.
+2. **Generation** — Run the backend notebook `../sporty-backend/notebooks/00009_generate_frontend_tiles.ipynb`. It reads the catalog, pairs each prompt with an anchor reference from `../sporty-backend/images/illu_type_01/anchors/`, and saves the generated WebP files into `../sporty-backend/images/illu_type_01/generated_website/`.
+3. **Upload** — The last notebook cell uploads the images to the public Supabase bucket `sporty-media`, under the `frontend_images/...` paths declared in the catalog.
+4. **Frontend consumption** — The Cloudflare Worker exposes `SUPABASE_STORAGE_URL` via `/config.js`. `site/assets/js/landing.js` maps the `data-image-key` attributes on the `<img>` tags in `site/index.html` to the uploaded Storage paths and constructs the final URLs at runtime.
+
+To update artwork, adjust `catalog.yaml`, rerun the notebook, and redeploy the Worker ensuring `SUPABASE_STORAGE_URL` points at the bucket (e.g. `https://<project>.supabase.co/storage/v1/object/public/sporty-media`).
+
 ## Upcoming Development
 
 1. **Saved measurements** — Authenticated adults can persist measurement sets via Supabase.

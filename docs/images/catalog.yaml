@@ -1,0 +1,112 @@
+# Sporty Frontend Image Catalog (square tile system)
+# Updated: 2025-09-25
+# Fields:
+#   key            – stable identifier for referencing in code/tests.
+#   page           – source HTML or design spec location.
+#   slot           – human-readable placement within that page.
+#   output         – target filename for the generated asset.
+#   storage_path   – Supabase Storage path (relative to sporty-media/).
+#   alt            – accessible description shipped with the UI.
+#   prompt         – generation instructions (Gemini, etc.).
+#   aspect_ratio   – desired width:height guidance (default 1:1).
+#   style          – art-direction shorthand.
+#   status         – planned | in-progress | approved | archived.
+#   notes          – optional guidance for content/design teams.
+
+# === Current Adult Landing Page Tiles ===
+- key: landing.hero.tile_a
+  page: site/index.html
+  slot: hero.mosaic.left
+  output: hero_tile_basketball.webp
+  storage_path: frontend_images/landing/hero_tile_basketball.webp
+  alt: >-
+    Square illustration of an adult basketball player warming up with a ball in hand inside a bright gym.
+  prompt: |-
+    Square illustration showing an adult basketball player in warmups inside a modern community gym.
+    The athlete is mid-dribble with confident posture, wearing teal accents that match Sporty branding.
+    Include subtle background hints of court markings and supportive teammates blurred in the back.
+    Style should be semi-realistic with clean vector edges and soft gradients.
+  aspect_ratio: "1:1"
+  style: semi-realistic illustration with soft gradients
+  status: planned
+  notes: Serves as left tile in hero mosaic; keep subject facing slightly toward centre tile.
+
+- key: landing.hero.tile_b
+  page: site/index.html
+  slot: hero.mosaic.center
+  output: hero_tile_swimmer.webp
+  storage_path: frontend_images/landing/hero_tile_swimmer.webp
+  alt: >-
+    Square illustration of an adult swimmer stretching with a towel and goggles beside an indoor pool.
+  prompt: |-
+    Square illustration of an adult swimmer stretching on deck beside an indoor pool. Capture a calm
+    pre-training moment with towel around shoulders, goggles in hand, and soft morning light reflecting off
+    water. Palette should blend teal water tones with warm coral highlights to stay on-brand.
+  aspect_ratio: "1:1"
+  style: semi-realistic illustration with soft gradients
+  status: planned
+  notes: This tile anchors the mosaic; keep composition balanced so important elements stay centered.
+
+- key: landing.hero.tile_c
+  page: site/index.html
+  slot: hero.mosaic.right
+  output: hero_tile_runner.webp
+  storage_path: frontend_images/landing/hero_tile_runner.webp
+  alt: >-
+    Square illustration of an adult runner tying their shoes beside starting blocks on an indoor track.
+  prompt: |-
+    Square illustration showing an adult runner crouched to tie their shoes next to starting blocks on an
+    indoor track. Use directional light to emphasize focus and determination, with track lanes receding in the
+    background. Accent colors should echo Sporty teal and coral, with warm neutrals for contrast.
+  aspect_ratio: "1:1"
+  style: semi-realistic illustration with soft gradients
+  status: planned
+  notes: Tilt the subject slightly inward to complete the hero mosaic narrative.
+
+- key: landing.sample_results.tile_matches
+  page: site/index.html
+  slot: sample-results.card-1
+  output: sample_tile_matches.webp
+  storage_path: frontend_images/landing/sample_tile_matches.webp
+  alt: >-
+    Square illustration of three sport recommendation cards fanned out on a desk.
+  prompt: |-
+    Square illustration featuring three sport recommendation cards fanned out on a neutral desk surface.
+    Each card should hint at a sport icon (basketball, rowing, climbing) and abstract bullet shapes without
+    real text. Use Sporty accent colors and soft shadows to create depth while keeping the layout clean.
+  aspect_ratio: "1:1"
+  style: flat illustration with light depth cues
+  status: planned
+  notes: Provide enough border padding so cards do not touch edges when cropped.
+
+- key: landing.sample_results.tile_metrics
+  page: site/index.html
+  slot: sample-results.card-2
+  output: sample_tile_metrics.webp
+  storage_path: frontend_images/landing/sample_tile_metrics.webp
+  alt: >-
+    Square illustration of a bar chart comparing body metrics to optimal sport ranges.
+  prompt: |-
+    Square data-visualization illustration with horizontal bars representing metrics like height, arm span,
+    and leg length. Show optimal bands with soft translucent fills and overlay a distinct marker for the user.
+    Include a simple legend area; rely on teal and coral accents over a warm neutral background.
+  aspect_ratio: "1:1"
+  style: modern data visualization illustration
+  status: planned
+  notes: Avoid text-heavy elements; rely on shapes and color blocks so the tile remains legible at small sizes.
+
+- key: landing.sample_results.tile_next_steps
+  page: site/index.html
+  slot: sample-results.card-3
+  output: sample_tile_next_steps.webp
+  storage_path: frontend_images/landing/sample_tile_next_steps.webp
+  alt: >-
+    Square illustration of a clipboard checklist with sport-related next steps like clubs, drills, coaching.
+  prompt: |-
+    Square illustration of a clipboard with three completed checklist items labelled via icons (club jersey,
+    cones for drills, calendar for coaching). Add a pen and small motivational sticker to keep the tile warm
+    and encouraging. Maintain palette harmony with the hero mosaic.
+  aspect_ratio: "1:1"
+  style: friendly flat illustration with simple shading
+  status: planned
+  notes: Make checkmarks bold enough to read on mobile screens.

@@ -62,6 +62,13 @@ Full vision: `docs/product/VISION.md`.
 - Backend: `API_KEY` must match `RENDER_API_KEY`.
 - Supabase auth/storage credentials will be introduced when persistence launches.
 
+
+## Image Generation Workflow
+- Prompts and alt text live in `docs/images/catalog.yaml` with Supabase object paths (`frontend_images/...`). Entries marked `archived`/`legacy` are ignored.
+- Run `../sporty-backend/notebooks/00009_generate_frontend_tiles.ipynb` to regenerate tiles. The notebook reads the catalog, selects anchor references from `../sporty-backend/images/illu_type_01/anchors/`, saves WebP files to `../sporty-backend/images/illu_type_01/generated_website/`, and uploads them to the `sporty-media` bucket.
+- The Worker exposes `SUPABASE_STORAGE_URL` via `/config.js`. `site/assets/js/landing.js` maps `data-image-key` attributes in `site/index.html` to the uploaded object paths so HTML stays static.
+- Update `catalog.yaml` whenever copy/layout changes, rerun the notebook, and redeploy the Worker (with `SUPABASE_STORAGE_URL`) to refresh the live images.
+
 ## Local Dev Commands
 - Start backend:
   - `cd ../sporty-backend`

@@ -35,17 +35,11 @@
           <a class="button--ghost" href="#tiers">Explore paid options</a>
         </div>
       </div>
-      <figure class="image-placeholder" aria-label="Placeholder illustration of diverse adults enjoying multiple sports">
-        <span>Hero image placeholder — illustration of adults with varied body types playing basketball, swimming, running.</span>
-      </figure>
-    </section>
-
-    <section class="section" id="how-it-works">
-      <h2 class="section__title">Three quick steps</h2>
-      <p class="section__subtitle">We only need a few key measurements to return your top sport matches.</p>
-      <div class="grid-cards">
-        <article class="card">
-          <div class="step-number">1</div>
+            <div class="hero__visual" aria-label="Square illustration of an adult swimmer stretching with a towel and goggles beside an indoor pool.">
+        <figure class="image-tile">
+          <img data-image-key="landing.hero.tile_b" alt="Square illustration of an adult swimmer stretching with a towel and goggles beside an indoor pool." loading="lazy" />
+        </figure>
+      </div>
           <h3>Measure</h3>
           <p>Enter height, weight, and optional limb measurements. Adults only for the free flow.</p>
         </article>
@@ -65,7 +59,7 @@
     <section class="section" id="tiers">
       <h2 class="section__title">Choose the depth you need</h2>
       <p class="lead-copy">Sporty starts free for every adult. Upgrade when you want richer analysis or forecasts for children.</p>
-      <div class="grid-cards">
+      <div class="grid-cards grid-cards--balanced">
         <article class="card card--highlight" aria-label="Free plan details">
           <h3>Free · Adult Quick Match</h3>
           <ul class="feature-list">
@@ -93,24 +87,24 @@
 
     <section class="section" id="sample-results">
       <h2 class="section__title">What your free results look like</h2>
-      <div class="grid-cards">
+      <div class="grid-cards grid-cards--balanced">
         <article class="card">
-          <figure class="image-placeholder" aria-label="Placeholder sport card illustration for a free result">
-            <span>Result card image placeholder — collage of recommended sports.</span>
+          <figure class="image-tile" aria-label="Square illustration of three sport recommendation cards fanned out on a desk.">
+            <img data-image-key="landing.sample_results.tile_matches" alt="Square illustration of three sport recommendation cards fanned out on a desk." loading="lazy" />
           </figure>
           <h3>Top three matches</h3>
           <p>Each card explains why your body aligns with a sport, highlights standout measurements, and lists athletes with similar builds.</p>
         </article>
         <article class="card">
-          <figure class="image-placeholder" aria-label="Placeholder graphic depicting metric comparison chart">
-            <span>Graphic placeholder — bar chart showing how your metrics fall inside optimal ranges.</span>
+          <figure class="image-tile" aria-label="Square illustration of a bar chart comparing body metrics to optimal sport ranges.">
+            <img data-image-key="landing.sample_results.tile_metrics" alt="Square illustration of a bar chart comparing body metrics to optimal sport ranges." loading="lazy" />
           </figure>
           <h3>Measurement breakdown</h3>
           <p>See where you’re right in the sweet spot and where training can bridge the gap.</p>
         </article>
         <article class="card">
-          <figure class="image-placeholder" aria-label="Placeholder graphic for next steps callout">
-            <span>Graphic placeholder — checklist of next steps like clubs to try, drills to explore.</span>
+          <figure class="image-tile" aria-label="Square illustration of a clipboard checklist with sport-related next steps.">
+            <img data-image-key="landing.sample_results.tile_next_steps" alt="Square illustration of a clipboard checklist with sport-related next steps." loading="lazy" />
           </figure>
           <h3>Actionable next steps</h3>
           <p>We suggest starter drills, leagues, and areas to focus on so you can try a sport with confidence.</p>
@@ -168,6 +162,8 @@
     </div>
   </footer>
 
+  <script src="/config.js"></script>
+  <script src="/assets/js/landing.js" defer></script>
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
   </script>
