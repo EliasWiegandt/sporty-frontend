@@ -1,114 +1,87 @@
-# Sporty Backend Handbook
+# Sporty Frontend Handbook
 
 _Last updated: 2025-09-27_
 
-This handbook captures how the FastAPI service supports the Sporty MVP. Pair it with the frontend handbook (`../sporty-frontend/docs/handbook.md`) for the full story.
+This handbook tracks how the Sporty frontend is assembled and deployed. Pair it with the backend handbook (`../sporty-backend/docs/handbook.md`) for API details and shared operational notes.
 
 ---
 
-## 1. Role of the Backend
-- Serve `/recommend-adult-free` behind the Cloudflare Worker (`X-API-Key` auth).
-- Operate with Supabase service-role credentials to read/write recommendation data.
-- Seed and maintain sport metadata (`optimal_bodies`, taxonomies).
-- Prepare for Stripe checkout and credit consumption.
+## 1. Mission
+- Present Sporty’s marketing story and free adult intake experience.
+- Keep navigation, typography, and layout consistent across all pages.
+- Proxy `/api/recommend-adult-free` through the Cloudflare runtime so browsers never see backend secrets.
+- Free adult match collects only birthdate, sex, height, weight, and optional body measurements (arm span, leg inseam, etc.); paid flows will add preferences and injuries later.
+- Surface Supabase-powered auth/consent flows without persisting any sensitive keys client-side.
 
 ---
 
-## 2. Architecture Summary
+## 2. Architecture Overview
 
-| Component | Description |
-|-----------|-------------|
-| `app/main.py` | FastAPI app exposing `/recommend-adult-free` and (soon) Stripe endpoints. |
-| Supabase client | `create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)` for admin-level access with RLS bypass. |
-| Stripe SDK | Configured but idle until checkout endpoints land. |
-| Deployment | Render (`render.yaml`) builds with `pip install -r requirements.txt`, starts via Uvicorn. |
+| Layer | Responsibilities |
+|-------|------------------|
+| **Astro** | Pages live in `src/pages`. Shared chrome (nav, footer, fonts) lives in `src/layouts/BaseLayout.astro`. Global design tokens are declared in `src/styles/tokens.css`, while `src/styles/global.css` provides base resets and utility classes. |
+| **Astro API routes** | `src/pages/config.js.ts` publishes runtime Supabase config; `src/pages/api/recommend-adult-free.ts` proxies the backend; `src/pages/api/healthz.ts` exposes a health endpoint. |
+| **Public assets** | Vanilla JS (`public/assets/js/*.js`) handles Supabase auth, form submission, and DOM updates. Images and other static assets also live under `public/`. |
+| **Cloudflare Worker (generated)** | `astro build` (Cloudflare adapter) emits `dist/_worker.js/index.js`, wiring runtime env, asset serving, and the proxy routes above. |
+| **Backend** | FastAPI service (`/recommend-adult-free`) behind the Worker; see backend repo for implementation details. |
 
-Request flow: Worker → backend with `X-API-Key` → Supabase `optimal_bodies` lookup → scored matches returned to browser. Consent logic lives in the frontend; backend never persists per-user data directly.
-
----
-
-## 3. Environment & Secrets
-
-Set these in `.env` locally and in Render for each environment:
-
-| Variable | Purpose |
-|----------|---------|
-| `API_KEY` | Shared secret expected from the Worker. |
-| `SUPABASE_URL` / `SUPABASE_SECRET_KEY` | Supabase PostgREST URL + service-role key. |
-| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Stripe credentials for future checkout flows. |
-| `STRIPE_MODE` | `test` or `live`; optional (inferred from secret key). |
-
-Optional for scripts: `SUPABASE_URL_TEST`, `SUPABASE_SECRET_KEY_TEST`.
-
-**Never** log or expose the Supabase secret key.
+`npm run build` produces a server bundle (`dist/_worker.js/**`) plus static assets (`dist/`), ready for `wrangler dev`/`wrangler deploy`.
 
 ---
 
-## 4. Local Development
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.sample .env   # or create manually
-make run-backend      # uvicorn app.main:app --reload
-```
-
-Verify:
-```bash
-curl -sS -X POST \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: $API_KEY" \
-  -d '{"birthday":"1990-01-01","sex":"female","height_cm":175,"weight_kg":68}' \
-  http://127.0.0.1:8000/recommend-adult-free | jq
-```
-
-Run alongside `wrangler dev` in `../sporty-frontend` to test the full flow.
+## 3. Design System & Tokens
+- Global tokens (`src/styles/tokens.css`) define typography stacks, spacing scale, radii, shadows, and brand colors. Reference those variables rather than hard-coding values.
+- `BaseLayout` ensures shared fonts, nav layout, and auth controls render identically on every page. Only pass page-specific variations (e.g., nav links, primary CTA) via props.
+- For page-specific tweaks, scope styles via inline `<style>` blocks in the `.astro` file so global CSS stays lean.
+- Reuse utility classes (`.section`, `.grid-cards`, `.card`, `.button`) whenever possible to avoid divergence.
 
 ---
 
-## 5. Supabase Notes
+## 4. Local Development Workflow
 
-- Migrations live in `supabase/migrations/`. Apply in order (00001 schemas/policies, 00002 payments).
-- `handle_new_user()` trigger is `SECURITY DEFINER` so profiles are created safely when new auth users register.
-- Key tables touched by the backend: `optimal_bodies`, `sports`, `roles`, `consents`, `measurements`, `submissions`, `recommendations`, `billing_products`, `purchases`, `analysis_credits`.
-- Image metadata (`spec.media.card`) must align with Supabase Storage paths defined in `../sporty-frontend/docs/images/catalog.yaml`.
+1. `npm install`
+2. `npm run dev` to work in Astro’s dev server (`http://localhost:4321`). Fastest loop for layout/content.
+3. To test end-to-end with the generated Worker proxy:
+   ```bash
+   npm run build           # emit dist/_worker.js and assets
+   wrangler dev            # or `make run-frontend`
+   ```
+   Provide the same env vars as production (API key, Supabase URLs, Stripe publishable key) via `.dev.vars` or Wrangler CLI flags.
+4. Screenshot helper: `make snap` still hits `http://127.0.0.1:8787` expecting `wrangler dev` to be running.
+
+---
+
+## 5. Environment & Secrets
+- Worker vars injected by GitHub Actions: `RENDER_URL`, `SUPABASE_URL`, `SUPABASE_STORAGE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `STRIPE_PUBLIC_KEY`.
+- Secret deployed via `wrangler-action`: `RENDER_API_KEY` (also surfaced locally as `RENDER_API_KEY` when needed).
+- Do **not** expose Supabase service-role keys or Stripe secret keys in the frontend. Only the Worker/backend should see those values.
+
+`/config.js` is generated at request time by the Worker and makes only the publishable Supabase + storage details available to browser JS.
 
 ---
 
 ## 6. Deployment & Operations
-
-- Render uses `render.yaml` (build = `pip install -r requirements.txt`, start = `uvicorn app.main:app --host 0.0.0.0 --port $PORT`).
-- Expose the public Render URL to the Worker via GitHub Environment variable `RENDER_URL`.
-- Keep `API_KEY`/`RENDER_API_KEY` synchronized per environment.
-- Add a lightweight `/healthz` endpoint before production launch (placeholder in backlog).
-
-Seeding helpers:
-```bash
-make seed-test-taxonomies
-make seed-test-optimal-bodies
-```
-Requires Supabase credentials in `.env` or `.env.prod`.
+- Workflow: `.github/workflows/deploy.yml` runs `npm ci` → `npm run build` → `wrangler deploy` for `test` and `main` branches.
+- `wrangler.toml` points `main` to `dist/_worker.js/index.js` and serves static assets from `dist/` via the `ASSETS` binding.
+- Keep `package-lock.json` committed so CI builds remain reproducible.
+- Before merging UI changes, run `npm run build` to catch compile issues and confirm the generated Worker succeeds.
 
 ---
 
-## 7. Backlog (Backend Focus)
-
-1. Implement Stripe checkout endpoints (`/create-checkout-session`, `/stripe-webhook`) and credit issuance.
-2. Provide APIs/views for fetching consented recommendation history (currently queried client-side via Supabase).
-3. Extend recommendation engine for detailed adult inputs once forms ship.
-4. Build guardian + child endpoints (create child, invite/approve guardians, forecast analysis).
-5. Instrument logging/metrics (latency, error rates) prior to GA.
-
-Keep this list aligned with the frontend handbook backlog.
+## 7. Backlog (Frontend Focus)
+1. Add automated visual regression checks to catch layout drift when design tokens change.
+2. Split Supabase auth/UI helpers into ES modules for easier test coverage.
+3. Introduce content collections for FAQs and policy pages so marketing edits require less HTML wrangling.
+4. Evaluate adding `astro:transitions` or partial hydration for future interactive dashboards once paid flows ship.
+5. Coordinate with backend when Stripe + credits launch to surface purchase states in the UI.
 
 ---
 
 ## 8. References
-- Frontend repo: `../sporty-frontend`
-- Frontend handbook: `../sporty-frontend/docs/handbook.md`
-- Deploy workflow: `.github/workflows/deploy.yml`
-- Image prompts: `../sporty-frontend/docs/images/catalog.yaml`
-- Render config: `render.yaml`
+- Backend repo: `../sporty-backend`
+- Worker deploy workflow: `.github/workflows/deploy.yml`
+- Shared image catalog: `docs/images/catalog.yaml`
+- Design tokens: `src/styles/tokens.css`
+- Supabase auth helpers: `public/assets/js/app.js`
 
-Update the handbook whenever backend behavior or operations change.
+Update this handbook whenever we change page structure, deployment steps, or environment expectations.

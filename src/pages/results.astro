@@ -1,0 +1,125 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+---
+<BaseLayout
+  title="Sporty — Your Matches"
+  description="Review the sport matches Sporty generated for your body."
+>
+  <Fragment slot="head">
+    <style>
+      .result-header {
+        max-width: var(--max-width);
+        margin: clamp(2rem, 4vw, 3.5rem) auto clamp(1rem, 3vw, 2.5rem);
+        display: grid;
+        gap: 1rem;
+        padding: 0 clamp(1.5rem, 5vw, 3rem);
+      }
+      .cta-inline {
+        display: inline-flex;
+        gap: 0.75rem;
+        align-items: center;
+        font-size: 0.95rem;
+        color: var(--color-muted);
+      }
+      .cta-inline a {
+        font-weight: 600;
+      }
+      .empty-state {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 2rem;
+        text-align: center;
+        background: rgba(148, 163, 184, 0.12);
+        border-radius: 20px;
+        border: 1px dashed rgba(148, 163, 184, 0.3);
+      }
+      .history-picker {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-end;
+      }
+      .history-picker label {
+        display: grid;
+        gap: 0.35rem;
+        font-size: 0.95rem;
+      }
+      .history-picker select {
+        border-radius: 14px;
+        padding: 0.6rem 0.85rem;
+        border: 1px solid rgba(148, 163, 184, 0.45);
+        font: inherit;
+      }
+    </style>
+  </Fragment>
+
+  <header class="result-header">
+    <h1 class="section__title" style="margin:0;">Your sport matches</h1>
+    <p class="lead-copy">Here’s how your body lines up with pro-informed sport profiles. Each card shows why the sport fits you today and what to explore next.</p>
+    <p class="cta-inline" data-results-message>Sign in to automatically store each run and revisit them anytime.</p>
+    <div class="history-picker" data-history-picker hidden>
+      <label>
+        <span>Saved runs</span>
+        <select data-history-select></select>
+      </label>
+      <button class="button--ghost button--sm" type="button" data-history-refresh>Refresh</button>
+    </div>
+  </header>
+
+  <main class="section" style="margin-top:0;">
+    <div class="result-grid" data-results></div>
+    <div class="empty-state" data-empty-state hidden>
+      <h2>No matches yet</h2>
+      <p>We couldn’t find any stored results. Run a new recommendation and we’ll populate this page automatically.</p>
+      <div class="button-row" style="justify-content:center; margin-top:1.5rem;">
+        <a class="button" href="/intake">Start a new match</a>
+      </div>
+    </div>
+  </main>
+
+  <section class="section section--narrow" id="whats-next">
+    <h2 class="section__title">Next steps</h2>
+    <div class="grid-cards">
+      <article class="card">
+        <h3>Share with a coach or friend</h3>
+        <p>Show them how your body stacks up and discuss drills or clubs to explore.</p>
+      </article>
+      <article class="card">
+        <h3>Track progress</h3>
+        <p>Jot down how the suggested sports feel. Paid accounts arriving soon will let you store reflections beside each match.</p>
+      </article>
+      <article class="card">
+        <h3>Expand the analysis</h3>
+        <p>Upgrade for deeper adult insights and child forecasts as soon as credits launch.</p>
+      </article>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <strong>Something off?</strong>
+        <p class="lead-copy">Email hello@sporty.test with feedback. Every suggestion helps us fine-tune the matching engine.</p>
+      </div>
+      <nav class="footer-nav">
+        <a href="/intake">Try again</a>
+        <a href="#whats-next">Next steps</a>
+        <a href="/">Landing</a>
+      </nav>
+      <small>© <span id="year">2025</span> Sporty</small>
+    </div>
+  </footer>
+
+  <Fragment slot="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="/config.js" defer></script>
+    <script src="/assets/js/app.js" defer></script>
+    <script src="/assets/js/results.js" defer></script>
+    <script>
+      const yearEl = document.getElementById('year');
+    if (yearEl) {
+      yearEl.textContent = String(new Date().getFullYear());
+    }
+    </script>
+  </Fragment>
+</BaseLayout>

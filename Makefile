@@ -1,6 +1,6 @@
 ## Makefile — Sporty Frontend
 
-.PHONY: snap clean-snap
+.PHONY: snap clean-snap run-frontend build-frontend dev-frontend
 
 # Take screenshots of the running local dev site into ./screenshots
 snap:
@@ -9,5 +9,11 @@ snap:
 clean-snap:
 	rm -rf screenshots
 
-run-frontend:
+build-frontend:
+	npm run build
+
+dev-frontend:
+	npm run dev
+
+run-frontend: build-frontend
 	wrangler dev

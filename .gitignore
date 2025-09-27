@@ -12,3 +12,7 @@
 # Node/Worker tooling
 node_modules/
 .wrangler/
+
+# Astro build output
+dist/
+.astro/

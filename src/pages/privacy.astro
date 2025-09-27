@@ -1,0 +1,74 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+---
+<BaseLayout
+  title="Sporty — Privacy (Draft)"
+  description="Draft privacy policy for Sporty."
+>
+  <Fragment slot="head">
+    <style>
+      main {
+        max-width: 760px;
+        margin: clamp(2rem, 5vw, 4rem) auto;
+        padding: 0 clamp(1rem, 4vw, 2.5rem);
+      }
+      h1 {
+        font-size: clamp(2rem, 4vw, 2.6rem);
+        margin-bottom: 1rem;
+      }
+      p {
+        color: var(--color-muted);
+        font-size: 1rem;
+      }
+      ul {
+        color: var(--color-muted);
+        line-height: 1.6;
+      }
+      .callout {
+        border-radius: 18px;
+        padding: 1.5rem;
+        background: rgba(14, 165, 165, 0.1);
+        border: 1px solid rgba(14, 165, 165, 0.25);
+        margin: 1.5rem 0;
+      }
+    </style>
+  </Fragment>
+
+  <main>
+    <h1>Privacy Policy (Draft)</h1>
+    <p>Sporty processes your measurements to generate sport recommendations. We store your data only when you create an account and explicitly consent to retention.</p>
+
+    <section class="callout">
+      <strong>Key points</strong>
+      <ul>
+        <li>Inputs collected: body measurements, optional preferences, injury notes, past sports, and goals.</li>
+        <li>Storage: Supabase Postgres; data is kept only after you grant consent. You can revoke consent anytime from your profile.</li>
+        <li>Access: limited to you (and verified guardians for child data in future phases). Row-Level Security protects every table.</li>
+        <li>Sharing: no data sales. Aggregated, anonymized insights may be published.</li>
+        <li>Deletion: request removal via your profile or by emailing <a href="mailto:hello@sporty.test">hello@sporty.test</a>.</li>
+      </ul>
+    </section>
+
+    <p>This document is an interim summary while we prepare the lawyer-reviewed policy for launch. Contact us with any questions or concerns.</p>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <strong>Questions?</strong>
+        <p class="lead-copy">Reach us at hello@sporty.test for privacy or data requests.</p>
+      </div>
+      <small>© <span id="year">2025</span> Sporty</small>
+    </div>
+  </footer>
+
+  <Fragment slot="scripts">
+    <script>
+      const yearEl = document.getElementById('year');
+    if (yearEl) {
+      yearEl.textContent = String(new Date().getFullYear());
+    }
+    </script>
+  </Fragment>
+</BaseLayout>

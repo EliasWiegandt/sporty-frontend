@@ -152,7 +152,7 @@
             <input type="checkbox" name="signup-consent" data-signup-consent />
             <span>
               I consent to Sporty storing my measurements and recommendations in line with the
-              <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>.
+              <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.
             </span>
           </label>
           <div class="auth-modal__actions">

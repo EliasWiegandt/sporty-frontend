@@ -1,0 +1,206 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+---
+<BaseLayout
+  title="Sporty — Free Adult Intake"
+  description="Provide your measurements to get free sport matches tailored to your body."
+>
+  <Fragment slot="head">
+    <style>
+      .intake-layout {
+        max-width: 960px;
+        margin: 0 auto;
+        display: grid;
+        gap: 2rem;
+        padding: clamp(2rem, 4vw, 3.5rem) clamp(1.5rem, 5vw, 3rem);
+      }
+      .intake-aside {
+        background: rgba(14, 165, 165, 0.08);
+        border: 1px solid rgba(14, 165, 165, 0.2);
+        border-radius: 20px;
+        padding: 1.5rem;
+        color: var(--color-muted);
+      }
+      .intake-grid {
+        display: grid;
+        gap: 1.5rem;
+      }
+      .input-row {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+      label span {
+        display: block;
+        font-weight: 600;
+        color: var(--color-text);
+        margin-bottom: 0.35rem;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 0.75rem 0.9rem;
+        border-radius: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.45);
+        background: #fff;
+        font: inherit;
+      }
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+      fieldset {
+        border: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        gap: 0.5rem;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      }
+      fieldset label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 0.95rem;
+      }
+      .privacy-note {
+        font-size: 0.9rem;
+        color: var(--color-muted);
+      }
+      .banner {
+        border-radius: 18px;
+        padding: 1.25rem 1.5rem;
+        background: rgba(14, 165, 165, 0.12);
+        border: 1px solid rgba(14, 165, 165, 0.2);
+        color: var(--color-accent-dark);
+      }
+      .banner strong {
+        display: block;
+        font-size: 1rem;
+        margin-bottom: 0.35rem;
+      }
+      .card {
+        padding: clamp(1.5rem, 4vw, 2.5rem);
+      }
+    </style>
+  </Fragment>
+
+  <main class="intake-layout">
+    <section class="banner" aria-live="polite">
+      <strong>Free adult quick match</strong>
+      <span data-intake-banner>Share a handful of measurements and we’ll return your top three sports instantly. Log in and consent to save your results for later.</span>
+    </section>
+
+    <form class="card" data-intake-form>
+      <h1 class="section__title" style="margin-bottom:0.5rem">Tell us about your body</h1>
+      <p class="lead-copy" style="margin-top:0">Take less than a minute to complete. Optional measurements tighten the match.</p>
+
+      <div class="intake-grid" role="group" aria-labelledby="basic-info">
+        <h2 id="basic-info" class="section__subtitle" style="margin-bottom:0">Basic info</h2>
+        <div class="input-row">
+          <label>
+            <span>Birthday</span>
+            <input type="date" name="birthday" required />
+          </label>
+          <label>
+            <span>Sex assigned at birth</span>
+            <select name="sex" required>
+              <option value="">Select one</option>
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div class="intake-grid" role="group" aria-labelledby="measurements">
+        <h2 id="measurements" class="section__subtitle" style="margin-bottom:0">Measurements</h2>
+        <div class="input-row">
+          <label>
+            <span>Height (cm)</span>
+            <input type="number" name="height_cm" min="120" max="230" required inputmode="decimal" />
+          </label>
+          <label>
+            <span>Weight (kg)</span>
+            <input type="number" name="weight_kg" min="35" max="200" required inputmode="decimal" />
+          </label>
+        </div>
+        <div class="input-row">
+          <label>
+            <span>Arm span (cm)</span>
+            <input type="number" name="arm_span_cm" min="100" max="250" inputmode="decimal" />
+          </label>
+          <label>
+            <span>Leg inseam (cm)</span>
+            <input type="number" name="leg_inseam_cm" min="50" max="130" inputmode="decimal" />
+          </label>
+        </div>
+        <div class="input-row">
+          <label>
+            <span>Shoulder width (cm)</span>
+            <input type="number" name="shoulder_width_cm" min="30" max="80" inputmode="decimal" />
+          </label>
+          <label>
+            <span>Hip width (cm)</span>
+            <input type="number" name="hip_width_cm" min="30" max="80" inputmode="decimal" />
+          </label>
+        </div>
+        <div class="input-row">
+          <label>
+            <span>Hand length (cm)</span>
+            <input type="number" name="hand_length_cm" min="10" max="30" inputmode="decimal" />
+          </label>
+          <label>
+            <span>Foot length (cm)</span>
+            <input type="number" name="foot_length_cm" min="15" max="35" inputmode="decimal" />
+          </label>
+        </div>
+      </div>
+
+      
+      <div class="form-actions">
+        <p class="privacy-note">We don’t store your data unless you log in and consent. Measurements sent to the backend are processed securely.</p>
+        <div data-status aria-live="polite"></div>
+        <div class="button-row">
+          <button class="button" type="submit" data-submit>Get my matches</button>
+          <a class="button--ghost" href="/privacy">Privacy policy (draft)</a>
+        </div>
+      </div>
+    </form>
+
+    <aside class="intake-aside">
+      <h2 class="section__subtitle" style="margin-top:0;">Tips for accurate measuring</h2>
+      <ul>
+        <li>Use a flexible measuring tape and stand tall without shoes.</li>
+        <li>Arm span: fingertip to fingertip, arms extended level with shoulders.</li>
+        <li>Leg inseam: heel to inner thigh crease (use a book to mark the spot).</li>
+        <li>Shoulder width: outer edge to outer edge of shoulders.</li>
+      </ul>
+    </aside>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <strong>Need help measuring?</strong>
+        <p class="lead-copy">We’ll add video guides soon. For now, keep a flexible measuring tape handy and stand tall without shoes.</p>
+      </div>
+      <small>© <span id="year">2025</span> Sporty</small>
+    </div>
+  </footer>
+
+  <Fragment slot="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="/config.js" defer></script>
+    <script src="/assets/js/app.js" defer></script>
+    <script src="/assets/js/intake.js" defer></script>
+    <script>
+      const yearEl = document.getElementById('year');
+    if (yearEl) {
+      yearEl.textContent = String(new Date().getFullYear());
+    }
+    </script>
+  </Fragment>
+</BaseLayout>

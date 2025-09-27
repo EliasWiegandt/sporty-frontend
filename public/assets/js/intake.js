@@ -124,7 +124,7 @@
         }
       }
 
-      window.location.assign('/results.html');
+      window.location.assign('/results');
     } catch (error) {
       setStatus(error.message || 'Unexpected error, please try again.', 'error');
       submitBtn.disabled = false;

@@ -1,0 +1,137 @@
+---
+import '../styles/global.css';
+
+interface NavLink {
+  href: string;
+  label: string;
+  external?: boolean;
+}
+
+interface NavAction {
+  href: string;
+  label: string;
+  variant?: 'solid' | 'ghost';
+  size?: 'md' | 'sm';
+}
+
+interface Props {
+  title?: string;
+  description?: string;
+  canonical?: string;
+  bodyClass?: string;
+  navLabel?: string;
+  navLinks?: NavLink[];
+  primaryAction?: NavAction | null;
+  secondaryAction?: NavAction | null;
+  showAuth?: boolean;
+  showHeader?: boolean;
+}
+
+const defaultNavLinks: NavLink[] = [
+  { href: '/', label: 'Home' },
+  { href: '/intake', label: 'Free match' },
+  { href: '/results', label: 'Results' },
+  { href: '/profile', label: 'Profile' },
+  { href: '/#tiers', label: 'Plans' },
+  { href: '/#faq', label: 'FAQ' },
+];
+
+const defaultPrimaryAction: NavAction = { href: '/intake', label: 'Start free' };
+
+const {
+  title = 'Sporty',
+  description = 'Discover sports that fit your body with Sporty.',
+  canonical,
+  bodyClass = '',
+  navLabel = 'Primary',
+  navLinks: navLinksProp,
+  primaryAction: primaryActionProp,
+  secondaryAction = null,
+  showAuth = true,
+  showHeader = true,
+} = Astro.props as Props;
+
+const navLinks = navLinksProp ?? defaultNavLinks;
+const primaryAction = primaryActionProp ?? defaultPrimaryAction;
+
+const actions = [primaryAction, secondaryAction].filter(
+  (action): action is NavAction => Boolean(action)
+);
+
+const hasNavContent = navLinks.length > 0;
+const hasActionContent = actions.length > 0 || showAuth;
+
+const actionClassNames = (action: NavAction) => {
+  const classes: string[] = [];
+  if (action.variant === 'ghost') {
+    classes.push('button--ghost');
+  } else {
+    classes.push('button');
+  }
+  if (action.size === 'sm') {
+    classes.push('button--sm');
+  }
+  if (!classes.includes('button')) {
+    classes.unshift('button');
+  }
+  return classes.join(' ');
+};
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    {canonical && <link rel="canonical" href={canonical} />}
+    <link rel="icon" href="data:," />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <slot name="head" />
+  </head>
+  <body class={bodyClass}>
+    {showHeader && (
+      <header class="site-header">
+        <nav class="nav-container" aria-label={navLabel}>
+          <a class="logo" href="/">Sporty</a>
+          {hasNavContent && (
+            <div class="nav-links">
+              {navLinks.map((link) => (
+                <a href={link.href} rel={link.external ? 'noreferrer noopener' : undefined} target={link.external ? '_blank' : undefined}>
+                  {link.label}
+                </a>
+              ))}
+            </div>
+          )}
+          {hasActionContent && (
+            <div class="nav-actions">
+              {actions.map((action) => (
+                <a class={actionClassNames(action)} href={action.href}>
+                  {action.label}
+                </a>
+              ))}
+              {showAuth && (
+                <div class="nav-auth" data-auth-controls>
+                  <button class="button button--sm" type="button" data-auth-open>
+                    Log in
+                  </button>
+                  <span class="auth-status" data-auth-status hidden></span>
+                  <button class="button--ghost button--sm" type="button" data-auth-signout hidden>
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </nav>
+      </header>
+    )}
+    <slot />
+    <slot name="scripts" />
+  </body>
+</html>

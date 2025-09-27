@@ -1,37 +1,11 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sporty — Discover sports that fit your body</title>
-  <meta name="description" content="Free sport recommendations based on your body today, with optional paid deep analysis and child forecasts." />
-  <link rel="icon" href="data:," />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/assets/css/main.css" />
-</head>
-<body>
-  <header class="site-header">
-    <nav class="nav-container" aria-label="Primary">
-      <a class="logo" href="/">Sporty</a>
-      <div class="nav-links">
-        <a href="#how-it-works">How it works</a>
-        <a href="#tiers">Plans</a>
-        <a href="#faq">FAQ</a>
-        <a href="/profile.html">Profile</a>
-      </div>
-      <div class="nav-actions">
-        <a class="button" href="/intake.html">Start free</a>
-        <div class="nav-auth" data-auth-controls>
-          <button class="button button--sm" type="button" data-auth-open>Log in</button>
-          <span class="auth-status" data-auth-status hidden></span>
-          <button class="button--ghost button--sm" type="button" data-auth-signout hidden>Log out</button>
-        </div>
-      </div>
-    </nav>
-  </header>
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
 
+---
+<BaseLayout
+  title="Sporty — Discover sports that fit your body"
+  description="Free sport recommendations based on your body today, with optional paid deep analysis and child forecasts."
+>
   <main>
     <section class="section hero" id="hero">
       <div>
@@ -39,15 +13,22 @@
         <h1 class="hero__headline">Find the sport that fits your body today—no login required.</h1>
         <p class="hero__copy">Sporty compares your measurements against pro-informed body profiles to surface sports where you’re naturally set up to thrive. Get instant, free matches for adults, and unlock deeper guidance plus child forecasts with our paid tier.</p>
         <div class="button-row" role="group" aria-label="Primary calls to action">
-          <a class="button" href="/intake.html">Start the free match</a>
+          <a class="button" href="/intake">Start the free match</a>
           <a class="button--ghost" href="#tiers">Explore paid options</a>
         </div>
       </div>
-            <div class="hero__visual" aria-label="Square illustration of an adult swimmer stretching with a towel and goggles beside an indoor pool.">
+      <div class="hero__visual" aria-label="Square illustration of an adult swimmer stretching with a towel and goggles beside an indoor pool.">
         <figure class="image-tile">
           <img data-image-key="landing.hero.tile_b" alt="Square illustration of an adult swimmer stretching with a towel and goggles beside an indoor pool." loading="lazy" />
         </figure>
       </div>
+    </section>
+
+    <section class="section" id="how-it-works">
+      <h2 class="section__title">How Sporty works</h2>
+      <div class="grid-cards grid-cards--balanced">
+        <article class="card">
+          <div class="step-number">1</div>
           <h3>Measure</h3>
           <p>Enter height, weight, and optional limb measurements. Adults only for the free flow.</p>
         </article>
@@ -76,7 +57,7 @@
             <li><strong>Top three sports</strong> — see why they fit you and what to explore first.</li>
           </ul>
           <div class="button-row" style="margin-top:1.5rem;">
-            <a class="button" href="/intake.html">Try it now</a>
+            <a class="button" href="/intake">Try it now</a>
           </div>
         </article>
         <article class="card" aria-label="Paid plan overview">
@@ -159,10 +140,10 @@
         <p class="lead-copy">Helping every body find their sport. Free adult matches today, deeper analysis and child support tomorrow.</p>
       </div>
       <nav class="footer-nav" aria-label="Footer">
-        <a href="/intake.html">Start free</a>
+        <a href="/intake">Start free</a>
         <a href="#tiers">Plans</a>
         <a href="#faq">FAQ</a>
-        <a href="/privacy.html">Privacy (draft)</a>
+        <a href="/privacy">Privacy (draft)</a>
         <a href="#">Terms (draft)</a>
         <a href="mailto:hello@sporty.test">Contact</a>
       </nav>
@@ -170,12 +151,16 @@
     </div>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="/config.js" defer></script>
-  <script src="/assets/js/app.js" defer></script>
-  <script src="/assets/js/landing.js" defer></script>
-  <script>
-    document.getElementById('year').textContent = new Date().getFullYear();
-  </script>
-</body>
-</html>
+  <Fragment slot="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="/config.js" defer></script>
+    <script src="/assets/js/app.js" defer></script>
+    <script src="/assets/js/landing.js" defer></script>
+    <script>
+      const yearEl = document.getElementById('year');
+    if (yearEl) {
+      yearEl.textContent = String(new Date().getFullYear());
+    }
+    </script>
+  </Fragment>
+</BaseLayout>
