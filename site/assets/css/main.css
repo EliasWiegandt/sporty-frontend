@@ -72,6 +72,48 @@ header.site-header {
   color: var(--color-text);
 }
 
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-auth {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.button--sm {
+  padding: 0.55rem 1.15rem;
+  font-size: 0.9rem;
+}
+
+.auth-status {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .nav-container {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .nav-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .nav-auth {
+    margin-left: auto;
+  }
+}
+
 main {
   padding: clamp(1rem, 2vw, 3rem) clamp(1rem, 3vw, 3rem);
 }
@@ -248,36 +290,6 @@ main {
   background: rgba(248, 113, 113, 0.18);
   border-color: rgba(248, 113, 113, 0.45);
   color: #b91c1c;
-}
-
-.consent-confirm {
-  display: flex;
-  gap: 1rem;
-  align-items: flex-start;
-  padding: 1.1rem 1.3rem;
-  border-radius: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  background: rgba(148, 163, 184, 0.08);
-  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
-}
-
-.consent-confirm input[type='checkbox'] {
-  width: 20px;
-  height: 20px;
-  margin-top: 0.1rem;
-  accent-color: var(--color-accent);
-}
-
-.consent-confirm label {
-  font-size: 0.95rem;
-  color: var(--color-text);
-  line-height: 1.55;
-}
-
-.consent-confirm:focus-within {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(14, 165, 165, 0.18);
-  background: rgba(14, 165, 165, 0.08);
 }
 
 .grid-cards {
@@ -577,4 +589,256 @@ blockquote.testimonial footer {
 
 .card .image-tile img {
   object-fit: cover;
+}
+
+
+.history-picker {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.history-picker label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+  color: var(--color-muted);
+}
+
+.history-picker select {
+  min-width: 220px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  font: inherit;
+}
+
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 100;
+}
+
+.auth-overlay[hidden] {
+  display: none;
+}
+
+.auth-modal {
+  background: var(--color-surface);
+  border-radius: 20px;
+  padding: clamp(1.5rem, 4vw, 2.25rem);
+  width: min(420px, 100%);
+  box-shadow: 0 28px 60px -40px rgba(15, 23, 42, 0.65);
+  display: grid;
+  gap: 1.1rem;
+}
+
+.consent-modal {
+  background: var(--color-surface);
+  border-radius: 20px;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  width: min(460px, 100%);
+  box-shadow: 0 28px 60px -40px rgba(15, 23, 42, 0.65);
+  display: grid;
+  gap: 1rem;
+}
+
+.consent-modal h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.consent-modal p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.95rem;
+}
+
+.consent-modal__actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.auth-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.auth-modal__title {
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+.auth-modal__close {
+  appearance: none;
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: var(--color-muted);
+}
+
+.auth-modal form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.auth-modal label span {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.auth-modal input[type="email"],
+.auth-modal input[type="password"] {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  font: inherit;
+}
+
+.auth-modal__consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+}
+
+.auth-modal__consent input[type="checkbox"] {
+  margin-top: 0.2rem;
+}
+
+.auth-modal__consent a {
+  text-decoration: underline;
+}
+
+.auth-modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.auth-modal__switch {
+  font-size: 0.9rem;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.auth-modal__status {
+  font-size: 0.95rem;
+  color: var(--color-accent-dark);
+}
+
+.auth-modal__status--error {
+  color: #b91c1c;
+}
+
+.auth-modal__switch button {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.auth-modal__switch button:hover {
+  text-decoration: underline;
+}
+
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.profile-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: clamp(1rem, 4vw, 2.5rem);
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.profile-help {
+  color: var(--color-muted);
+  font-size: 0.95rem;
+  margin: 0.35rem 0 0;
+}
+
+.profile-status {
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  margin-bottom: 0;
+}
+
+.profile-status--active {
+  background: rgba(14, 165, 165, 0.12);
+  color: var(--color-accent-dark);
+}
+
+.profile-status--missing {
+  background: rgba(248, 113, 113, 0.12);
+  color: #b91c1c;
+}
+
+.toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 60px;
+  height: 32px;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle__track {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: rgba(148, 163, 184, 0.5);
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+
+.toggle__track::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.toggle input:checked + .toggle__track {
+  background: var(--color-accent);
+}
+
+.toggle input:checked + .toggle__track::after {
+  transform: translateX(28px);
 }

@@ -1,34 +1,176 @@
 (function () {
   const container = document.querySelector('[data-results]');
   const fallback = document.querySelector('[data-empty-state]');
+  const messageEl = document.querySelector('[data-results-message]');
+  const historySection = document.querySelector('[data-history-picker]');
+  const historySelect = document.querySelector('[data-history-select]');
+  const historyRefreshBtn = document.querySelector('[data-history-refresh]');
   const storageBase = resolveStorageBase();
+  const sportyApp = window.SportyApp;
 
   if (!container) return;
 
-  try {
-    const raw = sessionStorage.getItem('sporty:lastResult');
-    if (!raw) {
-      if (fallback) fallback.hidden = false;
+  let sportySnapshot = { user: null, hasConsent: false };
+  let historyEntries = [];
+
+  const sessionResult = readSessionResult();
+  if (sessionResult) {
+    displayResult(sessionResult);
+  } else {
+    showFallback();
+  }
+
+  if (sportyApp && sportyApp.ready) {
+    sportyApp.ready.then(() => {
+      if (typeof sportyApp.onAuthChange === 'function') {
+        sportyApp.onAuthChange((snapshot) => {
+          sportySnapshot = snapshot;
+          updateMessage(snapshot);
+          if (snapshot.user) {
+            if (snapshot.hasConsent) {
+              loadHistory(true);
+            } else {
+              historyEntries = [];
+              hideHistory();
+              if (!readSessionResult()) {
+                showFallback();
+              }
+            }
+          } else {
+            historyEntries = [];
+            hideHistory();
+            if (!readSessionResult()) {
+              showFallback();
+            }
+          }
+        });
+      } else {
+        updateMessage(sportySnapshot);
+      }
+    });
+  } else {
+    updateMessage(sportySnapshot);
+  }
+
+  if (historySelect) {
+    historySelect.addEventListener('change', () => {
+      const selectedId = historySelect.value;
+      const entry = historyEntries.find((item) => item.id === selectedId);
+      if (entry && entry.summary) {
+        displayResult(entry.summary);
+      }
+    });
+  }
+
+  if (historyRefreshBtn) {
+    historyRefreshBtn.addEventListener('click', () => loadHistory(true));
+  }
+
+  function readSessionResult() {
+    try {
+      const raw = sessionStorage.getItem('sporty:lastResult');
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (error) {
+      console.error('Unable to parse stored result', error);
+      return null;
+    }
+  }
+
+  async function loadHistory(force = false) {
+    if (!sportyApp || !sportySnapshot.user || typeof sportyApp.fetchRecommendations !== 'function') {
+      hideHistory();
+      return [];
+    }
+
+    if (!force && historyEntries.length) {
+      showHistory();
+      return historyEntries;
+    }
+
+    try {
+      const results = await sportyApp.fetchRecommendations(25);
+      historyEntries = (results || []).map((entry) => ({
+        id: entry.id,
+        created_at: entry.created_at,
+        summary: normalizeSummary(entry.summary),
+      }));
+      populateHistory(historyEntries);
+      if (historyEntries.length) {
+        showHistory();
+        const latest = historyEntries[0];
+        historySelect.value = latest.id;
+        displayResult(latest.summary);
+      } else {
+        hideHistory();
+      }
+      return historyEntries;
+    } catch (error) {
+      console.error('Failed to load recommendation history', error);
+      hideHistory();
+      return [];
+    }
+  }
+
+  function populateHistory(entries) {
+    if (!historySelect) return;
+    historySelect.innerHTML = '';
+    entries.forEach((entry) => {
+      const option = document.createElement('option');
+      const created = entry.created_at ? new Date(entry.created_at) : null;
+      const label = created
+        ? created.toLocaleString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : 'Saved result';
+      option.value = entry.id;
+      option.textContent = label;
+      historySelect.appendChild(option);
+    });
+  }
+
+  function showHistory() {
+    if (historySection) historySection.hidden = false;
+    if (historySelect) historySelect.disabled = false;
+  }
+
+  function hideHistory() {
+    if (historySection) historySection.hidden = true;
+    if (historySelect) historySelect.disabled = true;
+  }
+
+  function updateMessage(snapshot) {
+    if (!messageEl) return;
+    if (snapshot && snapshot.user) {
+      if (snapshot.hasConsent) {
+        messageEl.textContent = 'You are signed in. Select any saved run from the list below.';
+      } else {
+        messageEl.textContent = 'Grant data-retention consent from your profile to start saving runs automatically.';
+      }
+    } else {
+      messageEl.textContent = 'Sign in to automatically store each run and revisit them anytime.';
+    }
+  }
+
+  function displayResult(data) {
+    if (!data || !Array.isArray(data.matches) || !data.matches.length) {
+      showFallback();
       return;
     }
 
-    const data = JSON.parse(raw);
-    const matches = Array.isArray(data.matches) ? data.matches : [];
-
-    if (!matches.length) {
-      if (fallback) fallback.hidden = false;
-      return;
-    }
-
+    hideFallback();
     const fragment = document.createDocumentFragment();
 
-    matches.forEach((match, index) => {
+    data.matches.forEach((match, index) => {
       const rank = index + 1;
       const body = match.optimal_body || {};
       const spec = body.spec || {};
       const sport = body.sport || {};
       const hierarchy = Array.isArray(body.category_hierarchy) ? body.category_hierarchy : [];
-      const cardMedia = spec.media && spec.media.card ? spec.media.card : null;
+      const cardMedia = match.media && match.media.card ? match.media.card : spec.media && spec.media.card ? spec.media.card : null;
       const imageUrl = resolveMediaUrl(cardMedia, storageBase);
       const imageAlt = cardMedia && cardMedia.alt ? cardMedia.alt : 'Sports image';
 
@@ -63,9 +205,15 @@
 
     container.innerHTML = '';
     container.appendChild(fragment);
-  } catch (error) {
-    console.error('Unable to parse stored result', error);
+  }
+
+  function showFallback() {
     if (fallback) fallback.hidden = false;
+    container.innerHTML = '';
+  }
+
+  function hideFallback() {
+    if (fallback) fallback.hidden = true;
   }
 
   function renderHierarchyDetails(hierarchy, sportName) {
@@ -149,6 +297,9 @@
   }
 
   function resolveStorageBase() {
+    if (typeof self !== 'undefined' && self.SPORTY_CONFIG && typeof self.SPORTY_CONFIG.SUPABASE_STORAGE_URL === 'string') {
+      return self.SPORTY_CONFIG.SUPABASE_STORAGE_URL.replace(/\/$/, '');
+    }
     if (typeof self !== 'undefined' && typeof self.SUPABASE_STORAGE_URL === 'string') {
       return self.SUPABASE_STORAGE_URL.replace(/\/$/, '');
     }
@@ -200,21 +351,27 @@
   }
 
   function orderHierarchy(hierarchy, sportName) {
-    const sportLevel = hierarchy.find((item) => item.key === 'sport');
-    const others = hierarchy.filter((item) => item.key !== 'sport');
-
-    if (!sportLevel && !sportName) {
-      return hierarchy;
+    const sport = hierarchy.find((item) => item.key === 'sport');
+    const rest = hierarchy.filter((item) => item.key !== 'sport');
+    const ordered = [];
+    if (sport) ordered.push(sport);
+    ordered.push(...rest);
+    if (!ordered.length && sportName) {
+      ordered.push({ key: 'sport', name: sportName });
     }
+    return ordered;
+  }
 
-    const result = [];
-
-    if (sportLevel) {
-      result.push(sportLevel);
-    } else if (sportName) {
-      result.push({ key: 'sport', name: sportName, description: '' });
+  function normalizeSummary(summary) {
+    if (!summary) return { matches: [] };
+    if (summary.matches && Array.isArray(summary.matches)) {
+      return summary;
     }
-
-    return result.concat(others);
+    try {
+      const parsed = typeof summary === 'string' ? JSON.parse(summary) : summary;
+      return parsed && parsed.matches ? parsed : { matches: [] };
+    } catch (error) {
+      return { matches: [] };
+    }
   }
 })();

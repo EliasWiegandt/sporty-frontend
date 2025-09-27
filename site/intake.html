@@ -91,15 +91,23 @@
         <a href="/">Home</a>
         <a href="/results.html">Results</a>
         <a href="/">Plans</a>
+        <a href="/profile.html">Profile</a>
       </div>
-      <a class="button--ghost" href="/">Back to landing</a>
+      <div class="nav-actions">
+        <a class="button--ghost" href="/">Back to landing</a>
+        <div class="nav-auth" data-auth-controls>
+          <button class="button button--sm" type="button" data-auth-open>Log in</button>
+          <span class="auth-status" data-auth-status hidden></span>
+          <button class="button--ghost button--sm" type="button" data-auth-signout hidden>Log out</button>
+        </div>
+      </div>
     </nav>
   </header>
 
   <main class="intake-layout">
     <section class="banner" aria-live="polite">
       <strong>Free adult quick match</strong>
-      Share a handful of measurements and we’ll return your top three sports instantly. We do not store your data during this MVP.
+      <span data-intake-banner>Share a handful of measurements and we’ll return your top three sports instantly. Log in and consent to save your results for later.</span>
     </section>
 
     <form class="card" data-intake-form>
@@ -151,12 +159,6 @@
       </div>
 
       <div class="intake-grid">
-        <div class="consent-confirm">
-          <input type="checkbox" name="consent" id="consent-checkbox" />
-          <label for="consent-checkbox">
-            I consent to Sporty processing these details to generate a sport suggestion. I understand the free MVP does not store data yet; I’ll be asked for additional consent before any future storage.
-          </label>
-        </div>
         <div data-status aria-live="polite"></div>
         <div class="button-row">
           <button class="button" type="submit" data-submit>See my matches</button>
@@ -191,6 +193,9 @@
     </div>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="/config.js" defer></script>
+  <script src="/assets/js/app.js" defer></script>
   <script src="/assets/js/intake.js" defer></script>
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();

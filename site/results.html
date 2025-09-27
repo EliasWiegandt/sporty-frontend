@@ -47,15 +47,30 @@
         <a href="/">Home</a>
         <a href="/intake.html">Try again</a>
         <a href="/">Plans</a>
+        <a href="/profile.html">Profile</a>
       </div>
-      <a class="button--ghost" href="/intake.html">Run another match</a>
+      <div class="nav-actions">
+        <a class="button--ghost" href="/intake.html">Run another match</a>
+        <div class="nav-auth" data-auth-controls>
+          <button class="button button--sm" type="button" data-auth-open>Log in</button>
+          <span class="auth-status" data-auth-status hidden></span>
+          <button class="button--ghost button--sm" type="button" data-auth-signout hidden>Log out</button>
+        </div>
+      </div>
     </nav>
   </header>
 
   <header class="result-header">
     <h1 class="section__title" style="margin:0;">Your sport matches</h1>
     <p class="lead-copy">Here’s how your body lines up with pro-informed sport profiles. Each card shows why the sport fits you today and what to explore next.</p>
-    <p class="cta-inline">Want to save these results? <a href="#">Join the waitlist</a> for the paid tier.</p>
+    <p class="cta-inline" data-results-message>Sign in to automatically store each run and revisit them anytime.</p>
+    <div class="history-picker" data-history-picker hidden>
+      <label>
+        <span>Saved runs</span>
+        <select data-history-select></select>
+      </label>
+      <button class="button--ghost button--sm" type="button" data-history-refresh>Refresh</button>
+    </div>
   </header>
 
   <main class="section" style="margin-top:0;">
@@ -102,7 +117,9 @@
     </div>
   </footer>
 
-  <script src="/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="/config.js" defer></script>
+  <script src="/assets/js/app.js" defer></script>
   <script src="/assets/js/results.js" defer></script>
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();

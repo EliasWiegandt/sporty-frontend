@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sporty — Profile & Consents</title>
+  <meta name="description" content="Manage your Sporty profile, review saved consents, and control data retention." />
+  <link rel="icon" href="data:," />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/css/main.css" />
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav-container" aria-label="Primary">
+      <a class="logo" href="/">Sporty</a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/intake.html">Free match</a>
+        <a href="/results.html">Results</a>
+        <a href="/">Plans</a>
+      </div>
+      <div class="nav-actions">
+        <a class="button" href="/intake.html">Start free</a>
+        <div class="nav-auth" data-auth-controls>
+          <button class="button button--sm" type="button" data-auth-open>Log in</button>
+          <span class="auth-status" data-auth-status hidden></span>
+          <button class="button--ghost button--sm" type="button" data-auth-signout hidden>Log out</button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="section section--narrow" data-profile-root>
+    <section class="card" data-profile-signed-out hidden>
+      <h1 class="section__title" style="margin-top:0;">Your profile</h1>
+      <p class="lead-copy">Sign in to view saved measurements, manage data-retention consent, and control future analyses.</p>
+      <div class="button-row">
+        <button class="button" type="button" data-auth-open>Log in</button>
+        <button class="button--ghost" type="button" data-signup-open>Create account</button>
+      </div>
+    </section>
+
+    <section class="card" data-profile-signed-in hidden>
+      <header class="profile-header">
+        <div>
+          <h1 class="section__title" style="margin:0;">Account overview</h1>
+          <p class="lead-copy" data-profile-email></p>
+        </div>
+        <button class="button--ghost" type="button" data-auth-signout>Log out</button>
+      </header>
+
+      <div class="profile-toggle-row">
+        <div>
+          <h2 class="section__subtitle" style="margin:0;">Store my measurements &amp; free results</h2>
+          <p class="profile-help" data-profile-toggle-help>
+            Enable this if you want Sporty to remember your free matches. You can turn it off anytime.
+          </p>
+        </div>
+        <label class="toggle" aria-label="Data retention consent">
+          <input type="checkbox" data-consent-toggle />
+          <span class="toggle__track"></span>
+        </label>
+      </div>
+
+      <div class="profile-status" data-profile-consent-status></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <strong>Need support?</strong>
+        <p class="lead-copy">Email hello@sporty.test and we will help with account changes or data requests.</p>
+      </div>
+      <small>© <span id="year">2025</span> Sporty</small>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="/config.js" defer></script>
+  <script src="/assets/js/app.js" defer></script>
+  <script src="/assets/js/profile.js" defer></script>
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

@@ -2,12 +2,45 @@
   const form = document.querySelector('[data-intake-form]');
   const statusEl = document.querySelector('[data-status]');
   const submitBtn = document.querySelector('[data-submit]');
+  const bannerTextEl = document.querySelector('[data-intake-banner]');
+  const sportyApp = window.SportyApp;
+  let sportySnapshot = { user: null, hasConsent: false };
 
-  if (!form) return;
+  if (!form) {
+    updateBanner(sportySnapshot);
+    return;
+  }
+
+  if (sportyApp && sportyApp.ready) {
+    sportyApp.ready.then(() => {
+      if (typeof sportyApp.onAuthChange === 'function') {
+        sportyApp.onAuthChange((snapshot) => {
+          sportySnapshot = snapshot;
+          updateBanner(snapshot);
+        });
+      } else {
+        updateBanner(sportySnapshot);
+      }
+    });
+  } else {
+    updateBanner(sportySnapshot);
+  }
 
   function setStatus(html, type = 'info') {
     if (!statusEl) return;
     statusEl.innerHTML = html ? `<div class="status status--${type}">${html}</div>` : '';
+  }
+
+  function updateBanner(snapshot) {
+    if (!bannerTextEl) return;
+    if (snapshot && snapshot.user) {
+      bannerTextEl.textContent = snapshot.hasConsent
+        ? 'You are signed in. Measurements and results will be stored automatically.'
+        : 'You are signed in. Grant data-retention consent from your profile to store future results.';
+    } else {
+      bannerTextEl.textContent =
+        'Share a handful of measurements and we’ll return your top three sports instantly. Log in and consent to save your results for later.';
+    }
   }
 
   form.addEventListener('submit', async (event) => {
@@ -16,13 +49,6 @@
     if (!submitBtn) return;
 
     const fd = new FormData(form);
-    const consent = fd.get('consent') === 'on';
-
-    if (!consent) {
-      setStatus('Please confirm you consent to us processing these details.', 'error');
-      return;
-    }
-
     const payload = {
       birthday: fd.get('birthday'),
       sex: fd.get('sex') || 'prefer_not_to_say',
@@ -45,6 +71,27 @@
     submitBtn.textContent = 'Generating…';
     setStatus('Crunching the numbers…', 'info');
 
+    let consentAccepted = sportySnapshot.hasConsent;
+    if (
+      sportyApp &&
+      sportySnapshot.user &&
+      !sportySnapshot.hasConsent &&
+      typeof sportyApp.ensureConsent === 'function'
+    ) {
+      try {
+        consentAccepted = await sportyApp.ensureConsent();
+      } catch (error) {
+        console.error('Consent prompt failed', error);
+        consentAccepted = false;
+      }
+      if (!consentAccepted) {
+        setStatus(
+          'To keep your data private, log out before running another match or enable storage in your profile.',
+          'error'
+        );
+      }
+    }
+
     try {
       const response = await fetch('/api/recommend-adult-free', {
         method: 'POST',
@@ -64,6 +111,19 @@
       }
 
       sessionStorage.setItem('sporty:lastResult', bodyText);
+
+      if (consentAccepted && sportyApp && typeof sportyApp.saveRecommendation === 'function') {
+        try {
+          const resultJson = JSON.parse(bodyText);
+          const saveOutcome = await sportyApp.saveRecommendation(payload, resultJson);
+          if (saveOutcome && saveOutcome.saved) {
+            setStatus('Saved to your account. Redirecting…', 'info');
+          }
+        } catch (error) {
+          console.error('Failed to persist recommendation', error);
+        }
+      }
+
       window.location.assign('/results.html');
     } catch (error) {
       setStatus(error.message || 'Unexpected error, please try again.', 'error');
@@ -94,7 +154,6 @@
       hip_width_cm: 35,
       hand_length_cm: 19,
       foot_length_cm: 25,
-      consent: true,
     };
 
     Object.entries(preset).forEach(([key, value]) => {
@@ -115,5 +174,4 @@
       }
     });
   }
-
 })();

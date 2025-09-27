@@ -19,8 +19,16 @@
         <a href="#how-it-works">How it works</a>
         <a href="#tiers">Plans</a>
         <a href="#faq">FAQ</a>
+        <a href="/profile.html">Profile</a>
       </div>
-      <a class="button" href="/intake.html">Start free</a>
+      <div class="nav-actions">
+        <a class="button" href="/intake.html">Start free</a>
+        <div class="nav-auth" data-auth-controls>
+          <button class="button button--sm" type="button" data-auth-open>Log in</button>
+          <span class="auth-status" data-auth-status hidden></span>
+          <button class="button--ghost button--sm" type="button" data-auth-signout hidden>Log out</button>
+        </div>
+      </div>
     </nav>
   </header>
 
@@ -154,7 +162,7 @@
         <a href="/intake.html">Start free</a>
         <a href="#tiers">Plans</a>
         <a href="#faq">FAQ</a>
-        <a href="#">Privacy (draft)</a>
+        <a href="/privacy.html">Privacy (draft)</a>
         <a href="#">Terms (draft)</a>
         <a href="mailto:hello@sporty.test">Contact</a>
       </nav>
@@ -162,7 +170,9 @@
     </div>
   </footer>
 
-  <script src="/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="/config.js" defer></script>
+  <script src="/assets/js/app.js" defer></script>
   <script src="/assets/js/landing.js" defer></script>
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();

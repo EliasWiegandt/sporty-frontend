@@ -6,8 +6,15 @@ export default {
 
     // Lightweight config file for static pages to read env-based URLs.
     if (request.method === "GET" && url.pathname === "/config.js") {
-      const storageUrl = env.SUPABASE_STORAGE_URL || "";
-      const body = `self.SUPABASE_STORAGE_URL = ${JSON.stringify(storageUrl)};`;
+      const config = {
+        SUPABASE_STORAGE_URL: env.SUPABASE_STORAGE_URL || "",
+        SUPABASE_URL: env.SUPABASE_URL || "",
+        SUPABASE_PUBLISHABLE_KEY: env.SUPABASE_PUBLISHABLE_KEY || "",
+      };
+
+      const body = `self.SPORTY_CONFIG = ${JSON.stringify(
+        config
+      )};\nself.SUPABASE_STORAGE_URL = self.SPORTY_CONFIG.SUPABASE_STORAGE_URL;\nself.SUPABASE_URL = self.SPORTY_CONFIG.SUPABASE_URL;\nself.SUPABASE_PUBLISHABLE_KEY = self.SPORTY_CONFIG.SUPABASE_PUBLISHABLE_KEY;`;
       return new Response(body, {
         status: 200,
         headers: {

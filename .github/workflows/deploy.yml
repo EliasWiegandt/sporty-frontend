@@ -25,7 +25,9 @@ jobs:
             --env test
             --var RENDER_URL:"${{ vars.RENDER_URL }}"
             --var STRIPE_PUBLIC_KEY:"${{ vars.STRIPE_PUBLIC_KEY }}"
+            --var SUPABASE_URL:"${{ vars.SUPABASE_URL }}"
             --var SUPABASE_STORAGE_URL:"${{ vars.SUPABASE_STORAGE_URL }}"
+            --var SUPABASE_PUBLISHABLE_KEY:"${{ vars.SUPABASE_PUBLISHABLE_KEY }}"
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
 
@@ -50,6 +52,8 @@ jobs:
             --env production
             --var RENDER_URL:"${{ vars.RENDER_URL }}"
             --var STRIPE_PUBLIC_KEY:"${{ vars.STRIPE_PUBLIC_KEY }}"
+            --var SUPABASE_URL:"${{ vars.SUPABASE_URL }}"
             --var SUPABASE_STORAGE_URL:"${{ vars.SUPABASE_STORAGE_URL }}"
+            --var SUPABASE_PUBLISHABLE_KEY:"${{ vars.SUPABASE_PUBLISHABLE_KEY }}"
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
