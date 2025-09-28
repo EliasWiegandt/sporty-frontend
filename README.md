@@ -60,7 +60,7 @@ Environment values are unchanged:
 
 Cloudflare adapter outputs the Worker; no hand-written `src/worker.js` remains. Dynamic routes now live in `src/pages/api/`:
 - `config.js.ts` → `GET /config.js` (publishes Supabase URLs/key for browser code)
-- `api/recommend-adult-free.ts` → `POST /api/recommend-adult-free` proxy with `X-API-Key`
+- `api/recommend-adult-free.ts` → `POST /api/recommend-adult-free` proxy with `X-API-Key` to backend `/v1/recommend-adult-free`
 - `api/healthz.ts` → `GET /api/healthz`
 
 All endpoints reuse the same request-id logic as the legacy Worker. Static assets are served from `public/` and baked into the build output.

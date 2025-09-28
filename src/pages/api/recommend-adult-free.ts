@@ -37,7 +37,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     );
   }
 
-  const upstreamUrl = new URL('/recommend-adult-free', backendUrl);
+  const upstreamUrl = new URL('/v1/recommend-adult-free', backendUrl);
   const body = await request.text();
 
   try {

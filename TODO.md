@@ -1,5 +1,6 @@
-# Remember this
+# Remember this (for Developer, Codex and agents: you can ignore it)
 
+- headers are different on website, need to fix this.
 - Adjust website so we only sell in the US and in EU
 - Make better image-generator
 - Make api v1 (why do we do this? - learn it)

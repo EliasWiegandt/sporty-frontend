@@ -3,7 +3,7 @@
 This VS Code workspace contains two sibling repos:
 
 - `sporty-frontend`: Cloudflare Worker that serves static UI and proxies API.
-- `sporty-backend`: FastAPI service with `POST /recommend-adult-free`.
+- `sporty-backend`: FastAPI service with `POST /v1/recommend-adult-free`.
 
 ## Quick Start
 1) Install deps:

@@ -10,7 +10,7 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 
 - Present Sporty’s marketing story and free adult intake experience.
 - Keep navigation, typography, and layout consistent across all pages.
-- Proxy `/api/recommend-adult-free` through the Cloudflare runtime so browsers never see backend secrets.
+- Proxy `/api/recommend-adult-free` through the Cloudflare runtime so browsers never see backend secrets (upstream `/v1/recommend-adult-free`).
 - Free adult match collects only birthdate, sex, height, weight and body measurements (arm span, leg inseam, etc.); paid flows will add preferences and injuries later.
 - Surface Supabase-powered auth/consent flows without persisting any sensitive keys client-side.
 
@@ -21,10 +21,10 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 | Layer                             | Responsibilities                                                                                                                                                                                                                             |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Astro**                         | Pages live in `src/pages`. Shared chrome (nav, footer, fonts) lives in `src/layouts/BaseLayout.astro`. Global design tokens are declared in `src/styles/tokens.css`, while `src/styles/global.css` provides base resets and utility classes. |
-| **Astro API routes**              | `src/pages/config.js.ts` publishes runtime Supabase config; `src/pages/api/recommend-adult-free.ts` proxies the backend; `src/pages/api/healthz.ts` exposes a health endpoint.                                                               |
+| **Astro API routes**              | `src/pages/config.js.ts` publishes runtime Supabase config; `src/pages/api/recommend-adult-free.ts` proxies the backend `/v1/recommend-adult-free`; `src/pages/api/healthz.ts` exposes a health endpoint.                                                               |
 | **Public assets**                 | Vanilla JS (`public/assets/js/*.js`) handles Supabase auth, form submission, and DOM updates. Images and other static assets also live under `public/`.                                                                                      |
 | **Cloudflare Worker (generated)** | `astro build` (Cloudflare adapter) emits `dist/_worker.js/index.js`, wiring runtime env, asset serving, and the proxy routes above.                                                                                                          |
-| **Backend**                       | FastAPI service (`/recommend-adult-free`) behind the Worker; see backend repo for implementation details.                                                                                                                                    |
+| **Backend**                       | FastAPI service (`/v1/recommend-adult-free`) behind the Worker; see backend repo for implementation details.                                                                                                                                    |
 
 `npm run build` produces a server bundle (`dist/_worker.js/**`) plus static assets (`dist/`), ready for `wrangler dev`/`wrangler deploy`.
 
