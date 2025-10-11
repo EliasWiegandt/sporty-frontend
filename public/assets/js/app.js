@@ -43,8 +43,8 @@
     setAuthMode: (mode) => setAuthMode(mode),
     signOut: () => signOut(),
     ensureConsent: () => ensureConsent(),
-    saveRecommendation: (formPayload, resultPayload) =>
-      saveRecommendation(formPayload, resultPayload),
+    saveRecommendation: (formPayload, resultPayload, extras) =>
+      saveRecommendation(formPayload, resultPayload, extras),
     fetchRecommendations: (limit) => fetchRecommendations(limit),
     refreshConsent: () => loadConsent(),
     fetchConsents: () => fetchConsents(),
@@ -613,7 +613,7 @@
     }
   }
 
-  async function saveRecommendation(formPayload, resultPayload) {
+  async function saveRecommendation(formPayload, resultPayload, extras = {}) {
     if (!state.client || !state.user || !state.hasConsent) {
       return { saved: false, reason: 'not-authorized' };
     }
@@ -632,6 +632,8 @@
       foot_length_cm: formPayload.foot_length_cm ?? null,
     };
 
+    const analysisInput = extras && extras.analysisInput ? extras.analysisInput : null;
+
     try {
       const measurementRes = await state.client
         .from('measurements')
@@ -640,6 +642,16 @@
         .single();
 
       if (measurementRes.error) throw measurementRes.error;
+
+      const measurementId = measurementRes.data.id;
+
+      if (analysisInput && hasAnalysisSelections(analysisInput)) {
+        try {
+          await persistAnalysisInput(measurementId, analysisInput, measurementRecord);
+        } catch (error) {
+          console.error('[Sporty] Failed to persist premium intake details', error);
+        }
+      }
 
       const submissionRes = await state.client
         .from('submissions')
@@ -707,6 +719,128 @@
       console.error('[Sporty] Failed to save recommendation', error);
       return { saved: false, error };
     }
+  }
+
+  function hasAnalysisSelections(selection) {
+    if (!selection) return false;
+    const { preferences, goals, injuries } = selection;
+    return (
+      (Array.isArray(preferences) && preferences.length > 0) ||
+      (Array.isArray(goals) && goals.length > 0) ||
+      (Array.isArray(injuries) && injuries.length > 0)
+    );
+  }
+
+  async function persistAnalysisInput(measurementId, selection, measurementRecord) {
+    if (!state.client || !state.user || !measurementId) return null;
+
+    const payload = {
+      subject_type: measurementRecord.subject_type || 'adult',
+      subject_user_id: measurementRecord.subject_user_id || state.user.id,
+      subject_child_id: measurementRecord.subject_child_id || null,
+      measurement_id: measurementId,
+      notes: selection.notes ? sanitizeText(selection.notes, 280) : null,
+    };
+
+    const inputRes = await state.client
+      .from('analysis_inputs')
+      .insert([payload])
+      .select('id')
+      .single();
+
+    if (inputRes.error) throw inputRes.error;
+
+    const analysisInputId = inputRes.data.id;
+    const operations = [];
+
+    if (Array.isArray(selection.preferences) && selection.preferences.length) {
+      const seen = new Set();
+      const rows = selection.preferences.slice(0, 20).reduce((acc, item) => {
+        const id = item && item.preference_id ? String(item.preference_id) : '';
+        if (!id || seen.has(id)) return acc;
+        seen.add(id);
+        acc.push({
+          analysis_input_id: analysisInputId,
+          preference_id: id,
+          priority: normalizePriority(item.priority),
+        });
+        return acc;
+      }, []);
+      if (rows.length) {
+        operations.push(
+          state.client.from('analysis_input_preferences').insert(rows)
+        );
+      }
+    }
+
+    if (Array.isArray(selection.goals) && selection.goals.length) {
+      const seen = new Set();
+      const rows = selection.goals.slice(0, 20).reduce((acc, item) => {
+        const id = item && item.goal_id ? String(item.goal_id) : '';
+        if (!id || seen.has(id)) return acc;
+        seen.add(id);
+        acc.push({
+          analysis_input_id: analysisInputId,
+          goal_id: id,
+          priority: normalizePriority(item.priority),
+        });
+        return acc;
+      }, []);
+      if (rows.length) {
+        operations.push(state.client.from('analysis_input_goals').insert(rows));
+      }
+    }
+
+    if (Array.isArray(selection.injuries) && selection.injuries.length) {
+      const seen = new Set();
+      const rows = selection.injuries.slice(0, 20).reduce((acc, item) => {
+        const injuryId = item && item.injury_id ? String(item.injury_id) : '';
+        if (!injuryId) return acc;
+        const subcategoryId = item && item.injury_subcategory_id ? String(item.injury_subcategory_id) : null;
+        const uniqueKey = subcategoryId || injuryId;
+        if (seen.has(uniqueKey)) return acc;
+        seen.add(uniqueKey);
+        acc.push({
+          analysis_input_id: analysisInputId,
+          injury_id: injuryId,
+          injury_subcategory_id: subcategoryId,
+          severity: normalizeSeverity(item.severity),
+          notes: item && item.notes ? sanitizeText(item.notes, 280) : null,
+        });
+        return acc;
+      }, []);
+      if (rows.length) {
+        operations.push(state.client.from('analysis_input_injuries').insert(rows));
+      }
+    }
+
+    if (operations.length) {
+      const results = await Promise.all(operations);
+      results.forEach((res) => {
+        if (res.error) {
+          throw res.error;
+        }
+      });
+    }
+
+    return analysisInputId;
+  }
+
+  function normalizePriority(value) {
+    return value === 'must_have' ? 'must_have' : 'nice_to_have';
+  }
+
+  function normalizeSeverity(value) {
+    const allowed = new Set(['severe', 'somewhat_bad', 'mostly_healed']);
+    return allowed.has(value) ? value : 'somewhat_bad';
+  }
+
+  function sanitizeText(value, maxLength) {
+    if (!value) return null;
+    const text = String(value).trim();
+    if (!text) return null;
+    if (text.length <= maxLength) return text;
+    return text.slice(0, maxLength);
   }
 
   async function fetchRecommendations(limit = 20) {

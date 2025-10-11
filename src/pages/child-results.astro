@@ -1,0 +1,97 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout
+  title="Sporty — Child Forecast Results"
+  description="Review the projected adult measurements for your child and see how each source contributed."
+>
+  <Fragment slot="head">
+    <style>
+      .results {
+        max-width: var(--max-width);
+        margin: clamp(2rem, 4vw, 3.5rem) auto;
+        padding: 0 clamp(1.5rem, 5vw, 3rem);
+        display: grid;
+        gap: 2rem;
+      }
+      .summary {
+        background: rgba(14, 165, 165, 0.12);
+        border: 1px solid rgba(14, 165, 165, 0.2);
+        border-radius: 18px;
+        padding: clamp(1.4rem, 3vw, 2rem);
+        display: grid;
+        gap: 0.75rem;
+      }
+      .measurements {
+        display: grid;
+        gap: 1.25rem;
+      }
+      .measurement-card {
+        border-radius: 18px;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        padding: clamp(1.25rem, 3vw, 1.75rem);
+        background: #fff;
+        display: grid;
+        gap: 0.9rem;
+      }
+      .measurement-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+      .contrib-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+      }
+      .contrib-table th,
+      .contrib-table td {
+        padding: 0.5rem 0.35rem;
+        text-align: left;
+      }
+      .contrib-table th {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--color-muted);
+      }
+      .contrib-table tbody tr:nth-child(2n) {
+        background: rgba(148, 163, 184, 0.1);
+      }
+      .empty-state {
+        border-radius: 18px;
+        border: 1px dashed rgba(148, 163, 184, 0.35);
+        padding: clamp(1.6rem, 3vw, 2.2rem);
+        text-align: center;
+        color: var(--color-muted);
+      }
+    </style>
+  </Fragment>
+
+  <main class="results">
+    <header class="summary" data-summary hidden>
+      <div>
+        <h1 class="section__title" style="margin:0;">Child forecast</h1>
+        <p class="lead-copy" data-summary-copy></p>
+      </div>
+      <dl class="grid" style="grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:1rem;" data-summary-meta>
+      </dl>
+    </header>
+
+    <section class="measurements" data-forecast-results hidden></section>
+
+    <div class="empty-state" data-empty-state>
+      <h2>No forecast loaded</h2>
+      <p>Submit the child forecast form first. We keep the latest run locally so you can review it here.</p>
+      <div class="button-row" style="justify-content:center; margin-top:1.5rem;">
+        <a class="button" href="/child-intake">Back to intake</a>
+      </div>
+    </div>
+  </main>
+
+  <Fragment slot="scripts">
+    <script src="/assets/js/child-results.js" defer></script>
+  </Fragment>
+</BaseLayout>

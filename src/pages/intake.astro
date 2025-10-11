@@ -65,6 +65,97 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         gap: 0.6rem;
         font-size: 0.95rem;
       }
+      .premium-block {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(148, 163, 184, 0.35);
+        display: grid;
+        gap: 1.5rem;
+      }
+      .premium-header {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .premium-header__badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+        color: var(--color-accent-dark);
+      }
+      .premium-groups {
+        display: grid;
+        gap: 1.25rem;
+      }
+      .premium-group {
+        border: 1px solid rgba(14, 165, 165, 0.25);
+        background: rgba(14, 165, 165, 0.08);
+        border-radius: 18px;
+        padding: clamp(1.1rem, 3vw, 1.6rem);
+        display: grid;
+        gap: 1rem;
+      }
+      .premium-group__header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .premium-group__header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+      }
+      .premium-count {
+        font-size: 0.85rem;
+        color: var(--color-muted);
+      }
+      .premium-group__items {
+        display: grid;
+        gap: 0.9rem;
+      }
+      .premium-item {
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        align-items: end;
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        padding: 1rem;
+      }
+      .premium-item__note {
+        grid-column: 1 / -1;
+      }
+      .premium-empty {
+        font-size: 0.9rem;
+        color: var(--color-muted);
+      }
+      .premium-locked {
+        border-radius: 16px;
+        border: 1px dashed rgba(148, 163, 184, 0.4);
+        padding: clamp(1.2rem, 3vw, 1.8rem);
+        background: rgba(148, 163, 184, 0.12);
+        font-size: 0.95rem;
+      }
+      .premium-locked strong {
+        display: block;
+        font-size: 1rem;
+        margin-bottom: 0.3rem;
+      }
+      .premium-actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .premium-note {
+        font-size: 0.85rem;
+        color: var(--color-muted);
+      }
       .privacy-note {
         font-size: 0.9rem;
         color: var(--color-muted);
@@ -159,7 +250,128 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         </div>
       </div>
 
-      
+      <div class="premium-locked" data-premium-locked hidden>
+        <strong>Detailed analysis inputs</strong>
+        <p data-premium-locked-message>
+          Premium credits let you capture preferences, goals, and injuries alongside your measurements.
+          Sign in and apply a credit to unlock deeper tailoring.
+        </p>
+      </div>
+
+      <div class="premium-block" data-premium-block hidden>
+        <div class="premium-header">
+          <span class="premium-header__badge">Premium analysis</span>
+          <h2 class="section__subtitle" style="margin:0;">Tell us what matters most</h2>
+          <p class="lead-copy" style="margin:0;">Add up to 20 entries per category. We’ll blend these with your measurements for the detailed analysis.</p>
+          <p class="premium-note" data-premium-summary></p>
+        </div>
+        <div class="premium-groups">
+          <div class="premium-group" data-list="preferences">
+            <div class="premium-group__header">
+              <div>
+                <h3>Preferences</h3>
+                <p class="premium-note">Training environments, team dynamics, or settings you gravitate toward.</p>
+              </div>
+              <div class="premium-actions">
+                <span class="premium-count" data-count>0 / 20</span>
+                <button type="button" class="button--ghost button--sm" data-add="preference">Add preference</button>
+              </div>
+            </div>
+            <div class="premium-group__items" data-items></div>
+            <p class="premium-empty" data-empty>None added yet. Add up to 20 preferences.</p>
+            <template data-template>
+              <div class="premium-item" data-item>
+                <label>
+                  <span>Preference</span>
+                  <select data-field="preference_id" required></select>
+                </label>
+                <label>
+                  <span>Priority</span>
+                  <select data-field="priority">
+                    <option value="must_have">Must-have</option>
+                    <option value="nice_to_have">Nice-to-have</option>
+                  </select>
+                </label>
+                <button type="button" class="button--ghost button--sm" data-remove>Remove</button>
+              </div>
+            </template>
+          </div>
+
+          <div class="premium-group" data-list="goals">
+            <div class="premium-group__header">
+              <div>
+                <h3>Goals</h3>
+                <p class="premium-note">What you want sport to deliver—skills, fitness, or lifestyle outcomes.</p>
+              </div>
+              <div class="premium-actions">
+                <span class="premium-count" data-count>0 / 20</span>
+                <button type="button" class="button--ghost button--sm" data-add="goal">Add goal</button>
+              </div>
+            </div>
+            <div class="premium-group__items" data-items></div>
+            <p class="premium-empty" data-empty>None added yet. Add up to 20 goals.</p>
+            <template data-template>
+              <div class="premium-item" data-item>
+                <label>
+                  <span>Goal</span>
+                  <select data-field="goal_id" required></select>
+                </label>
+                <label>
+                  <span>Priority</span>
+                  <select data-field="priority">
+                    <option value="must_have">Must-have</option>
+                    <option value="nice_to_have">Nice-to-have</option>
+                  </select>
+                </label>
+                <button type="button" class="button--ghost button--sm" data-remove>Remove</button>
+              </div>
+            </template>
+          </div>
+
+          <div class="premium-group" data-list="injuries">
+            <div class="premium-group__header">
+              <div>
+                <h3>Injuries</h3>
+                <p class="premium-note">Flag current or past injuries so we can adjust intensity and recommendations.</p>
+              </div>
+              <div class="premium-actions">
+                <span class="premium-count" data-count>0 / 20</span>
+                <button type="button" class="button--ghost button--sm" data-add="injury">Add injury</button>
+              </div>
+            </div>
+            <div class="premium-group__items" data-items></div>
+            <p class="premium-empty" data-empty>None added yet. Add up to 20 injuries.</p>
+            <template data-template>
+              <div class="premium-item" data-item>
+                <label>
+                  <span>Injury</span>
+                  <select data-field="injury_id" required></select>
+                </label>
+                <label>
+                  <span>Specific area</span>
+                  <select data-field="injury_subcategory_id">
+                    <option value="">General</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Severity</span>
+                  <select data-field="severity">
+                    <option value="severe">Severe</option>
+                    <option value="somewhat_bad">Somewhat bad</option>
+                    <option value="mostly_healed">Mostly healed</option>
+                  </select>
+                </label>
+                <label class="premium-item__note">
+                  <span>Notes (optional)</span>
+                  <input type="text" data-field="notes" maxlength="160" placeholder="Rehab status, triggers, limits" />
+                </label>
+                <button type="button" class="button--ghost button--sm" data-remove>Remove</button>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
       <div class="form-actions">
         <p class="privacy-note">We don’t store your data unless you log in and consent. Measurements sent to the backend are processed securely.</p>
         <div data-status aria-live="polite"></div>

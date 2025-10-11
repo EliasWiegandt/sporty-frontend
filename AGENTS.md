@@ -5,7 +5,8 @@ Read this guide plus `docs/handbook.md` before contributing.
 ## Mission
 - Maintain the Astro-based marketing + intake experience.
 - Keep navigation, typography, and spacing consistent via `BaseLayout` and the tokens in `src/styles/tokens.css`.
-- Ensure the Cloudflare adapter Worker continues to serve `/config.js` and proxy `/api/recommend-adult-free` with `X-API-Key` auth to backend `/v1/recommend-adult-free`.
+- Ensure the Cloudflare adapter Worker continues to serve `/config.js`, proxy `/api/recommend-adult-free`, and now `/api/forecast-child` with `X-API-Key` auth.
+- Prototype and validate the child forecast QA flow (`/child-intake` → `/child-results`) so backend forecasting can ship confidently.
 - Coordinate any API or schema expectations with the backend team before shipping changes.
 
 ## Quick Facts

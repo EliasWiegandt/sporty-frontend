@@ -190,7 +190,7 @@
           <span class="result-card__rank">#${rank}</span>
           <div>
             <h3>${escapeHtml(sport.name || body.sport_slug || 'Sport match')}</h3>
-            ${subtitle ? `<p class="result-card__roles">${escapeHtml(subtitle)}</p>` : ''}
+            ${subtitle ? `<p class="result-card__subcategories">${escapeHtml(subtitle)}</p>` : ''}
           </div>
         </header>
         ${mediaMarkup}

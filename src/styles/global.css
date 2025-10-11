@@ -470,7 +470,7 @@ blockquote.testimonial footer {
   font-size: 1.3rem;
 }
 
-.result-card__roles {
+.result-card__subcategories {
   margin: 0;
   color: var(--color-muted);
   font-size: 0.95rem;

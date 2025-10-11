@@ -13,7 +13,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <h1 class="hero__headline">Find the sport that fits your body today—no login required.</h1>
         <p class="hero__copy">Sporty compares your measurements against pro-informed body profiles to surface sports where you’re naturally set up to thrive. Get instant, free matches for adults, and unlock deeper guidance plus child forecasts with our paid tier.</p>
         <div class="button-row" role="group" aria-label="Primary calls to action">
-          <a class="button" href="/intake">Start the free match</a>
+          <div class="button-row" style="gap:0.75rem; flex-wrap:wrap;">
+            <a class="button" href="/intake">Start the free match</a>
+            <a class="button--ghost" href="/child-intake">Forecast a child</a>
+          </div>
           <a class="button--ghost" href="#tiers">Explore paid options</a>
         </div>
       </div>

@@ -19,7 +19,8 @@ Marketing + intake experience for Sporty. Built with Astro + the Cloudflare adap
 
 Design tokens live in `src/styles/tokens.css`. Update tokens first before making ad-hoc style tweaks so every component stays in sync.
 
-- Free adult match collects only birthdate, sex, height, weight, and optional body measurements (arm span, etc.). Preferences, injuries, and past sports wait for the paid flows.
+- **Free adult match** collects birthdate, sex, height, weight, and optional body measurements (arm span, etc.). Premium adult analysis (credit required) lets signed-in users capture up to 20 goals, preferences, and injuries alongside those measurements.
+- **Child forecast QA flow** lives at `/child-intake` and `/child-results`. It posts to `/api/forecast-child` using the deterministic family seeded in the backend so we can validate the forecasting pipeline end-to-end.
 
 ## Local Development
 
@@ -61,6 +62,7 @@ Environment values are unchanged:
 Cloudflare adapter outputs the Worker; no hand-written `src/worker.js` remains. Dynamic routes now live in `src/pages/api/`:
 - `config.js.ts` → `GET /config.js` (publishes Supabase URLs/key for browser code)
 - `api/recommend-adult-free.ts` → `POST /api/recommend-adult-free` proxy with `X-API-Key` to backend `/v1/recommend-adult-free`
+- `api/forecast-child.ts` → `POST /api/forecast-child` proxy with `X-API-Key` to backend `/v1/forecast-child`
 - `api/healthz.ts` → `GET /api/healthz`
 
 All endpoints reuse the same request-id logic as the legacy Worker. Static assets are served from `public/` and baked into the build output.
@@ -71,5 +73,6 @@ All endpoints reuse the same request-id logic as the legacy Worker. Static asset
 - Pull colors, spacings, and typography from `src/styles/tokens.css`.
 - Scope page-specific styling with inline `<style>` blocks or dedicated components—edit `global.css` only for site-wide changes.
 - Update this README, `docs/handbook.md`, and `AGENTS.md` when introducing new pages, design tokens, or deployment steps.
+- When adding API calls, surface them through `src/pages/api/*` so the Worker injects the secret headers (see `api/forecast-child.ts` for the latest example).
 
 Questions? Coordinate with the backend team before changing proxy behavior or API assumptions.
