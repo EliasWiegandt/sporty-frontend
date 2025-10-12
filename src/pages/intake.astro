@@ -156,6 +156,85 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         font-size: 0.85rem;
         color: var(--color-muted);
       }
+      .past-sports {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(148, 163, 184, 0.35);
+        display: grid;
+        gap: 1.25rem;
+      }
+      .past-sports__header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .past-sports__items {
+        display: grid;
+        gap: 1rem;
+      }
+      .past-sports__empty {
+        font-size: 0.9rem;
+        color: var(--color-muted);
+      }
+      .past-sport-item {
+        display: grid;
+        gap: 1rem;
+        padding: clamp(1rem, 2.5vw, 1.4rem);
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        background: #fff;
+      }
+      .past-sport-flags {
+        display: grid;
+        gap: 0.5rem;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      }
+      .past-sport-flags label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+      }
+      .past-sport-picker {
+        position: relative;
+      }
+      .past-sport-picker__input {
+        width: 100%;
+      }
+      .past-sport-picker__results {
+        position: absolute;
+        inset-inline-start: 0;
+        inset-inline-end: 0;
+        top: calc(100% + 0.35rem);
+        z-index: 5;
+        max-height: 220px;
+        overflow-y: auto;
+        background: #fff;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        border-radius: 12px;
+        box-shadow: 0 12px 40px rgba(15, 23, 42, 0.1);
+      }
+      .past-sport-picker__option {
+        display: block;
+        width: 100%;
+        padding: 0.6rem 0.9rem;
+        text-align: left;
+        background: transparent;
+        border: none;
+        font: inherit;
+        cursor: pointer;
+      }
+      .past-sport-picker__option:hover,
+      .past-sport-picker__option:focus {
+        background: rgba(14, 165, 165, 0.12);
+        outline: none;
+      }
+      .past-sports__count {
+        font-size: 0.85rem;
+        color: var(--color-muted);
+      }
       .privacy-note {
         font-size: 0.9rem;
         color: var(--color-muted);
@@ -237,18 +316,77 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <span>Hip width (cm)</span>
             <input type="number" name="hip_width_cm" min="30" max="80" inputmode="decimal" />
           </label>
-        </div>
-        <div class="input-row">
-          <label>
-            <span>Hand length (cm)</span>
-            <input type="number" name="hand_length_cm" min="10" max="30" inputmode="decimal" />
-          </label>
-          <label>
-            <span>Foot length (cm)</span>
-            <input type="number" name="foot_length_cm" min="15" max="35" inputmode="decimal" />
-          </label>
-        </div>
       </div>
+      <div class="input-row">
+        <label>
+          <span>Hand length (cm)</span>
+          <input type="number" name="hand_length_cm" min="10" max="30" inputmode="decimal" />
+        </label>
+        <label>
+          <span>Foot length (cm)</span>
+          <input type="number" name="foot_length_cm" min="15" max="35" inputmode="decimal" />
+        </label>
+      </div>
+    </div>
+
+      <section class="past-sports" data-past-sports>
+        <div class="past-sports__header">
+          <div>
+            <h2 class="section__subtitle" style="margin:0;">Past sports</h2>
+            <p class="lead-copy" style="margin:0;">Tell us which sports you’ve already spent time on. We’ll use this to refine what comes next.</p>
+          </div>
+          <div class="premium-actions">
+            <span class="past-sports__count" data-past-count>0 / 5</span>
+            <button type="button" class="button--ghost button--sm" data-past-add>Add sport</button>
+          </div>
+        </div>
+        <p class="past-sports__empty" data-past-empty>Log in to add past sports and experiences.</p>
+        <div class="past-sports__items" data-past-items></div>
+        <template data-past-template>
+          <div class="past-sport-item" data-item>
+            <label>
+              <span>Sport or discipline</span>
+              <div class="past-sport-picker" data-picker>
+                <input type="text" class="past-sport-picker__input" data-field="sport_label" placeholder="Search sports…" autocomplete="off" />
+                <input type="hidden" data-field="sport_subcategory_id" />
+                <div class="past-sport-picker__results" data-search-results hidden></div>
+              </div>
+            </label>
+            <div class="input-row">
+              <label>
+                <span>Years played</span>
+                <input type="number" step="0.5" min="0" max="80" data-field="years_played" />
+              </label>
+              <label>
+                <span>Starting age</span>
+                <input type="number" min="0" max="80" data-field="age_started_years" />
+              </label>
+            </div>
+            <label>
+              <span>Intensity</span>
+              <select data-field="intensity">
+                <option value="">Select</option>
+                <option value="light">Casual / recreational</option>
+                <option value="moderate">Regular weekly sessions</option>
+                <option value="intense">Competitive season</option>
+                <option value="elite">High performance / elite</option>
+              </select>
+            </label>
+            <div class="past-sport-flags">
+              <label>
+                <input type="checkbox" data-field="liked" /> Enjoyed it
+              </label>
+              <label>
+                <input type="checkbox" data-field="had_flair" /> Felt natural
+              </label>
+              <label>
+                <input type="checkbox" data-field="achieved_skill" /> Became good at it
+              </label>
+            </div>
+            <button type="button" class="button--ghost button--sm" data-remove>Remove</button>
+          </div>
+        </template>
+      </section>
 
       <div class="premium-locked" data-premium-locked hidden>
         <strong>Detailed analysis inputs</strong>

@@ -618,6 +618,14 @@
       return { saved: false, reason: 'not-authorized' };
     }
 
+    const pastSportsInput = Array.isArray(extras.pastSports) ? extras.pastSports : [];
+
+    try {
+      await persistPastSports(pastSportsInput);
+    } catch (error) {
+      console.error('[Sporty] Failed to persist past sports', error);
+    }
+
     const measurementRecord = {
       subject_type: 'adult',
       subject_user_id: state.user.id,
@@ -824,6 +832,66 @@
     }
 
     return analysisInputId;
+  }
+
+  async function persistPastSports(entries) {
+    if (!state.client || !state.user) return;
+    const client = state.client;
+    const userId = state.user.id;
+
+    const normalized = Array.isArray(entries)
+      ? entries
+          .map((entry) => {
+            const sportId = entry && entry.sport_subcategory_id ? String(entry.sport_subcategory_id).trim() : '';
+            if (!sportId) return null;
+            const record = {
+              subject_type: 'adult',
+              subject_user_id: userId,
+              sport_subcategory_id: sportId,
+              intensity: normalizeIntensity(entry.intensity),
+              liked: Boolean(entry && entry.liked),
+              had_flair: Boolean(entry && entry.had_flair),
+              achieved_skill: Boolean(entry && entry.achieved_skill),
+            };
+
+            const years = normalizeDuration(entry.years_played);
+            if (years !== null) record.years_played = years;
+
+            const age = normalizeDuration(entry.age_started_years);
+            if (age !== null) record.age_started_years = age;
+
+            return record;
+          })
+          .filter(Boolean)
+      : [];
+
+    await client
+      .from('past_sports')
+      .delete()
+      .eq('subject_user_id', userId)
+      .eq('subject_type', 'adult');
+
+    if (!normalized.length) return;
+
+    const { error } = await client
+      .from('past_sports')
+      .upsert(normalized, { onConflict: 'subject_user_id,sport_subcategory_id' });
+
+    if (error) throw error;
+  }
+
+  function normalizeDuration(value) {
+    if (value === null || typeof value === 'undefined' || value === '') return null;
+    const parsed = parseFloat(value);
+    if (Number.isNaN(parsed)) return null;
+    if (parsed < 0 || parsed > 80) return null;
+    return Math.round(parsed * 10) / 10;
+  }
+
+  function normalizeIntensity(value) {
+    if (!value) return null;
+    const normalized = String(value).toLowerCase();
+    return ['light', 'moderate', 'intense', 'elite'].includes(normalized) ? normalized : null;
   }
 
   function normalizePriority(value) {

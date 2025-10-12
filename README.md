@@ -21,6 +21,7 @@ Design tokens live in `src/styles/tokens.css`. Update tokens first before making
 
 - **Free adult match** collects birthdate, sex, height, weight, and optional body measurements (arm span, etc.). Premium adult analysis (credit required) lets signed-in users capture up to 20 goals, preferences, and injuries alongside those measurements.
 - **Child forecast QA flow** lives at `/child-intake` and `/child-results`. It posts to `/api/forecast-child` using the deterministic family seeded in the backend so we can validate the forecasting pipeline end-to-end.
+- **Logged-in past sports** section lets authenticated users add up to five past sports (with search over `sports_subcategories`, intensity, years played, and flair/skill flags) so we can blend experience into matching.
 
 ## Local Development
 
@@ -74,5 +75,6 @@ All endpoints reuse the same request-id logic as the legacy Worker. Static asset
 - Scope page-specific styling with inline `<style>` blocks or dedicated components—edit `global.css` only for site-wide changes.
 - Update this README, `docs/handbook.md`, and `AGENTS.md` when introducing new pages, design tokens, or deployment steps.
 - When adding API calls, surface them through `src/pages/api/*` so the Worker injects the secret headers (see `api/forecast-child.ts` for the latest example).
+- Past sport search pulls directly from `sports_subcategories`; keep that taxonomy seeded so the dropdown stays accurate.
 
 Questions? Coordinate with the backend team before changing proxy behavior or API assumptions.

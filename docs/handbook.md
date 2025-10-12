@@ -14,6 +14,7 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 - Proxy `/api/recommend-adult-free` and `/api/forecast-child` through the Cloudflare runtime so browsers never see backend secrets.
 - Free adult match collects only birthdate, sex, height, weight and body measurements (arm span, leg inseam, etc.); when an adult analysis credit is available the intake page unlocks sections for up to 20 preferences, goals, and injuries that sync directly to Supabase.
 - Child forecast intake pulls in the deterministic test family (prefilled on preview branches) and posts to `/api/forecast-child`, then `/child-results` renders per-source contributions from the stored session payload.
+- Logged-in intakes also capture past sports (searchable `sports_subcategories`, intensity, enjoyment/flair/skill flags) and sync them to Supabase before saving recommendations.
 - Surface Supabase-powered auth/consent flows without persisting any sensitive keys client-side.
 
 ---
@@ -24,7 +25,7 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Astro**                         | Pages live in `src/pages`. Shared chrome (nav, footer, fonts) lives in `src/layouts/BaseLayout.astro`. Global design tokens are declared in `src/styles/tokens.css`, while `src/styles/global.css` provides base resets and utility classes. |
 | **Astro API routes**              | `src/pages/config.js.ts` publishes runtime Supabase config; `src/pages/api/recommend-adult-free.ts` proxies the backend `/v1/recommend-adult-free`; `src/pages/api/forecast-child.ts` proxies `/v1/forecast-child`; `src/pages/api/healthz.ts` exposes a health endpoint. |
-| **Public assets**                 | Vanilla JS (`public/assets/js/*.js`) handles Supabase auth, form submission, and DOM updates. `intake.js` manages the adult free + premium forms, while `child-intake.js`/`child-results.js` drive the forecast QA flow. Images and other static assets also live under `public/`. |
+| **Public assets**                 | Vanilla JS (`public/assets/js/*.js`) handles Supabase auth, form submission, and DOM updates. `intake.js` manages the adult free + premium forms and the past-sport repeater, while `child-intake.js`/`child-results.js` drive the forecast QA flow. Images and other static assets also live under `public/`. |
 | **Cloudflare Worker (generated)** | `astro build` (Cloudflare adapter) emits `dist/_worker.js/index.js`, wiring runtime env, asset serving, and the proxy routes above.                                                                                                          |
 | **Backend**                       | FastAPI service (`/v1/recommend-adult-free`) behind the Worker; see backend repo for implementation details.                                                                                                                                    |
 

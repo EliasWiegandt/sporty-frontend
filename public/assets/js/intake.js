@@ -9,6 +9,7 @@
     ? premiumLocked.querySelector('[data-premium-locked-message]')
     : null;
   const premiumSummaryEl = document.querySelector('[data-premium-summary]');
+  const pastSportsSection = document.querySelector('[data-past-sports]');
   const sportyApp = window.SportyApp;
   let sportySnapshot = { user: null, hasConsent: false };
   const premiumController = createPremiumController({
@@ -18,10 +19,15 @@
     summary: premiumSummaryEl,
     getClient: () => (sportyApp && typeof sportyApp.getClient === 'function' ? sportyApp.getClient() : null),
   });
+  const pastSportsController = createPastSportsController({
+    root: pastSportsSection,
+    getClient: () => (sportyApp && typeof sportyApp.getClient === 'function' ? sportyApp.getClient() : null),
+  });
 
   if (!form) {
     updateBanner(sportySnapshot);
     premiumController.update(sportySnapshot);
+    pastSportsController.update(sportySnapshot);
     return;
   }
 
@@ -62,6 +68,9 @@
     Promise.resolve(premiumController.update(sportySnapshot)).catch((error) => {
       console.error('Failed to update premium intake state', error);
     });
+    Promise.resolve(pastSportsController.update(sportySnapshot)).catch((error) => {
+      console.error('Failed to update past sports', error);
+    });
   }
 
   form.addEventListener('submit', async (event) => {
@@ -92,6 +101,16 @@
     if (premiumSelection && premiumSelection.errors && premiumSelection.errors.length) {
       setStatus(premiumSelection.errors.join(' '), 'error');
       return;
+    }
+
+    const pastSportsSelection = pastSportsController.collect();
+    if (pastSportsSelection && pastSportsSelection.errors && pastSportsSelection.errors.length) {
+      setStatus(pastSportsSelection.errors.join(' '), 'error');
+      return;
+    }
+
+    if (pastSportsSelection && Array.isArray(pastSportsSelection.data)) {
+      payload.past_sports = pastSportsSelection.data;
     }
 
     submitBtn.disabled = true;
@@ -143,10 +162,14 @@
       if (consentAccepted && sportyApp && typeof sportyApp.saveRecommendation === 'function') {
         try {
           const resultJson = JSON.parse(bodyText);
-          const extras =
-            premiumSelection && premiumSelection.data
-              ? { analysisInput: premiumSelection.data }
-              : undefined;
+          const extraPayload = {};
+          if (premiumSelection && premiumSelection.data) {
+            extraPayload.analysisInput = premiumSelection.data;
+          }
+          if (pastSportsSelection && Array.isArray(pastSportsSelection.data) && pastSportsSelection.data.length) {
+            extraPayload.pastSports = pastSportsSelection.data;
+          }
+          const extras = Object.keys(extraPayload).length ? extraPayload : undefined;
           const saveOutcome = await sportyApp.saveRecommendation(payload, resultJson, extras);
           if (saveOutcome && saveOutcome.saved) {
             setStatus('Saved to your account. Redirecting…', 'info');
@@ -167,6 +190,453 @@
   // Prefill measurements on test/staging branches for faster QA
   if (isTestBranch()) {
     prefillForTest();
+  }
+
+  function createPastSportsController(config) {
+    const { root, getClient } = config || {};
+    const MAX_ITEMS = 5;
+    const INTENSITY_VALUES = ['light', 'moderate', 'intense', 'elite'];
+    if (!root) {
+      return {
+        update: async () => {},
+        collect: () => ({ data: [], errors: [] }),
+        prefillForTest: () => {},
+      };
+    }
+
+    const addButton = root.querySelector('[data-past-add]');
+    const itemsContainer = root.querySelector('[data-past-items]');
+    const emptyState = root.querySelector('[data-past-empty]');
+    const countEl = root.querySelector('[data-past-count]');
+    const template = root.querySelector('[data-past-template]');
+
+    let catalog = null;
+    let catalogPromise = null;
+    let active = false;
+    let updateToken = 0;
+    let prefillRequested = false;
+
+    const pickers = new Set();
+
+    document.addEventListener('click', (event) => {
+      pickers.forEach((picker) => {
+        if (!picker.root.contains(event.target)) {
+          picker.hide();
+        }
+      });
+    });
+
+    if (addButton) {
+      addButton.addEventListener('click', () => {
+        if (!active) return;
+        if (itemsContainer && itemsContainer.querySelectorAll('[data-item]').length >= MAX_ITEMS) {
+          return;
+        }
+        addItem();
+      });
+    }
+
+    function updateCount() {
+      if (!countEl) return;
+      const count = itemsContainer ? itemsContainer.querySelectorAll('[data-item]').length : 0;
+      countEl.textContent = `${count} / ${MAX_ITEMS}`;
+    }
+
+    function toggleEmptyState(message) {
+      const count = itemsContainer ? itemsContainer.querySelectorAll('[data-item]').length : 0;
+      if (emptyState) {
+        if (!active) {
+          emptyState.hidden = false;
+          emptyState.textContent = message || 'Log in to add past sports and experiences.';
+        } else {
+          emptyState.hidden = count > 0;
+          if (!count) {
+            emptyState.textContent = 'Add the sports you’ve invested time in. You can add up to five.';
+          }
+        }
+      }
+      if (addButton) {
+        addButton.disabled = !active || count >= MAX_ITEMS;
+      }
+    }
+
+    function clearItems() {
+      if (itemsContainer) {
+        itemsContainer.innerHTML = '';
+      }
+      pickers.clear();
+      updateCount();
+    }
+
+    function setLoggedOutState() {
+      active = false;
+      clearItems();
+      toggleEmptyState();
+    }
+
+    function setActiveState() {
+      if (active) return;
+      active = true;
+      toggleEmptyState();
+      if (itemsContainer && !itemsContainer.querySelector('[data-item]')) {
+        addItem();
+      }
+    }
+
+    function buildLabel(row) {
+      const category = row && row.category ? row.category : {};
+      const parts = [];
+      const preferredKeys = ['sport', 'discipline', 'category', 'subcategory', 'position', 'role'];
+      preferredKeys.forEach((key) => {
+        const value = category[key];
+        if (value && value.name && !parts.includes(value.name)) {
+          parts.push(value.name);
+        }
+      });
+      if (!parts.length) {
+        Object.values(category).forEach((value) => {
+          if (value && value.name && !parts.includes(value.name)) {
+            parts.push(value.name);
+          }
+        });
+      }
+      if (!parts.length) {
+        const slug = row.slug || '';
+        return slug.replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+      }
+      return parts.join(' • ');
+    }
+
+    async function ensureCatalog(client) {
+      if (catalog) return catalog;
+      if (!client) return [];
+      if (catalogPromise) return catalogPromise;
+      catalogPromise = (async () => {
+        const { data, error } = await client
+          .from('sports_subcategories')
+          .select('id, slug, category')
+          .order('slug', { ascending: true });
+        if (error) throw error;
+        catalog = (data || []).map((row) => {
+          const label = buildLabel(row);
+          return {
+            id: row.id,
+            slug: row.slug,
+            label,
+            searchText: `${label} ${row.slug}`.toLowerCase(),
+          };
+        });
+        return catalog;
+      })().finally(() => {
+        catalogPromise = null;
+      });
+      return catalogPromise;
+    }
+
+    function searchCatalog(query) {
+      if (!catalog || !catalog.length) return [];
+      const trimmed = (query || '').trim().toLowerCase();
+      if (!trimmed) {
+        return catalog.slice(0, 12);
+      }
+      const tokens = trimmed.split(/\s+/).filter(Boolean);
+      return catalog
+        .map((row) => {
+          const text = row.searchText;
+          const matches = tokens.every((token) => text.includes(token));
+          if (!matches) return null;
+          const primary = text.indexOf(tokens[0]);
+          return { row, score: primary === -1 ? 9999 : primary };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.score - b.score)
+        .slice(0, 12)
+        .map((entry) => entry.row);
+    }
+
+    async function fetchExisting(client, userId) {
+      const { data, error } = await client
+        .from('past_sports')
+        .select(
+          'sport_subcategory_id, years_played, age_started_years, intensity, liked, had_flair, achieved_skill'
+        )
+        .eq('subject_user_id', userId)
+        .eq('subject_type', 'adult')
+        .order('updated_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
+
+    function addItem(initial) {
+      if (!itemsContainer || !template) return;
+      const count = itemsContainer.querySelectorAll('[data-item]').length;
+      if (count >= MAX_ITEMS) {
+        toggleEmptyState();
+        return;
+      }
+
+      const fragment = template.content.cloneNode(true);
+      const item = fragment.querySelector('[data-item]');
+      if (!item) return;
+
+      const yearsInput = item.querySelector('[data-field="years_played"]');
+      const ageInput = item.querySelector('[data-field="age_started_years"]');
+      const intensitySelect = item.querySelector('[data-field="intensity"]');
+      const likedCheckbox = item.querySelector('[data-field="liked"]');
+      const flairCheckbox = item.querySelector('[data-field="had_flair"]');
+      const skillCheckbox = item.querySelector('[data-field="achieved_skill"]');
+
+      if (yearsInput && initial && typeof initial.years_played !== 'undefined' && initial.years_played !== null) {
+        yearsInput.value = Number(initial.years_played);
+      }
+      if (ageInput && initial && typeof initial.age_started_years !== 'undefined' && initial.age_started_years !== null) {
+        ageInput.value = Number(initial.age_started_years);
+      }
+      if (intensitySelect && initial && initial.intensity && INTENSITY_VALUES.includes(initial.intensity)) {
+        intensitySelect.value = initial.intensity;
+      }
+      if (likedCheckbox && initial && typeof initial.liked === 'boolean') {
+        likedCheckbox.checked = initial.liked;
+      }
+      if (flairCheckbox && initial && typeof initial.had_flair === 'boolean') {
+        flairCheckbox.checked = initial.had_flair;
+      }
+      if (skillCheckbox && initial && typeof initial.achieved_skill === 'boolean') {
+        skillCheckbox.checked = initial.achieved_skill;
+      }
+
+      const removeBtn = item.querySelector('[data-remove]');
+      if (removeBtn) {
+        removeBtn.addEventListener('click', () => {
+          item.remove();
+          updateCount();
+          toggleEmptyState();
+        });
+      }
+
+      setupPicker(item, initial);
+
+      itemsContainer.appendChild(fragment);
+      updateCount();
+      toggleEmptyState();
+    }
+
+    function setupPicker(item, initial) {
+      const searchInput = item.querySelector('[data-field="sport_label"]');
+      const hiddenInput = item.querySelector('[data-field="sport_subcategory_id"]');
+      const resultsEl = item.querySelector('[data-search-results]');
+      if (!searchInput || !hiddenInput || !resultsEl) return;
+
+      function selectRow(row) {
+        hiddenInput.value = row.id;
+        searchInput.value = row.label;
+        resultsEl.hidden = true;
+        resultsEl.innerHTML = '';
+      }
+
+      function renderMatches(query) {
+        if (!catalog || !catalog.length) return;
+        const matches = searchCatalog(query);
+        if (!matches.length) {
+          resultsEl.hidden = true;
+          resultsEl.innerHTML = '';
+          return;
+        }
+        const fragment = document.createDocumentFragment();
+        matches.forEach((row) => {
+          const option = document.createElement('button');
+          option.type = 'button';
+          option.className = 'past-sport-picker__option';
+          option.textContent = row.label;
+          option.addEventListener('click', () => {
+            selectRow(row);
+          });
+          fragment.appendChild(option);
+        });
+        resultsEl.innerHTML = '';
+        resultsEl.appendChild(fragment);
+        resultsEl.hidden = false;
+      }
+
+      searchInput.addEventListener('input', () => {
+        hiddenInput.value = '';
+        renderMatches(searchInput.value);
+      });
+      searchInput.addEventListener('focus', () => {
+        renderMatches(searchInput.value);
+      });
+      searchInput.addEventListener('blur', () => {
+        setTimeout(() => {
+          resultsEl.hidden = true;
+        }, 120);
+      });
+
+      resultsEl.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+      });
+
+      pickers.add({
+        root: item,
+        hide() {
+          resultsEl.hidden = true;
+        },
+      });
+
+      if (initial && initial.sport_subcategory_id) {
+        const row = catalog ? catalog.find((entry) => entry.id === initial.sport_subcategory_id) : null;
+        if (row) {
+          selectRow(row);
+        }
+      }
+    }
+
+    function collect() {
+      if (!active) {
+        return { data: [], errors: [] };
+      }
+      const items = itemsContainer ? Array.from(itemsContainer.querySelectorAll('[data-item]')) : [];
+      const errors = [];
+      const payload = [];
+
+      items.forEach((item, index) => {
+        const hiddenInput = item.querySelector('[data-field="sport_subcategory_id"]');
+        const labelInput = item.querySelector('[data-field="sport_label"]');
+        const yearsInput = item.querySelector('[data-field="years_played"]');
+        const ageInput = item.querySelector('[data-field="age_started_years"]');
+        const intensitySelect = item.querySelector('[data-field="intensity"]');
+        const likedCheckbox = item.querySelector('[data-field="liked"]');
+        const flairCheckbox = item.querySelector('[data-field="had_flair"]');
+        const skillCheckbox = item.querySelector('[data-field="achieved_skill"]');
+
+        const sportId = hiddenInput && hiddenInput.value ? hiddenInput.value.trim() : '';
+        const sportLabel = labelInput && labelInput.value ? labelInput.value.trim() : '';
+        const hasOtherValues = Boolean(
+          sportLabel ||
+            (yearsInput && yearsInput.value) ||
+            (ageInput && ageInput.value) ||
+            (intensitySelect && intensitySelect.value)
+        );
+
+        if (!sportId) {
+          if (hasOtherValues) {
+            errors.push(`Past sport ${index + 1}: choose a sport from the list.`);
+          }
+          return;
+        }
+
+        const entry = {
+          sport_subcategory_id: sportId,
+          liked: likedCheckbox ? Boolean(likedCheckbox.checked) : false,
+          had_flair: flairCheckbox ? Boolean(flairCheckbox.checked) : false,
+          achieved_skill: skillCheckbox ? Boolean(skillCheckbox.checked) : false,
+        };
+
+        if (yearsInput && yearsInput.value) {
+          const parsedYears = parseFloat(yearsInput.value);
+          if (!Number.isNaN(parsedYears) && parsedYears >= 0 && parsedYears <= 80) {
+            entry.years_played = parsedYears;
+          } else {
+            errors.push(`Past sport ${index + 1}: enter years played between 0 and 80.`);
+          }
+        }
+
+        if (ageInput && ageInput.value) {
+          const parsedAge = parseFloat(ageInput.value);
+          if (!Number.isNaN(parsedAge) && parsedAge >= 0 && parsedAge <= 80) {
+            entry.age_started_years = parsedAge;
+          } else {
+            errors.push(`Past sport ${index + 1}: starting age must be between 0 and 80.`);
+          }
+        }
+
+        if (intensitySelect && intensitySelect.value) {
+          const value = intensitySelect.value;
+          if (INTENSITY_VALUES.includes(value)) {
+            entry.intensity = value;
+          } else {
+            errors.push(`Past sport ${index + 1}: select a valid intensity.`);
+          }
+        }
+
+        payload.push(entry);
+      });
+
+      return { data: payload, errors };
+    }
+
+    function applyPrefill() {
+      if (!active || !catalog || !catalog.length || !itemsContainer) return;
+      if (itemsContainer.querySelector('[data-item]')) return;
+      const samples = catalog.slice(0, Math.min(2, catalog.length));
+      samples.forEach((row, idx) => {
+        addItem({
+          sport_subcategory_id: row.id,
+          years_played: idx === 0 ? 4 : 2,
+          age_started_years: idx === 0 ? 12 : 18,
+          intensity: idx === 0 ? 'intense' : 'moderate',
+          liked: true,
+          had_flair: idx === 0,
+          achieved_skill: idx === 0,
+        });
+      });
+    }
+
+    async function update(snapshot) {
+      const client = typeof getClient === 'function' ? getClient() : null;
+      const userId = snapshot && snapshot.user ? snapshot.user.id : null;
+      const currentToken = ++updateToken;
+
+      if (!client || !userId) {
+        setLoggedOutState();
+        return;
+      }
+
+      try {
+        await ensureCatalog(client);
+      } catch (error) {
+        console.error('Failed to load sport catalog', error);
+        setLoggedOutState();
+        return;
+      }
+
+      if (currentToken !== updateToken) return;
+
+      setActiveState();
+
+      let existing = [];
+      try {
+        existing = await fetchExisting(client, userId);
+      } catch (error) {
+        console.error('Failed to load past sports', error);
+      }
+
+      if (currentToken !== updateToken) return;
+
+      clearItems();
+      if (existing && existing.length) {
+        existing.forEach((row) => addItem(row));
+      } else if (prefillRequested) {
+        applyPrefill();
+      }
+      updateCount();
+      toggleEmptyState();
+    }
+
+    function prefillForTest() {
+      prefillRequested = true;
+      if (active && catalog && catalog.length) {
+        clearItems();
+        applyPrefill();
+        updateCount();
+        toggleEmptyState();
+      }
+    }
+
+    return {
+      update,
+      collect,
+      prefillForTest,
+    };
   }
 
   function createPremiumController(config) {
@@ -860,5 +1330,9 @@
         }
       }
     });
+
+    if (pastSportsController && typeof pastSportsController.prefillForTest === 'function') {
+      pastSportsController.prefillForTest();
+    }
   }
 })();
