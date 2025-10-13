@@ -188,14 +188,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       }
       .past-sport-flags {
         display: grid;
-        gap: 0.5rem;
+        gap: 1rem;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      }
-      .past-sport-flags label {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.9rem;
       }
       .past-sport-picker {
         position: relative;
@@ -374,13 +368,28 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             </label>
             <div class="past-sport-flags">
               <label>
-                <input type="checkbox" data-field="liked" /> Enjoyed it
+                <span>Enjoyed it?</span>
+                <select data-field="liked">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
               </label>
               <label>
-                <input type="checkbox" data-field="had_flair" /> Felt natural
+                <span>Felt natural?</span>
+                <select data-field="had_flair">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
               </label>
               <label>
-                <input type="checkbox" data-field="achieved_skill" /> Became good at it
+                <span>Became good at it?</span>
+                <select data-field="achieved_skill">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
               </label>
             </div>
             <button type="button" class="button--ghost button--sm" data-remove>Remove</button>

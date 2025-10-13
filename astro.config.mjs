@@ -1,5 +1,6 @@
 import { defineConfig } from 'astro/config';
 import cloudflare from '@astrojs/cloudflare';
+import preact from '@astrojs/preact';
 
 export default defineConfig({
   output: 'server',
@@ -12,4 +13,5 @@ export default defineConfig({
   session: {
     driver: 'null',
   },
+  integrations: [preact()],
 });

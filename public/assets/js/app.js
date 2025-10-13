@@ -848,17 +848,25 @@
               subject_type: 'adult',
               subject_user_id: userId,
               sport_subcategory_id: sportId,
-              intensity: normalizeIntensity(entry.intensity),
-              liked: Boolean(entry && entry.liked),
-              had_flair: Boolean(entry && entry.had_flair),
-              achieved_skill: Boolean(entry && entry.achieved_skill),
             };
 
-            const years = normalizeDuration(entry.years_played);
+            const intensity = normalizeIntensity(entry ? entry.intensity : null);
+            if (intensity) record.intensity = intensity;
+
+            const years = normalizeDuration(entry ? entry.years_played : null);
             if (years !== null) record.years_played = years;
 
-            const age = normalizeDuration(entry.age_started_years);
+            const age = normalizeDuration(entry ? entry.age_started_years : null);
             if (age !== null) record.age_started_years = age;
+
+            const liked = normalizeYesNoBoolean(entry ? entry.liked : null);
+            if (liked !== null) record.liked = liked;
+
+            const flair = normalizeYesNoBoolean(entry ? entry.had_flair : null);
+            if (flair !== null) record.had_flair = flair;
+
+            const skill = normalizeYesNoBoolean(entry ? entry.achieved_skill : null);
+            if (skill !== null) record.achieved_skill = skill;
 
             return record;
           })
@@ -892,6 +900,17 @@
     if (!value) return null;
     const normalized = String(value).toLowerCase();
     return ['light', 'moderate', 'intense', 'elite'].includes(normalized) ? normalized : null;
+  }
+
+  function normalizeYesNoBoolean(value) {
+    if (value === true) return true;
+    if (value === false) return false;
+    if (typeof value === 'string') {
+      const normalized = value.toLowerCase();
+      if (normalized === 'yes') return true;
+      if (normalized === 'no') return false;
+    }
+    return null;
   }
 
   function normalizePriority(value) {

@@ -32,4 +32,15 @@ wrangler dev
 - Keep `BaseLayout` as the single source of truth for the top nav and auth controls; add props instead of duplicating markup in pages.
 - Never expose Supabase service-role or Stripe secret keys in the frontend; only the Worker/backend should handle them.
 
+## Consent & Visual Asset Guidelines
+- Follow the consent flows documented in `docs/JOURNEYS.md`: always offer preview modes, gate storage behind explicit opt-ins (measurements, goals/preferences, injuries, child data), and surface revoke controls. UI copy must explain purpose, retention, and provide links to Privacy/Data Rights pages.
+- Distinguish visual asset pipelines: use coded charts/tables for data (fit contributions, growth curves, etc.), and rely on the illustration generator for human/sport scenes or measurement helpers. Maintain the illustration backlog referenced in the journeys file and ensure every chart has an accessible text/table fallback.
+
 If the repo drifts from the handbook, fix the docs first.
+
+
+## MVP Investment Policy
+- Invest effort in polished charts and illustration placeholders—the journeys lean on strong visual storytelling.
+- Keep everything else lightweight: reuse existing components, prefer simple CSS/HTML patterns, and defer advanced animations.
+- Use Astro islands sparingly (vanilla or Preact) to deliver interactivity without bloating the MVP surface.
+- Only add dependencies that directly serve the MVP scope (charts, consent); avoid speculative tooling.

@@ -7,14 +7,20 @@
 
 # For later
 
-- add generation of injuries at risk and injuries that are likely for each sport subcategory
-- add generation of goals that can be succeeded with each sport
-- add preference tagging to each sport
-- add logging of past sports data. What will i use this for? carry-over: if you are good at one sports, you might be good at others. Or in reverse, you can exclude them if you want to from the search-results.
 - Adjust website so we only sell in the US and in EU
 - Make better image-generator
 - generate alt-text for images of sports
-- Codex in Frontend do not use "explored, read, search" but seem to use commands for it. Ask why. Seems like they should both do the same.
+- use session when I am enriching with goals, prefernces and injuries. So all in one big session.
+- Add sources to all research generation
+
+# Short term plan
+
+Jeg skal have den simpleste løsning op og køre
+Den hvor folk bare indtaster sportsgrene de har dyrket selv
+Der skal lige en eller anden form for hierarki på
+Men det må gå med det.
+
+Så kan alt det andet komme på selv, senere
 
 # Ad Microsoft Playwright MCP later, description below. First needed when we move into design phase
 

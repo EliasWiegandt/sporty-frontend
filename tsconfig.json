@@ -5,7 +5,7 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "jsx": "preserve",
-    "jsxImportSource": "react",
+    "jsxImportSource": "preact",
     "allowJs": true,
     "checkJs": false,
     "types": ["astro/client"],

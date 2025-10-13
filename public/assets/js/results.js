@@ -276,24 +276,70 @@
   function renderMetrics(breakdown) {
     if (!breakdown) return '';
 
-    const rows = Object.entries(breakdown)
-      .sort(([, a], [, b]) => (b || 0) - (a || 0))
+    const metrics = breakdown.metrics && typeof breakdown.metrics === 'object' ? breakdown.metrics : breakdown;
+    const metricEntries = metrics && typeof metrics === 'object' ? Object.entries(metrics) : [];
+
+    const metricRows = metricEntries
+      .sort(([, a], [, b]) => (Number(b) || 0) - (Number(a) || 0))
       .map(([metric, score]) => `
         <tr>
           <th scope="row">${formatMetric(metric)}</th>
-          <td>${score || 0}</td>
+          <td>${formatPercent(score)}</td>
         </tr>
       `)
       .join('');
 
-    return `
-      <section class="result-card__section result-card__section--stretch">
-        <h4>How your measurements matched</h4>
-        <table class="table result-card__table">
-          <tbody>${rows}</tbody>
-        </table>
-      </section>
-    `;
+    const components = breakdown.components && typeof breakdown.components === 'object' ? breakdown.components : null;
+    const componentRows = components
+      ? Object.entries(components)
+          .map(([name, info]) => {
+            const pctScore = info && typeof info.score === 'number' ? formatPercent(info.score * 100) : '—';
+            const pctWeight = info && typeof info.weight === 'number' ? `${Math.round(info.weight * 100)}%` : '—';
+            return `
+              <tr>
+                <th scope="row">${formatComponent(name)}</th>
+                <td>${pctScore}</td>
+                <td>${pctWeight}</td>
+              </tr>
+            `;
+          })
+          .join('')
+      : '';
+
+    const componentsTable = componentRows
+      ? `
+        <section class="result-card__section result-card__section--stretch">
+          <h4>What influenced this match</h4>
+          <table class="table result-card__table">
+            <thead>
+              <tr>
+                <th scope="col">Signal</th>
+                <th scope="col">Score</th>
+                <th scope="col">Weight</th>
+              </tr>
+            </thead>
+            <tbody>${componentRows}</tbody>
+          </table>
+        </section>
+      `
+      : '';
+
+    const metricsTable = metricRows
+      ? `
+        <section class="result-card__section result-card__section--stretch">
+          <h4>How your measurements matched</h4>
+          <table class="table result-card__table">
+            <tbody>${metricRows}</tbody>
+          </table>
+        </section>
+      `
+      : '';
+
+    if (!componentsTable && !metricsTable) {
+      return '';
+    }
+
+    return `${componentsTable}${metricsTable}`;
   }
 
   function resolveStorageBase() {
@@ -348,6 +394,28 @@
       default:
         return metric;
     }
+  }
+
+  function formatComponent(name) {
+    switch (name) {
+      case 'body':
+        return 'Body alignment';
+      case 'preferences':
+        return 'Preferences';
+      case 'goals':
+        return 'Goals';
+      case 'injuries':
+        return 'Injuries';
+      default:
+        return name.charAt(0).toUpperCase() + name.slice(1);
+    }
+  }
+
+  function formatPercent(value) {
+    if (value === null || typeof value === 'undefined') return '—';
+    const num = Number(value);
+    if (Number.isNaN(num)) return '—';
+    return `${Math.round(num)}%`;
   }
 
   function orderHierarchy(hierarchy, sportName) {

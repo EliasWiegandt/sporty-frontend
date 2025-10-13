@@ -382,9 +382,9 @@
       const yearsInput = item.querySelector('[data-field="years_played"]');
       const ageInput = item.querySelector('[data-field="age_started_years"]');
       const intensitySelect = item.querySelector('[data-field="intensity"]');
-      const likedCheckbox = item.querySelector('[data-field="liked"]');
-      const flairCheckbox = item.querySelector('[data-field="had_flair"]');
-      const skillCheckbox = item.querySelector('[data-field="achieved_skill"]');
+      const likedSelect = item.querySelector('[data-field="liked"]');
+      const flairSelect = item.querySelector('[data-field="had_flair"]');
+      const skillSelect = item.querySelector('[data-field="achieved_skill"]');
 
       if (yearsInput && initial && typeof initial.years_played !== 'undefined' && initial.years_played !== null) {
         yearsInput.value = Number(initial.years_played);
@@ -395,14 +395,14 @@
       if (intensitySelect && initial && initial.intensity && INTENSITY_VALUES.includes(initial.intensity)) {
         intensitySelect.value = initial.intensity;
       }
-      if (likedCheckbox && initial && typeof initial.liked === 'boolean') {
-        likedCheckbox.checked = initial.liked;
+      if (likedSelect && initial && typeof initial.liked === 'boolean') {
+        likedSelect.value = initial.liked ? 'yes' : 'no';
       }
-      if (flairCheckbox && initial && typeof initial.had_flair === 'boolean') {
-        flairCheckbox.checked = initial.had_flair;
+      if (flairSelect && initial && typeof initial.had_flair === 'boolean') {
+        flairSelect.value = initial.had_flair ? 'yes' : 'no';
       }
-      if (skillCheckbox && initial && typeof initial.achieved_skill === 'boolean') {
-        skillCheckbox.checked = initial.achieved_skill;
+      if (skillSelect && initial && typeof initial.achieved_skill === 'boolean') {
+        skillSelect.value = initial.achieved_skill ? 'yes' : 'no';
       }
 
       const removeBtn = item.querySelector('[data-remove]');
@@ -504,9 +504,9 @@
         const yearsInput = item.querySelector('[data-field="years_played"]');
         const ageInput = item.querySelector('[data-field="age_started_years"]');
         const intensitySelect = item.querySelector('[data-field="intensity"]');
-        const likedCheckbox = item.querySelector('[data-field="liked"]');
-        const flairCheckbox = item.querySelector('[data-field="had_flair"]');
-        const skillCheckbox = item.querySelector('[data-field="achieved_skill"]');
+        const likedSelect = item.querySelector('[data-field="liked"]');
+        const flairSelect = item.querySelector('[data-field="had_flair"]');
+        const skillSelect = item.querySelector('[data-field="achieved_skill"]');
 
         const sportId = hiddenInput && hiddenInput.value ? hiddenInput.value.trim() : '';
         const sportLabel = labelInput && labelInput.value ? labelInput.value.trim() : '';
@@ -526,9 +526,6 @@
 
         const entry = {
           sport_subcategory_id: sportId,
-          liked: likedCheckbox ? Boolean(likedCheckbox.checked) : false,
-          had_flair: flairCheckbox ? Boolean(flairCheckbox.checked) : false,
-          achieved_skill: skillCheckbox ? Boolean(skillCheckbox.checked) : false,
         };
 
         if (yearsInput && yearsInput.value) {
@@ -557,6 +554,18 @@
             errors.push(`Past sport ${index + 1}: select a valid intensity.`);
           }
         }
+
+        const likedValue = likedSelect ? likedSelect.value : '';
+        const flairValue = flairSelect ? flairSelect.value : '';
+        const skillValue = skillSelect ? skillSelect.value : '';
+
+        const likedBool = mapSelectToBool(likedValue);
+        const flairBool = mapSelectToBool(flairValue);
+        const skillBool = mapSelectToBool(skillValue);
+
+        if (likedBool !== null) entry.liked = likedBool;
+        if (flairBool !== null) entry.had_flair = flairBool;
+        if (skillBool !== null) entry.achieved_skill = skillBool;
 
         payload.push(entry);
       });
@@ -637,6 +646,13 @@
       collect,
       prefillForTest,
     };
+  }
+
+  function mapSelectToBool(value) {
+    if (!value) return null;
+    if (value === 'yes') return true;
+    if (value === 'no') return false;
+    return null;
   }
 
   function createPremiumController(config) {

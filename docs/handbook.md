@@ -16,6 +16,8 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 - Child forecast intake pulls in the deterministic test family (prefilled on preview branches) and posts to `/api/forecast-child`, then `/child-results` renders per-source contributions from the stored session payload.
 - Logged-in intakes also capture past sports (searchable `sports_subcategories`, intensity, enjoyment/flair/skill flags) and sync them to Supabase before saving recommendations.
 - Surface Supabase-powered auth/consent flows without persisting any sensitive keys client-side.
+- Honour explicit consent before storing measurements, preferences/goals, injuries, or child data; provide preview mode if consent is declined.
+- _Current UX scope: design the MVP as a desktop web-first experience; responsive/mobile treatments will follow in subsequent iterations._
 
 ---
 
@@ -40,9 +42,32 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 - For page-specific tweaks, scope styles via inline `<style>` blocks in the `.astro` file so global CSS stays lean.
 - Reuse utility classes (`.section`, `.grid-cards`, `.card`, `.button`) whenever possible to avoid divergence.
 
+### Visual Asset Policy
+- **Illustrations (generative)**: Use the Sporty illustration pipeline for all human/sport scenes (landing hero, measurement helpers, sport spotlight art, guardian imagery). Maintain a shared backlog derived from `docs/JOURNEYS.md` and store assets in Supabase Storage with descriptive alt text.
+- **Data visualizations (engineered)**: Implement charts/tables with code so they stay dynamic, accessible, and themable (component impact bars, radar charts, growth curves, etc.). Provide textual summaries or data tables alongside each visualization.
+- **Separation**: never embed analytic data in static images; reserve illustrations for brand storytelling and instructional content.
+
+### Consent UX Policy
+- Every intake page must state whether data will be stored; anonymous runs default to “preview only”.
+- When a user attempts to save data without existing consent, trigger a modal listing each data class (measurements, preferences/goals, injuries, child data) with purpose explanations and opt-in toggles.
+- Provide a “Preview without saving” option so users can decline while still seeing results.
+- Surface a persistent consent status indicator (e.g., banner or profile badge) linking to the consent management view where users can revoke or amend choices.
+- Log consent actions via the Supabase backend; frontend should include policy version in payloads to support GDPR/CCPA compliance.
+
 ---
 
-## 4. Local Development Workflow
+## 4. Data Visualization & Islands
+
+- Use two libraries for charts:
+  - **Observable Plot** (ESM) for comparative SVG visuals (stacked/impact bars, radar charts, contribution matrices, growth curves). Pair each chart with a `<table>` fallback for accessibility.
+  - **Chart.js** for gauges, donuts, and other canvas-based widgets that benefit from gradients or animation-ready defaults.
+- Mount chart components with Astro’s `client:only` hydration. Reach for the `@astrojs/preact` adapter when stateful interactivity is required; otherwise keep islands vanilla.
+- Keep chart utilities under `src/components/charts/` for reuse across adult and child journeys.
+- Default to existing CSS transitions; defer dedicated animation libraries until post-MVP.
+
+---
+
+## 5. Local Development Workflow
 
 1. `npm install`
 2. `npm run dev` to work in Astro’s dev server (`http://localhost:4321`). Fastest loop for layout/content.
@@ -57,7 +82,7 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 
 ---
 
-## 5. Environment & Secrets
+## 6. Environment & Secrets
 
 - Worker vars injected by GitHub Actions: `RENDER_URL`, `SUPABASE_URL`, `SUPABASE_STORAGE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `STRIPE_PUBLIC_KEY`.
 - Secret deployed via `wrangler-action`: `RENDER_API_KEY` (also surfaced locally as `RENDER_API_KEY` when needed).
@@ -67,7 +92,7 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 
 ---
 
-## 6. Deployment & Operations
+## 7. Deployment & Operations
 
 - Workflow: `.github/workflows/deploy.yml` runs `npm ci` → `npm run build` → `wrangler deploy` for `test` and `main` branches.
 - `wrangler.toml` points `main` to `dist/_worker.js/index.js` and serves static assets from `dist/` via the `ASSETS` binding.
@@ -76,7 +101,7 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 
 ---
 
-## 7. Backlog (Frontend Focus)
+## 8. Backlog (Frontend Focus)
 
 1. Add automated visual regression checks to catch layout drift when design tokens change.
 2. Split Supabase auth/UI helpers into ES modules for easier test coverage.
@@ -87,7 +112,7 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 
 ---
 
-## 8. References
+## 9. References
 
 - Backend repo: `../sporty-backend`
 - Worker deploy workflow: `.github/workflows/deploy.yml`
