@@ -1,5 +1,14 @@
 (function () {
-  const container = document.querySelector('[data-results]');
+  const impactSection = document.querySelector('[data-impact-summary]');
+  const impactBar = document.querySelector('[data-impact-bar]');
+  const impactLegend = document.querySelector('[data-impact-legend]');
+  const matchesSection = document.querySelector('[data-results-matches]');
+  const matchGrid = document.querySelector('[data-match-grid]');
+  const highlightsSection = document.querySelector('[data-results-highlights]');
+  const highlightsList = document.querySelector('[data-highlights-list]');
+  const metricsSection = document.querySelector('[data-results-metrics]');
+  const componentsTableEl = document.querySelector('[data-components-table]');
+  const measurementsTableEl = document.querySelector('[data-measurements-table]');
   const fallback = document.querySelector('[data-empty-state]');
   const messageEl = document.querySelector('[data-results-message]');
   const historySection = document.querySelector('[data-history-picker]');
@@ -8,7 +17,9 @@
   const storageBase = resolveStorageBase();
   const sportyApp = window.SportyApp;
 
-  if (!container) return;
+  if (!matchesSection && !impactSection && !metricsSection && !fallback) {
+    return;
+  }
 
   let sportySnapshot = { user: null, hasConsent: false };
   let historyEntries = [];
@@ -162,184 +173,320 @@
     }
 
     hideFallback();
-    const fragment = document.createDocumentFragment();
 
-    data.matches.forEach((match, index) => {
-      const rank = index + 1;
-      const body = match.optimal_body || {};
-      const spec = body.spec || {};
-      const sport = body.sport || {};
-      const hierarchy = Array.isArray(body.category_hierarchy) ? body.category_hierarchy : [];
-      const cardMedia = match.media && match.media.card ? match.media.card : spec.media && spec.media.card ? spec.media.card : null;
-      const imageUrl = resolveMediaUrl(cardMedia, storageBase);
-      const imageAlt = cardMedia && cardMedia.alt ? cardMedia.alt : 'Sports image';
+    const matches = data.matches.slice(0, 3);
+    const topMatch = matches[0];
+    const metricsData = extractMetrics(topMatch ? topMatch.score_breakdown : null);
 
-      const roleNames = hierarchy
-        .filter((level) => level.key !== 'sport' && level.name)
-        .map((level) => level.name);
-      const subtitle = roleNames.length ? roleNames.join(' · ') : '';
+    renderImpact(metricsData.componentsData);
+    renderMatches(matches);
+    renderHighlights(topMatch, metricsData);
+    renderTables(metricsData);
+  }
 
-      const article = document.createElement('article');
-      article.className = 'card result-card';
-      const mediaMarkup = imageUrl
-        ? `<img class="result-card__image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" loading="lazy" />`
-        : placeholderFigure(sport.name || body.sport_slug || 'sport');
+  function renderImpact(components) {
+    if (!impactSection || !impactBar || !impactLegend) return;
+    if (!components || !components.length) {
+      impactSection.hidden = true;
+      impactBar.innerHTML = '';
+      impactLegend.innerHTML = '';
+      return;
+    }
 
-      article.innerHTML = `
-        <header class="result-card__header">
-          <span class="result-card__rank">#${rank}</span>
+    const totalWeight = components.reduce((sum, entry) => {
+      const weight = typeof entry.weight === 'number' ? entry.weight : null;
+      if (weight !== null && !Number.isNaN(weight)) return sum + Math.max(weight, 0);
+      if (typeof entry.scoreNormalized === 'number') return sum + Math.max(entry.scoreNormalized, 0);
+      return sum + 1;
+    }, 0) || components.length;
+
+    impactBar.innerHTML = components
+      .map((entry, index) => {
+        const weightValue = typeof entry.weight === 'number' ? Math.max(entry.weight, 0) : null;
+        const base = weightValue !== null && !Number.isNaN(weightValue) ? weightValue : (entry.scoreNormalized || 1);
+        const ratio = base / totalWeight;
+        const flexValue = Math.max(ratio, 0.08);
+        const color = pickComponentColor(entry.key, index);
+        return `<div class="impact-bar__segment" style="flex:${flexValue}; background:${color};" aria-label="${escapeHtml(entry.label)}" data-label="${escapeHtml(entry.label.slice(0, 8))}"></div>`;
+      })
+      .join('');
+
+    impactLegend.innerHTML = components
+      .map((entry, index) => {
+        const color = pickComponentColor(entry.key, index);
+        const display = entry.displayWeight || entry.displayScore || '—';
+        return `<li><span style="background:${color};"></span>${escapeHtml(entry.label)} · ${escapeHtml(display)}</li>`;
+      })
+      .join('');
+
+    impactSection.hidden = false;
+  }
+
+  function renderMatches(matches) {
+    if (!matchesSection || !matchGrid) return;
+    if (!matches || !matches.length) {
+      matchesSection.hidden = true;
+      matchGrid.innerHTML = '';
+      return;
+    }
+
+    const cards = matches.map((match, index) => buildMatchCard(match, index + 1)).join('');
+    matchGrid.innerHTML = cards;
+    matchesSection.hidden = false;
+  }
+
+  function buildMatchCard(match, rank) {
+    const body = match.optimal_body || {};
+    const spec = body.spec || {};
+    const sport = body.sport || {};
+    const hierarchy = Array.isArray(body.category_hierarchy) ? body.category_hierarchy : [];
+    const cardMedia = match.media && match.media.card ? match.media.card : spec.media && spec.media.card ? spec.media.card : null;
+    const imageUrl = resolveMediaUrl(cardMedia, storageBase);
+    const imageAlt = cardMedia && cardMedia.alt ? cardMedia.alt : 'Sport illustration';
+    const subtitle = formatHierarchySubtitle(hierarchy, sport.name || body.sport_slug);
+    const metricsData = extractMetrics(match.score_breakdown || {});
+    const topMeasurements = (metricsData.measurements || []).slice(0, 3);
+    const summary = spec.rationale || spec.description || match.summary || 'Body alignment and biomechanics support this sport.';
+    const score = formatScore(match);
+    const mediaMarkup = imageUrl
+      ? `<div class="match-card__media"><img class="match-card__image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" loading="lazy" /></div>`
+      : `<div class="match-card__media match-card__media--empty"><span class="match-card__placeholder">Image coming soon · ${escapeHtml(sport.name || 'Sport')}</span></div>`;
+
+    return `
+      <article class="match-card">
+        <header class="match-card__header">
+          <span class="match-card__rank">#${rank}</span>
           <div>
             <h3>${escapeHtml(sport.name || body.sport_slug || 'Sport match')}</h3>
-            ${subtitle ? `<p class="result-card__subcategories">${escapeHtml(subtitle)}</p>` : ''}
+            ${subtitle ? `<p class="match-card__subtitle">${escapeHtml(subtitle)}</p>` : ''}
           </div>
+          <span class="match-card__score">${score !== null ? escapeHtml(String(score)) : '—'}</span>
         </header>
         ${mediaMarkup}
-        ${renderHierarchyDetails(hierarchy, sport.name || body.sport_slug)}
-        ${renderRationale(spec)}
-        ${renderAthletes(spec.example_athletes)}
-        ${renderMetrics(match.score_breakdown)}
-      `;
+        <p class="match-card__summary">${escapeHtml(truncateText(summary, 160))}</p>
+        <ul class="match-card__list">
+          ${topMeasurements.length
+            ? topMeasurements.map((entry) => `<li>${escapeHtml(entry.label)} · ${escapeHtml(entry.displayScore)}</li>`).join('')
+            : '<li>Weighing body metrics only for now. Premium inputs add more nuance.</li>'}
+        </ul>
+      </article>
+    `;
+  }
 
-      fragment.appendChild(article);
+  function renderHighlights(match, metricsData) {
+    if (!highlightsSection || !highlightsList) return;
+    const highlights = gatherHighlights(match, metricsData);
+    if (!highlights.length) {
+      highlightsSection.hidden = true;
+      highlightsList.innerHTML = '';
+      return;
+    }
+
+    highlightsList.innerHTML = highlights
+      .slice(0, 3)
+      .map((text, index) => `<li class="results-highlights__item"><span>${index + 1}.</span><span>${escapeHtml(text)}</span></li>`)
+      .join('');
+    highlightsSection.hidden = false;
+  }
+
+  function gatherHighlights(match, metricsData) {
+    const result = [];
+    if (!match) return result;
+    const spec = match.optimal_body && match.optimal_body.spec ? match.optimal_body.spec : {};
+
+    if (Array.isArray(match.highlights)) {
+      result.push(...match.highlights);
+    }
+    if (Array.isArray(spec.highlights)) {
+      result.push(...spec.highlights);
+    }
+    if (spec.tagline) {
+      result.push(spec.tagline);
+    }
+
+    const measurementEntries = (metricsData && metricsData.measurements) || [];
+    measurementEntries.slice(0, 3).forEach((entry) => {
+      if (entry.displayScore) {
+        result.push(`${entry.label} aligned at ${entry.displayScore}`);
+      }
     });
 
-    container.innerHTML = '';
-    container.appendChild(fragment);
+    const filtered = Array.from(new Set(result.map((item) => (item || '').trim()))).filter(Boolean);
+    if (!filtered.length) {
+      filtered.push('Strong overall body alignment drove this recommendation.');
+      filtered.push('Update measurements after a training block to see how your matches evolve.');
+    }
+    return filtered;
+  }
+
+  function renderTables(metricsData) {
+    if (!metricsSection) return;
+    const hasComponents = Boolean(metricsData.componentsTable);
+    const hasMeasurements = Boolean(metricsData.measurementsTable);
+
+    if (componentsTableEl) {
+      componentsTableEl.hidden = !hasComponents;
+      componentsTableEl.innerHTML = metricsData.componentsTable || '';
+    }
+    if (measurementsTableEl) {
+      measurementsTableEl.hidden = !hasMeasurements;
+      measurementsTableEl.innerHTML = metricsData.measurementsTable || '';
+    }
+
+    metricsSection.hidden = !(hasComponents || hasMeasurements);
   }
 
   function showFallback() {
     if (fallback) fallback.hidden = false;
-    container.innerHTML = '';
+    [matchesSection, impactSection, highlightsSection, metricsSection].forEach((section) => {
+      if (section) section.hidden = true;
+    });
+    if (matchGrid) matchGrid.innerHTML = '';
+    if (componentsTableEl) componentsTableEl.innerHTML = '';
+    if (measurementsTableEl) measurementsTableEl.innerHTML = '';
+    if (impactBar) impactBar.innerHTML = '';
+    if (impactLegend) impactLegend.innerHTML = '';
+    if (highlightsList) highlightsList.innerHTML = '';
   }
 
   function hideFallback() {
     if (fallback) fallback.hidden = true;
   }
 
-  function renderHierarchyDetails(hierarchy, sportName) {
-    if (!Array.isArray(hierarchy) || !hierarchy.length) {
-      return '';
+  function extractMetrics(breakdown) {
+    const componentsData = [];
+    const measurements = [];
+
+    if (breakdown && typeof breakdown === 'object') {
+      const components = breakdown.components && typeof breakdown.components === 'object' ? breakdown.components : null;
+      if (components) {
+        Object.entries(components).forEach(([key, info]) => {
+          const scoreNormalized = normalizePercentValue(info && info.score);
+          const weightNormalized = normalizePercentValue(info && info.weight);
+          componentsData.push({
+            key,
+            label: formatComponent(key),
+            scoreNormalized: scoreNormalized !== null ? scoreNormalized / 100 : null,
+            displayScore: scoreNormalized !== null ? `${scoreNormalized}%` : null,
+            weight: typeof info?.weight === 'number' ? info.weight : null,
+            displayWeight: weightNormalized !== null ? `${weightNormalized}%` : null,
+          });
+        });
+      }
+
+      const metricsSource = breakdown.metrics && typeof breakdown.metrics === 'object' ? breakdown.metrics : null;
+      const sourceEntries = metricsSource ? Object.entries(metricsSource) : [];
+      sourceEntries.forEach(([key, value]) => {
+        const normalized = normalizePercentValue(value);
+        if (normalized !== null) {
+          measurements.push({
+            key,
+            label: formatMetric(key),
+            score: normalized,
+            displayScore: `${normalized}%`,
+          });
+        }
+      });
     }
 
-    const ordered = orderHierarchy(hierarchy, sportName);
+    measurements.sort((a, b) => (b.score || 0) - (a.score || 0));
 
-    const items = ordered
-      .filter((item) => item && (item.name || item.description))
-      .map((item) => {
-        const name = escapeHtml(item.name || '') || item.key;
-        const description = escapeHtml(item.description || '');
-        return `
-          <div class="result-card__details-item">
-            <strong>${name}</strong>
-            ${description ? `<p>${description}</p>` : ''}
-          </div>
-        `;
-      })
-      .join('');
+    const componentsTable = componentsData.length
+      ? buildComponentsTable(componentsData)
+      : '';
+    const measurementsTable = measurements.length
+      ? buildMeasurementsTable(measurements)
+      : '';
 
-    return items ? `<section class="result-card__section result-card__details">${items}</section>` : '';
+    return { componentsData, measurements, componentsTable, measurementsTable };
   }
 
-  function renderRationale(spec) {
-    const text = escapeHtml(spec.rationale || spec.description || 'Description coming soon.');
-    return `
-      <section class="result-card__section result-card__rationale">
-        <h4>Physical characteristics</h4>
-        <p>${text}</p>
-      </section>
-    `;
-  }
-
-  function placeholderFigure(label) {
-    const safeLabel = escapeHtml(label || 'sport');
-    return `
-      <figure class="image-placeholder result-card__image" aria-label="Placeholder image for ${safeLabel}">
-        <span>Image placeholder — ${safeLabel} in action.</span>
-      </figure>
-    `;
-  }
-
-  function renderAthletes(athletes) {
-    if (!Array.isArray(athletes) || !athletes.length) {
-      return '';
-    }
-
-    const list = athletes.map((name) => `<li>${escapeHtml(name)}</li>`).join('');
-    return `
-      <section class="result-card__section">
-        <h4>Example athletes</h4>
-        <ul class="result-card__athletes">${list}</ul>
-      </section>
-    `;
-  }
-
-  function renderMetrics(breakdown) {
-    if (!breakdown) return '';
-
-    const metrics = breakdown.metrics && typeof breakdown.metrics === 'object' ? breakdown.metrics : breakdown;
-    const metricEntries = metrics && typeof metrics === 'object' ? Object.entries(metrics) : [];
-
-    const metricRows = metricEntries
-      .sort(([, a], [, b]) => (Number(b) || 0) - (Number(a) || 0))
-      .map(([metric, score]) => `
+  function buildComponentsTable(components) {
+    const rows = components
+      .map((entry) => `
         <tr>
-          <th scope="row">${formatMetric(metric)}</th>
-          <td>${formatPercent(score)}</td>
+          <th scope="row">${escapeHtml(entry.label)}</th>
+          <td>${escapeHtml(entry.displayScore || '—')}</td>
+          <td>${escapeHtml(entry.displayWeight || '—')}</td>
         </tr>
       `)
       .join('');
+    return `
+      <table>
+        <caption>Signal contributions</caption>
+        <thead>
+          <tr>
+            <th scope="col">Signal</th>
+            <th scope="col">Score</th>
+            <th scope="col">Weight</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
 
-    const components = breakdown.components && typeof breakdown.components === 'object' ? breakdown.components : null;
-    const componentRows = components
-      ? Object.entries(components)
-          .map(([name, info]) => {
-            const pctScore = info && typeof info.score === 'number' ? formatPercent(info.score * 100) : '—';
-            const pctWeight = info && typeof info.weight === 'number' ? `${Math.round(info.weight * 100)}%` : '—';
-            return `
-              <tr>
-                <th scope="row">${formatComponent(name)}</th>
-                <td>${pctScore}</td>
-                <td>${pctWeight}</td>
-              </tr>
-            `;
-          })
-          .join('')
-      : '';
+  function buildMeasurementsTable(entries) {
+    const rows = entries
+      .map((entry) => `
+        <tr>
+          <th scope="row">${escapeHtml(entry.label)}</th>
+          <td>${escapeHtml(entry.displayScore)}</td>
+        </tr>
+      `)
+      .join('');
+    return `
+      <table>
+        <caption>Measurement alignment</caption>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
 
-    const componentsTable = componentRows
-      ? `
-        <section class="result-card__section result-card__section--stretch">
-          <h4>What influenced this match</h4>
-          <table class="table result-card__table">
-            <thead>
-              <tr>
-                <th scope="col">Signal</th>
-                <th scope="col">Score</th>
-                <th scope="col">Weight</th>
-              </tr>
-            </thead>
-            <tbody>${componentRows}</tbody>
-          </table>
-        </section>
-      `
-      : '';
+  function formatScore(match) {
+    if (!match) return null;
+    const raw = match.score ?? match.fit_score ?? match.total_score ?? (match.score_breakdown && match.score_breakdown.total);
+    const normalized = normalizePercentValue(raw);
+    return normalized !== null ? `${normalized}%` : null;
+  }
 
-    const metricsTable = metricRows
-      ? `
-        <section class="result-card__section result-card__section--stretch">
-          <h4>How your measurements matched</h4>
-          <table class="table result-card__table">
-            <tbody>${metricRows}</tbody>
-          </table>
-        </section>
-      `
-      : '';
-
-    if (!componentsTable && !metricsTable) {
-      return '';
+  function normalizePercentValue(value) {
+    if (value === null || typeof value === 'undefined') return null;
+    const num = Number(value);
+    if (Number.isNaN(num)) return null;
+    if (!Number.isFinite(num)) return null;
+    if (Math.abs(num) <= 1) {
+      return Math.round(num * 100);
     }
+    return Math.round(num);
+  }
 
-    return `${componentsTable}${metricsTable}`;
+  function formatHierarchySubtitle(hierarchy, fallbackName) {
+    if (!Array.isArray(hierarchy) || !hierarchy.length) return fallbackName || '';
+    const names = hierarchy
+      .filter((item) => item && item.key !== 'sport' && item.name)
+      .map((item) => item.name);
+    return names.join(' · ');
+  }
+
+  function pickComponentColor(key, index) {
+    const palette = {
+      body: '#0f766e',
+      preferences: '#f97316',
+      goals: '#6366f1',
+      injuries: '#ef4444',
+      past_sports: '#14b8a6',
+      default: ['#0f766e', '#2563eb', '#f97316', '#14b8a6', '#9333ea'],
+    };
+    if (key && palette[key]) return palette[key];
+    return palette.default[index % palette.default.length];
+  }
+
+  function truncateText(text, maxLength) {
+    if (!text) return '';
+    const normalized = String(text).trim();
+    if (normalized.length <= maxLength) return normalized;
+    return `${normalized.slice(0, maxLength - 1).trim()}…`;
   }
 
   function resolveStorageBase() {
@@ -356,8 +503,7 @@
     if (!card) return null;
     if (card.url) return card.url;
     if (!card.path) return null;
-
-    const cleanedPath = card.path.replace(/^\/+/, '');
+    const cleanedPath = card.path.replace(/^\/+/g, '');
     if (base) return `${base}/${cleanedPath}`;
     if (/^https?:/i.test(card.path)) return card.path;
     return null;
@@ -406,28 +552,11 @@
         return 'Goals';
       case 'injuries':
         return 'Injuries';
+      case 'past_sports':
+        return 'Past sports';
       default:
         return name.charAt(0).toUpperCase() + name.slice(1);
     }
-  }
-
-  function formatPercent(value) {
-    if (value === null || typeof value === 'undefined') return '—';
-    const num = Number(value);
-    if (Number.isNaN(num)) return '—';
-    return `${Math.round(num)}%`;
-  }
-
-  function orderHierarchy(hierarchy, sportName) {
-    const sport = hierarchy.find((item) => item.key === 'sport');
-    const rest = hierarchy.filter((item) => item.key !== 'sport');
-    const ordered = [];
-    if (sport) ordered.push(sport);
-    ordered.push(...rest);
-    if (!ordered.length && sportName) {
-      ordered.push({ key: 'sport', name: sportName });
-    }
-    return ordered;
   }
 
   function normalizeSummary(summary) {

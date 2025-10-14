@@ -8,6 +8,8 @@ Read this guide plus `docs/handbook.md` before contributing.
 - Ensure the Cloudflare adapter Worker continues to serve `/config.js`, proxy `/api/recommend-adult-free`, and now `/api/forecast-child` with `X-API-Key` auth.
 - Capture and sync logged-in users’ past sports (searchable dropdown, intensity & flair flags) so the backend can incorporate prior experience.
 - Prototype and validate the child forecast QA flow (`/child-intake` → `/child-results`) so backend forecasting can ship confidently.
+- Respect the one-stored-analysis-per-day cap for free accounts while still collecting anonymous past-sport inputs (without identity) to grow the data moat.
+- Build out premium intake/results UI for performance factors and derived indexes (Monkey Index, discipline ratios) as soon as backend contracts land.
 - Coordinate any API or schema expectations with the backend team before shipping changes.
 
 ## Quick Facts

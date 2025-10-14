@@ -12,9 +12,12 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 - Prototype the child forecast QA flow so backend forecasting can be exercised end-to-end.
 - Keep navigation, typography, and layout consistent across all pages.
 - Proxy `/api/recommend-adult-free` and `/api/forecast-child` through the Cloudflare runtime so browsers never see backend secrets.
-- Free adult match collects only birthdate, sex, height, weight and body measurements (arm span, leg inseam, etc.); when an adult analysis credit is available the intake page unlocks sections for up to 20 preferences, goals, and injuries that sync directly to Supabase.
+- Free adult match now requires the full measurement set (birthday, sex, height, weight, arm span, leg inseam, shoulder width, hip width, hand length, foot length) and renders slider + number pairs for each. Premium-only inputs (preferences, goals, injuries) remain locked behind credits until a paid analysis is available.
+- The free results page now mirrors the journey vision with a component impact bar, three-up match grid, and highlight strip; interactive adjustment controls are deferred until preview endpoints exist.
 - Child forecast intake pulls in the deterministic test family (prefilled on preview branches) and posts to `/api/forecast-child`, then `/child-results` renders per-source contributions from the stored session payload.
 - Logged-in intakes also capture past sports (searchable `sports_subcategories`, intensity, enjoyment/flair/skill flags) and sync them to Supabase before saving recommendations.
+- Logged-in free users can view history but are limited to one new stored analysis per day; anonymous runs still capture past-sport signals anonymously to fuel the data moat.
+- Premium flows will add performance factor inputs (muscle gain ease, endurance bias, recovery speed) and surface derived indexes (Monkey Index, discipline ratios) in the results dashboard.
 - Surface Supabase-powered auth/consent flows without persisting any sensitive keys client-side.
 - Honour explicit consent before storing measurements, preferences/goals, injuries, or child data; provide preview mode if consent is declined.
 - _Current UX scope: design the MVP as a desktop web-first experience; responsive/mobile treatments will follow in subsequent iterations._
@@ -41,6 +44,7 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 - `BaseLayout` ensures shared fonts, nav layout, and auth controls render identically on every page. Only pass page-specific variations (e.g., nav links, primary CTA) via props.
 - For page-specific tweaks, scope styles via inline `<style>` blocks in the `.astro` file so global CSS stays lean.
 - Reuse utility classes (`.section`, `.grid-cards`, `.card`, `.button`) whenever possible to avoid divergence.
+- Global CSS sets all `<img>` elements to span the full width of their container. When you need tighter art (e.g., match-card thumbnails), override width/height with explicit values and `!important` or inline styles; otherwise the default rule will stretch the asset.
 
 ### Visual Asset Policy
 - **Illustrations (generative)**: Use the Sporty illustration pipeline for all human/sport scenes (landing hero, measurement helpers, sport spotlight art, guardian imagery). Maintain a shared backlog derived from `docs/JOURNEYS.md` and store assets in Supabase Storage with descriptive alt text.

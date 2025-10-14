@@ -1,6 +1,64 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 
+const valuePillars = [
+  {
+    title: 'Biomechanics-driven',
+    copy:
+      'Our optimal body profiles blend reference cohorts with coach insights so every match starts with anatomy, not vibes.',
+    icon: '🧠',
+  },
+  {
+    title: 'Coach-approved',
+    copy:
+      'We validate every recommendation with specialists who train athletes across court, field, water, and endurance sports.',
+    icon: '🏅',
+  },
+  {
+    title: 'Privacy-first',
+    copy:
+      'Measurements stay transient until you opt in. Consent controls and data deletion live front-and-center in our flows.',
+    icon: '🔒',
+  },
+];
+
+const howSteps = [
+  {
+    id: 'measure',
+    label: 'Measure',
+    summary: 'Enter a few measurements with guided tips.',
+    detail:
+      'Start with age, height, and weight. Optional arm span, leg inseam, shoulder, hip, hand, and foot length sharpen your match. Tooltips and visual helpers keep the process quick.',
+  },
+  {
+    id: 'match',
+    label: 'Match',
+    summary: 'We crunch cohorts and expert heuristics.',
+    detail:
+      'Sporty maps your inputs against curated optimal body specs for dozens of sports, factoring in proportional ranges and standard deviations to score alignment.',
+  },
+  {
+    id: 'explore',
+    label: 'Explore',
+    summary: 'Review personalized highlights and next steps.',
+    detail:
+      'See why each sport fits, where to focus training, and which pros share your build. Premium tiers unlock goals, injuries, and past sport overlays.',
+  },
+];
+
+const testimonials = [
+  {
+    quote:
+      '“The free match nailed my top three sports—and the rationale made it easy to pick what to try first.”',
+    name: 'Avery, 31 · Returning athlete',
+  },
+  {
+    quote:
+      '“I finally know how my build stacks up. Sporty shows the why, not just a score.”',
+    name: 'Jordan, 27 · Weekend competitor',
+  },
+];
+
 ---
 <BaseLayout
   title="Sporty — Discover sports that fit your body"
@@ -8,43 +66,91 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 >
   <main>
     <section class="section hero" id="hero">
-      <div>
-        <span class="hero__badge">New · Free body-fit matches</span>
-        <h1 class="hero__headline">Find the sport that fits your body today—no login required.</h1>
-        <p class="hero__copy">Sporty compares your measurements against pro-informed body profiles to surface sports where you’re naturally set up to thrive. Get instant, free matches for adults, and unlock deeper guidance plus child forecasts with our paid tier.</p>
-        <div class="button-row" role="group" aria-label="Primary calls to action">
-          <div class="button-row" style="gap:0.75rem; flex-wrap:wrap;">
-            <a class="button" href="/intake">Start the free match</a>
-            <a class="button--ghost" href="/child-intake">Forecast a child</a>
-          </div>
-          <a class="button--ghost" href="#tiers">Explore paid options</a>
+      <div class="hero__content">
+        <span class="hero__badge">Biomechanics-backed matches in under 60 seconds</span>
+        <h1 class="hero__headline">Find the sport your body is wired for.</h1>
+        <p class="hero__copy">Share a handful of measurements, then see free, science-backed sport matches tuned to your build. Upgrade later for saved histories, premium adult inputs, and child forecasts.</p>
+        <div class="hero__cta" role="group" aria-label="Primary calls to action">
+          <a class="button" href="/intake">See my match</a>
+          <a class="button--ghost" href="#how-it-works">How it works</a>
+          <a class="button--ghost" href="/child-intake">Forecast a child</a>
         </div>
       </div>
-      <div class="hero__visual" aria-label="Square illustration of an adult swimmer stretching with a towel and goggles beside an indoor pool.">
+      <div class="hero__visual hero__mosaic" aria-label="Three-tile illustration mosaic showing basketball, swimming, and running athletes.">
         <figure class="image-tile">
+          <img data-image-key="landing.hero.tile_a" alt="Square illustration of an adult basketball player warming up with a ball in hand inside a bright gym." loading="lazy" />
+        </figure>
+        <figure class="image-tile hero__mosaic--center">
           <img data-image-key="landing.hero.tile_b" alt="Square illustration of an adult swimmer stretching with a towel and goggles beside an indoor pool." loading="lazy" />
         </figure>
+        <figure class="image-tile">
+          <img data-image-key="landing.hero.tile_c" alt="Square illustration of an adult runner tying their shoes beside starting blocks on an indoor track." loading="lazy" />
+        </figure>
+      </div>
+    </section>
+
+    <section class="section section--accent" id="pillars" aria-labelledby="pillars-heading">
+      <h2 class="section__title" id="pillars-heading">Why Sporty hits different</h2>
+      <div class="pillars">
+        {valuePillars.map((pillar) => (
+          <article class="pillar-card">
+            <span class="pillar-card__icon" aria-hidden="true">{pillar.icon}</span>
+            <h3>{pillar.title}</h3>
+            <p>{pillar.copy}</p>
+          </article>
+        ))}
       </div>
     </section>
 
     <section class="section" id="how-it-works">
       <h2 class="section__title">How Sporty works</h2>
-      <div class="grid-cards grid-cards--balanced">
-        <article class="card">
-          <div class="step-number">1</div>
-          <h3>Measure</h3>
-          <p>Enter height, weight, and optional limb measurements. Adults only for the free flow.</p>
-        </article>
-        <article class="card">
-          <div class="step-number">2</div>
-          <h3>Match</h3>
-          <p>We compare you against optimal body profiles across dozens of sports—built with expert input and synthetic testing.</p>
-        </article>
-        <article class="card">
-          <div class="step-number">3</div>
-          <h3>Explore</h3>
-          <p>Review your top three fits with rationale, famous athletes with similar builds, and guidance on next steps.</p>
-        </article>
+      <div class="how-carousel" data-how-carousel>
+        <div class="how-carousel__tabs" role="tablist" aria-label="How Sporty works steps">
+          {howSteps.map((step, index) => (
+            <button
+              class={`how-carousel__tab ${index === 0 ? 'is-active' : ''}`}
+              role="tab"
+              type="button"
+              data-step={step.id}
+              id={`step-tab-${step.id}`}
+              aria-controls={`step-panel-${step.id}`}
+              aria-selected={index === 0}
+              tabindex={index === 0 ? 0 : -1}
+            >
+              <span class="how-carousel__tab-index">{index + 1}</span>
+              <div>
+                <span class="how-carousel__tab-label">{step.label}</span>
+                <span class="how-carousel__tab-summary">{step.summary}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+        <div class="how-carousel__panels">
+          {howSteps.map((step, index) => (
+            <article
+              id={`step-panel-${step.id}`}
+              class={`how-carousel__panel ${index === 0 ? 'is-active' : ''}`}
+              data-step-panel={step.id}
+              role="tabpanel"
+              aria-labelledby={`step-tab-${step.id}`}
+            >
+              <h3>{step.label}</h3>
+              <p>{step.detail}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="section testimonial-strip" aria-labelledby="testimonial-heading">
+      <h2 class="section__title" id="testimonial-heading">People are already feeling the fit</h2>
+      <div class="testimonial-strip__inner">
+        {testimonials.map((item) => (
+          <figure class="testimonial-card">
+            <blockquote>{item.quote}</blockquote>
+            <figcaption>{item.name}</figcaption>
+          </figure>
+        ))}
       </div>
     </section>
 
@@ -135,6 +241,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </div>
     </section>
   </main>
+
+  <div class="sticky-cta" data-sticky-cta hidden>
+    <div class="sticky-cta__inner">
+      <span class="sticky-cta__copy">Ready? Start the free match.</span>
+      <a class="button" href="/intake">Start now</a>
+    </div>
+  </div>
 
   <footer class="footer">
     <div class="footer-inner">

@@ -12,6 +12,10 @@
 - generate alt-text for images of sports
 - use session when I am enriching with goals, prefernces and injuries. So all in one big session.
 - Add sources to all research generation
+- hook up Stripe
+- hook up playwright stuff and start getting critiques of front-end look and user flows
+- Figure out great ways to test it.
+- instead of one big specs-dict, I probably need something better in the table on optimal bodies...
 
 # Short term plan
 

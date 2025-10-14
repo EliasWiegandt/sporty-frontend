@@ -8,38 +8,119 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 >
   <Fragment slot="head">
     <style>
-      .intake-layout {
-        max-width: 960px;
+      .intake-shell {
+        max-width: 1200px;
         margin: 0 auto;
+        padding: clamp(2rem, 5vw, 3.5rem) clamp(1.25rem, 4vw, 2.5rem);
         display: grid;
-        gap: 2rem;
-        padding: clamp(2rem, 4vw, 3.5rem) clamp(1.5rem, 5vw, 3rem);
+        gap: clamp(2rem, 5vw, 3rem);
+        grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+        align-items: start;
       }
-      .intake-aside {
-        background: rgba(14, 165, 165, 0.08);
-        border: 1px solid rgba(14, 165, 165, 0.2);
-        border-radius: 20px;
-        padding: 1.5rem;
+      @media (max-width: 960px) {
+        .intake-shell {
+          grid-template-columns: 1fr;
+          padding-bottom: 5rem;
+        }
+      }
+      @media (max-width: 620px) {
+        .intake-shell {
+          padding: clamp(1.5rem, 6vw, 2.5rem) 1rem 5rem;
+        }
+      }
+      .intake-flow {
+        display: flex;
+        flex-direction: column;
+        gap: clamp(1.5rem, 3vw, 2.5rem);
+      }
+      .intake-banner {
+        background: linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(99, 102, 241, 0.08));
+        border-radius: 24px;
+        padding: clamp(1.5rem, 4vw, 2.5rem);
+        border: 1px solid rgba(15, 118, 110, 0.18);
+        box-shadow: 0 24px 48px -32px rgba(15, 118, 110, 0.38);
+        display: grid;
+        gap: 0.75rem;
+      }
+      .intake-banner__label {
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-weight: 600;
+        font-size: 0.8rem;
+        color: var(--color-accent);
+      }
+      .intake-banner__headline {
+        font-size: clamp(1.9rem, 4vw, 2.4rem);
+        font-weight: 700;
+        margin: 0;
+        line-height: 1.1;
+      }
+      .intake-banner p {
+        margin: 0;
         color: var(--color-muted);
       }
-      .intake-grid {
+      .intake-card {
+        background: var(--color-surface, #ffffff);
+        border-radius: 24px;
+        padding: clamp(1.75rem, 4vw, 2.5rem);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        box-shadow: 0 28px 54px -40px rgba(15, 23, 42, 0.55);
         display: grid;
-        gap: 1.5rem;
+        gap: clamp(1.2rem, 3vw, 1.75rem);
       }
-      .input-row {
+      .coach-ribbon {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0.85rem;
+        border-radius: 999px;
+        background: rgba(14, 165, 165, 0.12);
+        color: var(--color-accent);
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .coach-ribbon--muted {
+        background: rgba(148, 163, 184, 0.18);
+        color: rgba(30, 41, 59, 0.72);
+      }
+      .intake-card__header {
+        display: grid;
+        gap: 0.5rem;
+      }
+      .intake-card__header > h2 {
+        margin: 0;
+        font-size: 1.35rem;
+      }
+      .intake-card__header > p {
+        margin: 0;
+        color: var(--color-muted);
+      }
+      .input-grid {
         display: grid;
         gap: 1rem;
+      }
+      .input-grid--two {
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       }
-      label span {
-        display: block;
+      .input-grid--pairs {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+      .field {
+        display: grid;
+        gap: 0.4rem;
+      }
+      .field__label {
         font-weight: 600;
         color: var(--color-text);
-        margin-bottom: 0.35rem;
       }
-      input,
-      select,
-      textarea {
+      .field__hint {
+        font-size: 0.85rem;
+        color: var(--color-muted);
+      }
+      .field input,
+      .field select {
         width: 100%;
         padding: 0.75rem 0.9rem;
         border-radius: 14px;
@@ -47,34 +128,116 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         background: #fff;
         font: inherit;
       }
-      textarea {
-        min-height: 120px;
-        resize: vertical;
+      .input-pair {
+        display: grid;
+        gap: 0.65rem;
       }
-      fieldset {
-        border: none;
-        padding: 0;
-        margin: 0;
+      .input-pair__head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .input-pair__chip {
+        font-size: 0.75rem;
+        border-radius: 999px;
+        padding: 0.2rem 0.6rem;
+        background: rgba(148, 163, 184, 0.18);
+        color: var(--color-muted);
+      }
+      .input-pair__controls {
         display: grid;
         gap: 0.5rem;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
       }
-      fieldset label {
-        display: inline-flex;
+      .input-pair__controls input[type='number'] {
+        width: 100%;
+        padding: 0.75rem 0.9rem;
+        border-radius: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.45);
+        background: #fff;
+        font: inherit;
+      }
+      .input-pair__controls input[type='range'] {
+        width: 100%;
+        accent-color: var(--color-accent);
+      }
+      .input-row {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      }
+      .intake-card__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
         align-items: center;
-        gap: 0.6rem;
-        font-size: 0.95rem;
+      }
+      .intake-card__empty {
+        font-size: 0.9rem;
+        color: var(--color-muted);
+      }
+      .past-sports__items {
+        display: grid;
+        gap: 1rem;
+      }
+      .past-sport-item {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        padding: clamp(1rem, 2.5vw, 1.4rem);
+        display: grid;
+        gap: 1rem;
+      }
+      .past-sport-flags {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      }
+      .past-sport-picker {
+        position: relative;
+      }
+      .past-sport-picker__results {
+        position: absolute;
+        top: calc(100% + 0.4rem);
+        left: 0;
+        right: 0;
+        background: #fff;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        border-radius: 12px;
+        padding: 0.5rem;
+        box-shadow: 0 18px 32px -24px rgba(15, 23, 42, 0.35);
+        max-height: 220px;
+        overflow-y: auto;
+        z-index: 10;
+      }
+      .past-sport-picker__results button {
+        width: 100%;
+        text-align: left;
+        background: none;
+        border: none;
+        padding: 0.5rem 0.4rem;
+        border-radius: 0.65rem;
+        font: inherit;
+        cursor: pointer;
+      }
+      .past-sport-picker__results button:hover {
+        background: rgba(14, 165, 165, 0.1);
+      }
+      .premium-actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .premium-note {
+        font-size: 0.85rem;
+        color: var(--color-muted);
       }
       .premium-block {
-        margin-top: 1.5rem;
-        padding-top: 1.5rem;
-        border-top: 1px solid rgba(148, 163, 184, 0.35);
         display: grid;
         gap: 1.5rem;
       }
       .premium-header {
-        display: flex;
-        flex-direction: column;
+        display: grid;
         gap: 0.5rem;
       }
       .premium-header__badge {
@@ -106,14 +269,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         justify-content: space-between;
         align-items: center;
       }
-      .premium-group__header h3 {
-        margin: 0;
-        font-size: 1.1rem;
-      }
-      .premium-count {
-        font-size: 0.85rem;
-        color: var(--color-muted);
-      }
       .premium-group__items {
         display: grid;
         gap: 0.9rem;
@@ -135,211 +290,247 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         font-size: 0.9rem;
         color: var(--color-muted);
       }
-      .premium-locked {
-        border-radius: 16px;
+      .intake-card--premium-locked {
         border: 1px dashed rgba(148, 163, 184, 0.4);
-        padding: clamp(1.2rem, 3vw, 1.8rem);
-        background: rgba(148, 163, 184, 0.12);
-        font-size: 0.95rem;
+        background: rgba(15, 23, 42, 0.04);
       }
-      .premium-locked strong {
-        display: block;
-        font-size: 1rem;
-        margin-bottom: 0.3rem;
-      }
-      .premium-actions {
-        display: flex;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-      }
-      .premium-note {
-        font-size: 0.85rem;
-        color: var(--color-muted);
-      }
-      .past-sports {
-        margin-top: 1.5rem;
-        padding-top: 1.5rem;
-        border-top: 1px solid rgba(148, 163, 184, 0.35);
+      .premium-lock {
         display: grid;
-        gap: 1.25rem;
+        gap: 1rem;
       }
-      .past-sports__header {
+      .premium-lock__header {
         display: flex;
         flex-wrap: wrap;
         gap: 0.75rem;
-        justify-content: space-between;
         align-items: center;
       }
-      .past-sports__items {
-        display: grid;
-        gap: 1rem;
+      .premium-lock__icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.75rem;
+        background: rgba(15, 118, 110, 0.15);
+        font-size: 1.4rem;
       }
-      .past-sports__empty {
-        font-size: 0.9rem;
+      .premium-lock__title {
+        margin: 0;
+        font-size: 1.2rem;
+      }
+      .premium-lock__copy {
+        margin: 0.35rem 0 0;
         color: var(--color-muted);
+        max-width: 540px;
       }
-      .past-sport-item {
-        display: grid;
-        gap: 1rem;
-        padding: clamp(1rem, 2.5vw, 1.4rem);
-        border-radius: 16px;
-        border: 1px solid rgba(148, 163, 184, 0.3);
-        background: #fff;
+      .premium-lock__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
       }
-      .past-sport-flags {
-        display: grid;
-        gap: 1rem;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      .intake-card--submit {
+        gap: 1.25rem;
       }
-      .past-sport-picker {
-        position: relative;
-      }
-      .past-sport-picker__input {
-        width: 100%;
-      }
-      .past-sport-picker__results {
-        position: absolute;
-        inset-inline-start: 0;
-        inset-inline-end: 0;
-        top: calc(100% + 0.35rem);
-        z-index: 5;
-        max-height: 220px;
-        overflow-y: auto;
-        background: #fff;
-        border: 1px solid rgba(148, 163, 184, 0.35);
-        border-radius: 12px;
-        box-shadow: 0 12px 40px rgba(15, 23, 42, 0.1);
-      }
-      .past-sport-picker__option {
-        display: block;
-        width: 100%;
-        padding: 0.6rem 0.9rem;
-        text-align: left;
-        background: transparent;
-        border: none;
-        font: inherit;
-        cursor: pointer;
-      }
-      .past-sport-picker__option:hover,
-      .past-sport-picker__option:focus {
-        background: rgba(14, 165, 165, 0.12);
-        outline: none;
-      }
-      .past-sports__count {
-        font-size: 0.85rem;
-        color: var(--color-muted);
+      .intake-card--submit .button-row {
+        justify-content: flex-end;
       }
       .privacy-note {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         color: var(--color-muted);
+        margin: 0;
       }
-      .banner {
-        border-radius: 18px;
-        padding: 1.25rem 1.5rem;
-        background: rgba(14, 165, 165, 0.12);
-        border: 1px solid rgba(14, 165, 165, 0.2);
-        color: var(--color-accent-dark);
+      .intake-aside {
+        background: rgba(15, 23, 42, 0.05);
+        border-radius: 24px;
+        padding: clamp(1.5rem, 3vw, 2rem);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        box-shadow: 0 18px 36px -30px rgba(15, 23, 42, 0.3);
+        display: grid;
+        gap: 1rem;
       }
-      .banner strong {
-        display: block;
-        font-size: 1rem;
-        margin-bottom: 0.35rem;
+      .intake-aside h2 {
+        margin: 0;
       }
-      .card {
-        padding: clamp(1.5rem, 4vw, 2.5rem);
+      .intake-aside ul {
+        padding-left: 1.2rem;
+        display: grid;
+        gap: 0.6rem;
+      }
+      .intake-sticky {
+        position: fixed;
+        left: 50%;
+        bottom: 20px;
+        transform: translateX(-50%);
+        z-index: 30;
+        pointer-events: none;
+      }
+      .intake-sticky__inner {
+        pointer-events: auto;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: var(--color-surface, #ffffff);
+        border-radius: 999px;
+        padding: 0.65rem 1.5rem;
+        border: 1px solid rgba(15, 118, 110, 0.25);
+        box-shadow: 0 22px 44px -24px rgba(15, 118, 110, 0.45);
+      }
+      .intake-sticky__label {
+        font-weight: 600;
+        color: var(--color-text);
+      }
+      @media (max-width: 640px) {
+        .intake-sticky {
+          width: calc(100% - 1.5rem);
+          transform: translate(-50%, 0);
+        }
+        .intake-sticky__inner {
+          justify-content: space-between;
+        }
       }
     </style>
   </Fragment>
+  <main class="intake-shell">
+    <form class="intake-flow" data-intake-form>
+      <header class="intake-banner">
+        <span class="intake-banner__label">Free adult quick match</span>
+        <h1 class="intake-banner__headline">Tell us about your body, we’ll do the rest.</h1>
+        <p data-intake-banner>
+          Share a handful of measurements and we’ll return your top three sports instantly. Log in and consent to save your results for later.
+        </p>
+      </header>
 
-  <main class="intake-layout">
-    <section class="banner" aria-live="polite">
-      <strong>Free adult quick match</strong>
-      <span data-intake-banner>Share a handful of measurements and we’ll return your top three sports instantly. Log in and consent to save your results for later.</span>
-    </section>
-
-    <form class="card" data-intake-form>
-      <h1 class="section__title" style="margin-bottom:0.5rem">Tell us about your body</h1>
-      <p class="lead-copy" style="margin-top:0">Take less than a minute to complete. Optional measurements tighten the match.</p>
-
-      <div class="intake-grid" role="group" aria-labelledby="basic-info">
-        <h2 id="basic-info" class="section__subtitle" style="margin-bottom:0">Basic info</h2>
-        <div class="input-row">
-          <label>
-            <span>Birthday</span>
+      <section class="intake-card intake-card--basics">
+        <span class="coach-ribbon">Step 1 · Basics</span>
+        <div class="intake-card__header">
+          <h2>Who are we measuring?</h2>
+          <p>We use your birthday and sex to place you in the right cohort.</p>
+        </div>
+        <div class="input-grid input-grid--two">
+          <label class="field">
+            <span class="field__label">Birthday</span>
             <input type="date" name="birthday" required />
+            <span class="field__hint">Used only to infer age brackets.</span>
           </label>
-          <label>
-            <span>Sex assigned at birth</span>
+          <label class="field">
+            <span class="field__label">Sex assigned at birth</span>
             <select name="sex" required>
               <option value="">Select one</option>
               <option value="female">Female</option>
               <option value="male">Male</option>
             </select>
+            <span class="field__hint">Helps line you up with cohort averages.</span>
           </label>
         </div>
-      </div>
+      </section>
 
-      <div class="intake-grid" role="group" aria-labelledby="measurements">
-        <h2 id="measurements" class="section__subtitle" style="margin-bottom:0">Measurements</h2>
-        <div class="input-row">
-          <label>
-            <span>Height (cm)</span>
-            <input type="number" name="height_cm" min="120" max="230" required inputmode="decimal" />
-          </label>
-          <label>
-            <span>Weight (kg)</span>
-            <input type="number" name="weight_kg" min="35" max="200" required inputmode="decimal" />
-          </label>
+      <section class="intake-card intake-card--measurements">
+        <span class="coach-ribbon">Step 2 · Body metrics</span>
+        <div class="intake-card__header">
+          <h2>Measurements</h2>
+          <p>Every measurement below is required so we can benchmark you accurately. Keep a flexible tape handy.</p>
         </div>
-        <div class="input-row">
-          <label>
-            <span>Arm span (cm)</span>
-            <input type="number" name="arm_span_cm" min="100" max="250" inputmode="decimal" />
-          </label>
-          <label>
-            <span>Leg inseam (cm)</span>
-            <input type="number" name="leg_inseam_cm" min="50" max="130" inputmode="decimal" />
-          </label>
+        <div class="input-grid input-grid--pairs">
+          <div class="input-pair" data-input-pair>
+            <div class="input-pair__head">
+              <span class="field__label">Height (cm)</span>
+              <span class="input-pair__chip" data-percentile data-unit="cm">Percentile —</span>
+            </div>
+            <div class="input-pair__controls">
+              <input type="number" name="height_cm" min="120" max="230" required inputmode="decimal" data-pair-input data-sync="height_cm" />
+              <input type="range" min="120" max="230" value="170" data-pair-range data-sync="height_cm" aria-label="Height slider (centimeters)" />
+            </div>
+          </div>
+          <div class="input-pair" data-input-pair>
+            <div class="input-pair__head">
+              <span class="field__label">Weight (kg)</span>
+              <span class="input-pair__chip" data-percentile data-unit="kg">Percentile —</span>
+            </div>
+            <div class="input-pair__controls">
+              <input type="number" name="weight_kg" min="35" max="200" required inputmode="decimal" data-pair-input data-sync="weight_kg" />
+              <input type="range" min="35" max="200" value="70" data-pair-range data-sync="weight_kg" aria-label="Weight slider (kilograms)" />
+            </div>
+          </div>
+          <div class="input-pair" data-input-pair>
+            <div class="input-pair__head">
+              <span class="field__label">Arm span (cm)</span>
+              <span class="input-pair__chip" data-percentile data-unit="cm">Percentile —</span>
+            </div>
+            <div class="input-pair__controls">
+              <input type="number" name="arm_span_cm" min="100" max="250" required inputmode="decimal" data-pair-input data-sync="arm_span_cm" />
+              <input type="range" min="100" max="250" value="180" data-pair-range data-sync="arm_span_cm" aria-label="Arm span slider (centimeters)" />
+            </div>
+          </div>
+          <div class="input-pair" data-input-pair>
+            <div class="input-pair__head">
+              <span class="field__label">Leg inseam (cm)</span>
+              <span class="input-pair__chip" data-percentile data-unit="cm">Percentile —</span>
+            </div>
+            <div class="input-pair__controls">
+              <input type="number" name="leg_inseam_cm" min="50" max="130" required inputmode="decimal" data-pair-input data-sync="leg_inseam_cm" />
+              <input type="range" min="50" max="130" value="75" data-pair-range data-sync="leg_inseam_cm" aria-label="Leg inseam slider (centimeters)" />
+            </div>
+          </div>
+          <div class="input-pair" data-input-pair>
+            <div class="input-pair__head">
+              <span class="field__label">Shoulder width (cm)</span>
+              <span class="input-pair__chip" data-percentile data-unit="cm">Percentile —</span>
+            </div>
+            <div class="input-pair__controls">
+              <input type="number" name="shoulder_width_cm" min="30" max="80" required inputmode="decimal" data-pair-input data-sync="shoulder_width_cm" />
+              <input type="range" min="30" max="80" value="45" data-pair-range data-sync="shoulder_width_cm" aria-label="Shoulder width slider (centimeters)" />
+            </div>
+          </div>
+          <div class="input-pair" data-input-pair>
+            <div class="input-pair__head">
+              <span class="field__label">Hip width (cm)</span>
+              <span class="input-pair__chip" data-percentile data-unit="cm">Percentile —</span>
+            </div>
+            <div class="input-pair__controls">
+              <input type="number" name="hip_width_cm" min="30" max="80" required inputmode="decimal" data-pair-input data-sync="hip_width_cm" />
+              <input type="range" min="30" max="80" value="45" data-pair-range data-sync="hip_width_cm" aria-label="Hip width slider (centimeters)" />
+            </div>
+          </div>
+          <div class="input-pair" data-input-pair>
+            <div class="input-pair__head">
+              <span class="field__label">Hand length (cm)</span>
+              <span class="input-pair__chip" data-percentile data-unit="cm">Percentile —</span>
+            </div>
+            <div class="input-pair__controls">
+              <input type="number" name="hand_length_cm" min="10" max="30" required inputmode="decimal" data-pair-input data-sync="hand_length_cm" />
+              <input type="range" min="10" max="30" value="20" data-pair-range data-sync="hand_length_cm" aria-label="Hand length slider (centimeters)" />
+            </div>
+          </div>
+          <div class="input-pair" data-input-pair>
+            <div class="input-pair__head">
+              <span class="field__label">Foot length (cm)</span>
+              <span class="input-pair__chip" data-percentile data-unit="cm">Percentile —</span>
+            </div>
+            <div class="input-pair__controls">
+              <input type="number" name="foot_length_cm" min="15" max="35" required inputmode="decimal" data-pair-input data-sync="foot_length_cm" />
+              <input type="range" min="15" max="35" value="25" data-pair-range data-sync="foot_length_cm" aria-label="Foot length slider (centimeters)" />
+            </div>
+          </div>
         </div>
-        <div class="input-row">
-          <label>
-            <span>Shoulder width (cm)</span>
-            <input type="number" name="shoulder_width_cm" min="30" max="80" inputmode="decimal" />
-          </label>
-          <label>
-            <span>Hip width (cm)</span>
-            <input type="number" name="hip_width_cm" min="30" max="80" inputmode="decimal" />
-          </label>
-      </div>
-      <div class="input-row">
-        <label>
-          <span>Hand length (cm)</span>
-          <input type="number" name="hand_length_cm" min="10" max="30" inputmode="decimal" />
-        </label>
-        <label>
-          <span>Foot length (cm)</span>
-          <input type="number" name="foot_length_cm" min="15" max="35" inputmode="decimal" />
-        </label>
-      </div>
-    </div>
+      </section>
 
-      <section class="past-sports" data-past-sports>
-        <div class="past-sports__header">
-          <div>
-            <h2 class="section__subtitle" style="margin:0;">Past sports</h2>
-            <p class="lead-copy" style="margin:0;">Tell us which sports you’ve already spent time on. We’ll use this to refine what comes next.</p>
-          </div>
-          <div class="premium-actions">
-            <span class="past-sports__count" data-past-count>0 / 5</span>
-            <button type="button" class="button--ghost button--sm" data-past-add>Add sport</button>
-          </div>
+      <section class="intake-card intake-card--past" data-past-sports>
+        <span class="coach-ribbon coach-ribbon--muted">Step 3 · Past experience</span>
+        <div class="intake-card__header">
+          <h2>Past sports</h2>
+          <p>Share up to five sports you’ve played. Signed-in users blend this into future matches.</p>
         </div>
-        <p class="past-sports__empty" data-past-empty>Log in to add past sports and experiences.</p>
+        <div class="intake-card__actions">
+          <span class="past-sports__count" data-past-count>0 / 5</span>
+          <button type="button" class="button--ghost button--sm" data-past-add>Add sport</button>
+        </div>
+        <p class="intake-card__empty" data-past-empty>Log in to add past sports and experiences.</p>
         <div class="past-sports__items" data-past-items></div>
         <template data-past-template>
           <div class="past-sport-item" data-item>
-            <label>
-              <span>Sport or discipline</span>
+            <label class="field">
+              <span class="field__label">Sport or discipline</span>
               <div class="past-sport-picker" data-picker>
                 <input type="text" class="past-sport-picker__input" data-field="sport_label" placeholder="Search sports…" autocomplete="off" />
                 <input type="hidden" data-field="sport_subcategory_id" />
@@ -347,17 +538,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
               </div>
             </label>
             <div class="input-row">
-              <label>
-                <span>Years played</span>
+              <label class="field">
+                <span class="field__label">Years played</span>
                 <input type="number" step="0.5" min="0" max="80" data-field="years_played" />
               </label>
-              <label>
-                <span>Starting age</span>
+              <label class="field">
+                <span class="field__label">Starting age</span>
                 <input type="number" min="0" max="80" data-field="age_started_years" />
               </label>
             </div>
-            <label>
-              <span>Intensity</span>
+            <label class="field">
+              <span class="field__label">Intensity</span>
               <select data-field="intensity">
                 <option value="">Select</option>
                 <option value="light">Casual / recreational</option>
@@ -367,24 +558,24 @@ import BaseLayout from '../layouts/BaseLayout.astro';
               </select>
             </label>
             <div class="past-sport-flags">
-              <label>
-                <span>Enjoyed it?</span>
+              <label class="field">
+                <span class="field__label">Enjoyed it?</span>
                 <select data-field="liked">
                   <option value="">Select</option>
                   <option value="yes">Yes</option>
                   <option value="no">No</option>
                 </select>
               </label>
-              <label>
-                <span>Felt natural?</span>
+              <label class="field">
+                <span class="field__label">Felt natural?</span>
                 <select data-field="had_flair">
                   <option value="">Select</option>
                   <option value="yes">Yes</option>
                   <option value="no">No</option>
                 </select>
               </label>
-              <label>
-                <span>Became good at it?</span>
+              <label class="field">
+                <span class="field__label">Became good at it?</span>
                 <select data-field="achieved_skill">
                   <option value="">Select</option>
                   <option value="yes">Yes</option>
@@ -397,148 +588,171 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         </template>
       </section>
 
-      <div class="premium-locked" data-premium-locked hidden>
-        <strong>Detailed analysis inputs</strong>
-        <p data-premium-locked-message>
-          Premium credits let you capture preferences, goals, and injuries alongside your measurements.
-          Sign in and apply a credit to unlock deeper tailoring.
-        </p>
-      </div>
-
-      <div class="premium-block" data-premium-block hidden>
-        <div class="premium-header">
-          <span class="premium-header__badge">Premium analysis</span>
-          <h2 class="section__subtitle" style="margin:0;">Tell us what matters most</h2>
-          <p class="lead-copy" style="margin:0;">Add up to 20 entries per category. We’ll blend these with your measurements for the detailed analysis.</p>
-          <p class="premium-note" data-premium-summary></p>
-        </div>
-        <div class="premium-groups">
-          <div class="premium-group" data-list="preferences">
-            <div class="premium-group__header">
-              <div>
-                <h3>Preferences</h3>
-                <p class="premium-note">Training environments, team dynamics, or settings you gravitate toward.</p>
-              </div>
-              <div class="premium-actions">
-                <span class="premium-count" data-count>0 / 20</span>
-                <button type="button" class="button--ghost button--sm" data-add="preference">Add preference</button>
-              </div>
+      <section class="intake-card intake-card--premium-locked" data-premium-locked>
+        <div class="premium-lock">
+          <div class="premium-lock__header">
+            <span class="premium-lock__icon" aria-hidden="true">🔒</span>
+            <div>
+              <h2 class="premium-lock__title">Premium analysis (paid)</h2>
+              <p class="premium-lock__copy" data-premium-locked-message>
+                Premium credits let you capture preferences, goals, and injuries alongside your measurements. Sign in and apply a credit to unlock deeper tailoring.
+              </p>
             </div>
-            <div class="premium-group__items" data-items></div>
-            <p class="premium-empty" data-empty>None added yet. Add up to 20 preferences.</p>
-            <template data-template>
-              <div class="premium-item" data-item>
-                <label>
-                  <span>Preference</span>
-                  <select data-field="preference_id" required></select>
-                </label>
-                <label>
-                  <span>Priority</span>
-                  <select data-field="priority">
-                    <option value="must_have">Must-have</option>
-                    <option value="nice_to_have">Nice-to-have</option>
-                  </select>
-                </label>
-                <button type="button" class="button--ghost button--sm" data-remove>Remove</button>
-              </div>
-            </template>
           </div>
-
-          <div class="premium-group" data-list="goals">
-            <div class="premium-group__header">
-              <div>
-                <h3>Goals</h3>
-                <p class="premium-note">What you want sport to deliver—skills, fitness, or lifestyle outcomes.</p>
-              </div>
-              <div class="premium-actions">
-                <span class="premium-count" data-count>0 / 20</span>
-                <button type="button" class="button--ghost button--sm" data-add="goal">Add goal</button>
-              </div>
-            </div>
-            <div class="premium-group__items" data-items></div>
-            <p class="premium-empty" data-empty>None added yet. Add up to 20 goals.</p>
-            <template data-template>
-              <div class="premium-item" data-item>
-                <label>
-                  <span>Goal</span>
-                  <select data-field="goal_id" required></select>
-                </label>
-                <label>
-                  <span>Priority</span>
-                  <select data-field="priority">
-                    <option value="must_have">Must-have</option>
-                    <option value="nice_to_have">Nice-to-have</option>
-                  </select>
-                </label>
-                <button type="button" class="button--ghost button--sm" data-remove>Remove</button>
-              </div>
-            </template>
-          </div>
-
-          <div class="premium-group" data-list="injuries">
-            <div class="premium-group__header">
-              <div>
-                <h3>Injuries</h3>
-                <p class="premium-note">Flag current or past injuries so we can adjust intensity and recommendations.</p>
-              </div>
-              <div class="premium-actions">
-                <span class="premium-count" data-count>0 / 20</span>
-                <button type="button" class="button--ghost button--sm" data-add="injury">Add injury</button>
-              </div>
-            </div>
-            <div class="premium-group__items" data-items></div>
-            <p class="premium-empty" data-empty>None added yet. Add up to 20 injuries.</p>
-            <template data-template>
-              <div class="premium-item" data-item>
-                <label>
-                  <span>Injury</span>
-                  <select data-field="injury_id" required></select>
-                </label>
-                <label>
-                  <span>Specific area</span>
-                  <select data-field="injury_subcategory_id">
-                    <option value="">General</option>
-                  </select>
-                </label>
-                <label>
-                  <span>Severity</span>
-                  <select data-field="severity">
-                    <option value="severe">Severe</option>
-                    <option value="somewhat_bad">Somewhat bad</option>
-                    <option value="mostly_healed">Mostly healed</option>
-                  </select>
-                </label>
-                <label class="premium-item__note">
-                  <span>Notes (optional)</span>
-                  <input type="text" data-field="notes" maxlength="160" placeholder="Rehab status, triggers, limits" />
-                </label>
-                <button type="button" class="button--ghost button--sm" data-remove>Remove</button>
-              </div>
-            </template>
+          <div class="premium-lock__actions">
+            <button type="button" class="button button--sm" data-auth-open data-auth-mode="signin">Log in</button>
+            <button type="button" class="button--ghost button--sm" data-auth-open data-auth-mode="signup">Create account</button>
+            <a class="button--ghost button--sm" href="#tiers">View pricing</a>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div class="form-actions">
-        <p class="privacy-note">We don’t store your data unless you log in and consent. Measurements sent to the backend are processed securely.</p>
+      <section class="intake-card intake-card--premium" data-premium-block hidden>
+        <div class="premium-block">
+          <div class="premium-header">
+            <span class="premium-header__badge">Premium analysis</span>
+            <h2 class="section__subtitle" style="margin:0;">Tell us what matters most</h2>
+            <p class="premium-note">Add up to 20 entries per category. We’ll blend these with your measurements for the detailed analysis.</p>
+            <p class="premium-note" data-premium-summary></p>
+          </div>
+          <div class="premium-groups">
+            <div class="premium-group" data-list="preferences">
+              <div class="premium-group__header">
+                <div>
+                  <h3>Preferences</h3>
+                  <p class="premium-note">Training environments, team dynamics, or settings you gravitate toward.</p>
+                </div>
+                <div class="premium-actions">
+                  <span class="premium-count" data-count>0 / 20</span>
+                  <button type="button" class="button--ghost button--sm" data-add="preference">Add preference</button>
+                </div>
+              </div>
+              <div class="premium-group__items" data-items></div>
+              <p class="premium-empty" data-empty>None added yet. Add up to 20 preferences.</p>
+              <template data-template>
+                <div class="premium-item" data-item>
+                  <label class="field">
+                    <span class="field__label">Preference</span>
+                    <select data-field="preference_id" required></select>
+                  </label>
+                  <label class="field">
+                    <span class="field__label">Priority</span>
+                    <select data-field="priority">
+                      <option value="must_have">Must-have</option>
+                      <option value="nice_to_have">Nice-to-have</option>
+                    </select>
+                  </label>
+                  <button type="button" class="button--ghost button--sm" data-remove>Remove</button>
+                </div>
+              </template>
+            </div>
+
+            <div class="premium-group" data-list="goals">
+              <div class="premium-group__header">
+                <div>
+                  <h3>Goals</h3>
+                  <p class="premium-note">What you want sport to deliver—skills, fitness, or lifestyle outcomes.</p>
+                </div>
+                <div class="premium-actions">
+                  <span class="premium-count" data-count>0 / 20</span>
+                  <button type="button" class="button--ghost button--sm" data-add="goal">Add goal</button>
+                </div>
+              </div>
+              <div class="premium-group__items" data-items></div>
+              <p class="premium-empty" data-empty>None added yet. Add up to 20 goals.</p>
+              <template data-template>
+                <div class="premium-item" data-item>
+                  <label class="field">
+                    <span class="field__label">Goal</span>
+                    <select data-field="goal_id" required></select>
+                  </label>
+                  <label class="field">
+                    <span class="field__label">Priority</span>
+                    <select data-field="priority">
+                      <option value="must_have">Must-have</option>
+                      <option value="nice_to_have">Nice-to-have</option>
+                    </select>
+                  </label>
+                  <button type="button" class="button--ghost button--sm" data-remove>Remove</button>
+                </div>
+              </template>
+            </div>
+
+            <div class="premium-group" data-list="injuries">
+              <div class="premium-group__header">
+                <div>
+                  <h3>Injuries</h3>
+                  <p class="premium-note">Flag current or past injuries so we can adjust intensity and recommendations.</p>
+                </div>
+                <div class="premium-actions">
+                  <span class="premium-count" data-count>0 / 20</span>
+                  <button type="button" class="button--ghost button--sm" data-add="injury">Add injury</button>
+                </div>
+              </div>
+              <div class="premium-group__items" data-items></div>
+              <p class="premium-empty" data-empty>None added yet. Add up to 20 injuries.</p>
+              <template data-template>
+                <div class="premium-item" data-item>
+                  <label class="field">
+                    <span class="field__label">Injury</span>
+                    <select data-field="injury_id" required></select>
+                  </label>
+                  <label class="field">
+                    <span class="field__label">Specific area</span>
+                    <select data-field="injury_subcategory_id">
+                      <option value="">General</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span class="field__label">Severity</span>
+                    <select data-field="severity">
+                      <option value="severe">Severe</option>
+                      <option value="somewhat_bad">Somewhat bad</option>
+                      <option value="mostly_healed">Mostly healed</option>
+                    </select>
+                  </label>
+                  <label class="field premium-item__note">
+                    <span class="field__label">Notes (optional)</span>
+                    <input type="text" data-field="notes" maxlength="160" placeholder="Rehab status, triggers, limits" />
+                  </label>
+                  <button type="button" class="button--ghost button--sm" data-remove>Remove</button>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="intake-card intake-card--submit" data-submit-anchor>
+        <div class="intake-card__header">
+          <h2>Ready to see your matches?</h2>
+          <p class="privacy-note">We don’t store your data unless you log in and consent. Measurements sent to the backend are processed securely.</p>
+        </div>
         <div data-status aria-live="polite"></div>
         <div class="button-row">
-          <button class="button" type="submit" data-submit>Get my matches</button>
+          <button class="button" type="submit" data-submit>See my matches</button>
           <a class="button--ghost" href="/privacy">Privacy policy (draft)</a>
         </div>
-      </div>
+      </section>
     </form>
 
     <aside class="intake-aside">
-      <h2 class="section__subtitle" style="margin-top:0;">Tips for accurate measuring</h2>
+      <h2 class="section__subtitle">Tips for accurate measuring</h2>
       <ul>
         <li>Use a flexible measuring tape and stand tall without shoes.</li>
         <li>Arm span: fingertip to fingertip, arms extended level with shoulders.</li>
-        <li>Leg inseam: heel to inner thigh crease (use a book to mark the spot).</li>
+        <li>Leg inseam: heel to inner thigh crease—use a book to mark the spot.</li>
         <li>Shoulder width: outer edge to outer edge of shoulders.</li>
       </ul>
     </aside>
   </main>
+
+  <div class="intake-sticky" data-sticky-submit hidden>
+    <div class="intake-sticky__inner">
+      <span class="intake-sticky__label">Ready? Run the quick match.</span>
+      <button type="button" class="button button--sm" data-sticky-button>See my matches</button>
+    </div>
+  </div>
 
   <footer class="footer">
     <div class="footer-inner">
@@ -557,9 +771,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <script src="/assets/js/intake.js" defer></script>
     <script>
       const yearEl = document.getElementById('year');
-    if (yearEl) {
-      yearEl.textContent = String(new Date().getFullYear());
-    }
+      if (yearEl) {
+        yearEl.textContent = String(new Date().getFullYear());
+      }
     </script>
   </Fragment>
 </BaseLayout>

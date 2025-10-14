@@ -10,8 +10,22 @@
     : null;
   const premiumSummaryEl = document.querySelector('[data-premium-summary]');
   const pastSportsSection = document.querySelector('[data-past-sports]');
+  const stickyBar = document.querySelector('[data-sticky-submit]');
+  const stickyButton = stickyBar ? stickyBar.querySelector('[data-sticky-button]') : null;
+  const submitAnchor = document.querySelector('[data-submit-anchor]');
   const sportyApp = window.SportyApp;
   let sportySnapshot = { user: null, hasConsent: false };
+  const MEASUREMENT_FIELDS = [
+    { name: 'height_cm', label: 'Height (cm)' },
+    { name: 'weight_kg', label: 'Weight (kg)' },
+    { name: 'arm_span_cm', label: 'Arm span (cm)' },
+    { name: 'leg_inseam_cm', label: 'Leg inseam (cm)' },
+    { name: 'shoulder_width_cm', label: 'Shoulder width (cm)' },
+    { name: 'hip_width_cm', label: 'Hip width (cm)' },
+    { name: 'hand_length_cm', label: 'Hand length (cm)' },
+    { name: 'foot_length_cm', label: 'Foot length (cm)' },
+  ];
+  const initialSubmitLabel = submitBtn ? submitBtn.textContent.trim() : 'See my matches';
   const premiumController = createPremiumController({
     block: premiumBlock,
     locked: premiumLocked,
@@ -23,6 +37,19 @@
     root: pastSportsSection,
     getClient: () => (sportyApp && typeof sportyApp.getClient === 'function' ? sportyApp.getClient() : null),
   });
+
+  if (stickyButton && submitBtn) {
+    stickyButton.textContent = initialSubmitLabel;
+    stickyButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      submitBtn.click();
+    });
+  } else if (stickyBar) {
+    stickyBar.hidden = true;
+  }
+
+  initializeInputPairs();
+  initializeSticky();
 
   if (!form) {
     updateBanner(sportySnapshot);
@@ -78,22 +105,55 @@
 
     if (!submitBtn) return;
 
+    if (typeof form.reportValidity === 'function' && !form.reportValidity()) {
+      return;
+    }
+
     const fd = new FormData(form);
+    const missingMeasurements = [];
+    const invalidMeasurements = [];
+    const measurementPayload = {};
+
+    MEASUREMENT_FIELDS.forEach((field) => {
+      const raw = fd.get(field.name);
+      if (raw === null || raw === '') {
+        missingMeasurements.push(field.label);
+        return;
+      }
+      const value = Number(raw);
+      if (!Number.isFinite(value)) {
+        invalidMeasurements.push(field.label);
+        return;
+      }
+      measurementPayload[field.name] = value;
+    });
+
+    if (missingMeasurements.length) {
+      setStatus('Fill out all body measurements before continuing.', 'error');
+      return;
+    }
+
+    if (invalidMeasurements.length) {
+      setStatus('Measurements must be numbers. Please double-check your entries.', 'error');
+      return;
+    }
+
+    const rawSex = fd.get('sex');
+    const resolvedSex = rawSex ? String(rawSex) : '';
+
     const payload = {
       birthday: fd.get('birthday'),
-      sex: fd.get('sex') || 'prefer_not_to_say',
-      height_cm: Number(fd.get('height_cm')) || null,
-      weight_kg: Number(fd.get('weight_kg')) || null,
-      arm_span_cm: fd.get('arm_span_cm') ? Number(fd.get('arm_span_cm')) : null,
-      leg_inseam_cm: fd.get('leg_inseam_cm') ? Number(fd.get('leg_inseam_cm')) : null,
-      shoulder_width_cm: fd.get('shoulder_width_cm') ? Number(fd.get('shoulder_width_cm')) : null,
-      hip_width_cm: fd.get('hip_width_cm') ? Number(fd.get('hip_width_cm')) : null,
-      hand_length_cm: fd.get('hand_length_cm') ? Number(fd.get('hand_length_cm')) : null,
-      foot_length_cm: fd.get('foot_length_cm') ? Number(fd.get('foot_length_cm')) : null,
+      sex: resolvedSex || 'prefer_not_to_say',
+      ...measurementPayload,
     };
 
-    if (!payload.birthday || !payload.height_cm || !payload.weight_kg) {
-      setStatus('Birthday, height, and weight are required to generate a suggestion.', 'error');
+    if (!payload.birthday) {
+      setStatus('Birthday is required to generate a suggestion.', 'error');
+      return;
+    }
+
+    if (!resolvedSex) {
+      setStatus('Select the sex assigned at birth so we can benchmark accurately.', 'error');
       return;
     }
 
@@ -113,8 +173,7 @@
       payload.past_sports = pastSportsSelection.data;
     }
 
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Generating…';
+    setSubmitBusy(true);
     setStatus('Crunching the numbers…', 'info');
 
     let consentAccepted = sportySnapshot.hasConsent;
@@ -132,11 +191,11 @@
           consentAccepted = false;
         }
         if (!consentAccepted) {
-        setStatus(
-          'To keep your data private, log out before running another match or enable storage in your profile.',
-          'error'
-        );
-      }
+          setStatus(
+            'To keep your data private, log out before running another match or enable storage in your profile.',
+            'error'
+          );
+        }
     }
 
     try {
@@ -182,14 +241,80 @@
       window.location.assign('/results');
     } catch (error) {
       setStatus(error.message || 'Unexpected error, please try again.', 'error');
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'See my matches';
+      setSubmitBusy(false);
     }
   });
 
   // Prefill measurements on test/staging branches for faster QA
   if (isTestBranch()) {
     prefillForTest();
+  }
+
+  function setSubmitBusy(isBusy) {
+    if (submitBtn) {
+      submitBtn.disabled = isBusy;
+      submitBtn.textContent = isBusy ? 'Generating…' : initialSubmitLabel;
+    }
+    if (stickyButton) {
+      stickyButton.disabled = isBusy;
+      stickyButton.textContent = isBusy ? 'Generating…' : initialSubmitLabel;
+    }
+  }
+
+  function initializeInputPairs() {
+    const pairs = document.querySelectorAll('[data-input-pair]');
+    pairs.forEach((pair) => {
+      if (pair.dataset.enhanced === 'true') return;
+      const numberInput = pair.querySelector('[data-pair-input]');
+      const rangeInput = pair.querySelector('[data-pair-range]');
+      if (!numberInput || !rangeInput) {
+        pair.dataset.enhanced = 'true';
+        return;
+      }
+      const chip = pair.querySelector('[data-percentile]');
+      const unit = chip ? chip.dataset.unit || '' : '';
+      const updateChip = () => {
+        if (!chip) return;
+        if (!numberInput.value) {
+          chip.textContent = 'Value —';
+        } else {
+          chip.textContent = `Value: ${numberInput.value}${unit ? ` ${unit}` : ''}`;
+        }
+      };
+      const syncRange = () => {
+        if (numberInput.value === '' || numberInput.value === null) {
+          updateChip();
+          return;
+        }
+        rangeInput.value = numberInput.value;
+        updateChip();
+      };
+      const syncNumber = (triggerEvent = false) => {
+        numberInput.value = rangeInput.value;
+        updateChip();
+        if (triggerEvent) {
+          numberInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      };
+      numberInput.addEventListener('input', syncRange);
+      numberInput.addEventListener('change', syncRange);
+      rangeInput.addEventListener('input', () => syncNumber(true));
+      updateChip();
+      pair.dataset.enhanced = 'true';
+    });
+  }
+
+  function initializeSticky() {
+    if (!stickyBar || !submitAnchor) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        stickyBar.hidden = entry.isIntersecting;
+      },
+      { threshold: 0.4 }
+    );
+    observer.observe(submitAnchor);
   }
 
   function createPastSportsController(config) {
@@ -1350,5 +1475,9 @@
     if (pastSportsController && typeof pastSportsController.prefillForTest === 'function') {
       pastSportsController.prefillForTest();
     }
+
+    document.querySelectorAll('[data-pair-input]').forEach((input) => {
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
   }
 })();

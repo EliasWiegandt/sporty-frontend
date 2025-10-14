@@ -200,6 +200,8 @@
     loginButtons.forEach((button) => {
       button.addEventListener('click', (event) => {
         event.preventDefault();
+        const mode = button.dataset.authMode === 'signup' ? 'signup' : 'signin';
+        setAuthMode(mode, { preserveStatus: true });
         openAuthOverlay();
       });
     });
@@ -369,34 +371,39 @@
   function updateAuthControls() {
     const controls = document.querySelectorAll('[data-auth-controls]');
     controls.forEach((container) => {
-      const openBtn = container.querySelector('[data-auth-open]');
-      const status = container.querySelector('[data-auth-status]');
+      const openButtons = container.querySelectorAll('[data-auth-open]');
       const signout = container.querySelector('[data-auth-signout]');
 
       if (!state.client) {
-        if (openBtn) openBtn.disabled = true;
-        if (status) {
-          status.hidden = false;
-          status.textContent = 'Auth offline';
+        openButtons.forEach((btn) => {
+          btn.disabled = true;
+          btn.hidden = false;
+        });
+        if (signout) {
+          signout.hidden = true;
+          signout.disabled = true;
         }
-        if (signout) signout.hidden = true;
         return;
       }
 
       if (state.user) {
-        if (openBtn) openBtn.hidden = true;
-        if (signout) signout.hidden = false;
-        if (status) {
-          status.hidden = false;
-          status.textContent = state.user.email || 'Signed in';
+        openButtons.forEach((btn) => {
+          btn.hidden = true;
+          btn.disabled = false;
+        });
+        if (signout) {
+          signout.hidden = false;
+          signout.disabled = false;
         }
       } else {
-        if (openBtn) {
-          openBtn.hidden = false;
-          openBtn.disabled = false;
+        openButtons.forEach((btn) => {
+          btn.hidden = false;
+          btn.disabled = false;
+        });
+        if (signout) {
+          signout.hidden = true;
+          signout.disabled = true;
         }
-        if (signout) signout.hidden = true;
-        if (status) status.hidden = true;
       }
     });
   }
