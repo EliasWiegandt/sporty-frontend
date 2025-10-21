@@ -157,9 +157,21 @@
       return;
     }
 
-    const premiumSelection = premiumController.collect();
-    if (premiumSelection && premiumSelection.errors && premiumSelection.errors.length) {
+    const premiumSelection = premiumController.collect() || {
+      applyCredit: false,
+      data: null,
+      errors: [],
+    };
+    if (premiumSelection.errors && premiumSelection.errors.length) {
       setStatus(premiumSelection.errors.join(' '), 'error');
+      return;
+    }
+
+    const usePremium = Boolean(premiumSelection.applyCredit);
+    const premiumData = premiumSelection.data || null;
+
+    if (usePremium && (!sportySnapshot.user || !sportySnapshot.user.id)) {
+      setStatus('Sign in to apply an adult analysis credit.', 'error');
       return;
     }
 
@@ -169,12 +181,30 @@
       return;
     }
 
-    if (pastSportsSelection && Array.isArray(pastSportsSelection.data)) {
+    if (pastSportsSelection && Array.isArray(pastSportsSelection.data) && pastSportsSelection.data.length) {
       payload.past_sports = pastSportsSelection.data;
+    } else {
+      delete payload.past_sports;
+    }
+
+    if (usePremium) {
+      payload.user_id = sportySnapshot.user.id;
+      payload.premium = {
+        apply_credit: true,
+        preferences: premiumData && premiumData.preferences ? premiumData.preferences : [],
+        goals: premiumData && premiumData.goals ? premiumData.goals : [],
+        injuries: premiumData && premiumData.injuries ? premiumData.injuries : [],
+      };
+    } else {
+      delete payload.user_id;
+      delete payload.premium;
     }
 
     setSubmitBusy(true);
-    setStatus('Crunching the numbers…', 'info');
+    setStatus(
+      usePremium ? 'Applying your credit and crunching the numbers…' : 'Crunching the numbers…',
+      'info'
+    );
 
     let consentAccepted = sportySnapshot.hasConsent;
       if (
@@ -199,7 +229,8 @@
     }
 
     try {
-      const response = await fetch('/api/recommend-adult-free', {
+      const endpoint = usePremium ? '/api/recommend-adult-premium' : '/api/recommend-adult-free';
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -216,19 +247,34 @@
         throw new Error(detail);
       }
 
-      sessionStorage.setItem('sporty:lastResult', bodyText);
+      const resultJson = (() => {
+        try {
+          return JSON.parse(bodyText);
+        } catch (_) {
+          return null;
+        }
+      })();
+
+      const storageKey = usePremium ? 'sporty:lastPremiumResult' : 'sporty:lastResult';
+      sessionStorage.setItem(storageKey, bodyText);
+      if (!usePremium) {
+        sessionStorage.setItem('sporty:lastResult', bodyText);
+      } else if (resultJson && resultJson.credit && resultJson.credit.totals) {
+        sessionStorage.setItem('sporty:lastCreditSnapshot', JSON.stringify(resultJson.credit.totals));
+      }
 
       if (consentAccepted && sportyApp && typeof sportyApp.saveRecommendation === 'function') {
         try {
-          const resultJson = JSON.parse(bodyText);
           const extraPayload = {};
-          if (premiumSelection && premiumSelection.data) {
-            extraPayload.analysisInput = premiumSelection.data;
+          if (premiumData) {
+            extraPayload.analysisInput = premiumData;
           }
           if (pastSportsSelection && Array.isArray(pastSportsSelection.data) && pastSportsSelection.data.length) {
             extraPayload.pastSports = pastSportsSelection.data;
           }
+          extraPayload.analysisType = usePremium ? 'premium' : 'free';
           const extras = Object.keys(extraPayload).length ? extraPayload : undefined;
+          if (!resultJson) throw new Error('Invalid analysis payload');
           const saveOutcome = await sportyApp.saveRecommendation(payload, resultJson, extras);
           if (saveOutcome && saveOutcome.saved) {
             setStatus('Saved to your account. Redirecting…', 'info');
@@ -238,7 +284,7 @@
         }
       }
 
-      window.location.assign('/results');
+      window.location.assign(usePremium ? '/results/premium' : '/results');
     } catch (error) {
       setStatus(error.message || 'Unexpected error, please try again.', 'error');
       setSubmitBusy(false);
@@ -781,13 +827,7 @@
   }
 
   function createPremiumController(config) {
-    const {
-      block,
-      locked,
-      lockedMessage,
-      summary,
-      getClient,
-    } = config || {};
+    const { block, locked, lockedMessage, summary, getClient } = config || {};
     const MAX_ITEMS = 20;
 
     const preferenceList = createPriorityList(
@@ -814,11 +854,21 @@
     );
 
     const taxonomyCache = { promise: null, value: null };
+    const toggleWrapper = block ? block.querySelector('[data-premium-toggle]') : null;
+    const applyToggle = block ? block.querySelector('[data-premium-apply]') : null;
     let active = false;
     let consentGranted = false;
     let creditCount = 0;
     let lastUserId = null;
     let updateToken = 0;
+    let applyCredit = false;
+
+    if (applyToggle) {
+      applyToggle.addEventListener('change', (event) => {
+        applyCredit = Boolean(event.currentTarget.checked);
+        updateSummary();
+      });
+    }
 
     function defaultLockedMessage() {
       return 'Premium credits let you capture preferences, goals, and injuries alongside your measurements. Sign in and apply a credit to unlock deeper tailoring.';
@@ -834,8 +884,11 @@
         creditCount === 1
           ? '1 adult analysis credit available.'
           : `${creditCount} adult analysis credits available.`;
+      const actionText = applyCredit
+        ? 'We will apply one credit when you submit.'
+        : 'Toggle below to apply a credit for the detailed analysis.';
       summary.textContent = consentGranted
-        ? `${creditText} Add up to 20 entries per category before submitting your detailed analysis.`
+        ? `${creditText} ${actionText}`
         : `${creditText} Enable data-retention consent when prompted so we can store these detailed inputs.`;
     }
 
@@ -843,17 +896,25 @@
       active = true;
       if (locked) locked.hidden = true;
       if (block) block.hidden = false;
+      if (toggleWrapper) toggleWrapper.hidden = false;
+      if (applyToggle) applyToggle.disabled = false;
       updateSummary();
     }
 
     function deactivate(message) {
       active = false;
       creditCount = 0;
+      applyCredit = false;
       if (block) block.hidden = true;
       if (summary) summary.textContent = '';
       if (locked) locked.hidden = false;
       if (lockedMessage) {
         lockedMessage.textContent = message || defaultLockedMessage();
+      }
+      if (toggleWrapper) toggleWrapper.hidden = true;
+      if (applyToggle) {
+        applyToggle.checked = false;
+        applyToggle.disabled = true;
       }
       preferenceList.reset();
       goalList.reset();
@@ -913,20 +974,17 @@
       return taxonomyCache.promise;
     }
 
-    async function fetchAdultCredits(client, userId) {
-      if (!client || !userId) return { availableCount: 0, rows: [] };
-      const { data, error } = await client
-        .from('analysis_credits')
-        .select('id, remaining, credit_type, consumed_at')
-        .eq('user_id', userId)
-        .eq('credit_type', 'adult');
-      if (error) throw error;
-      const rows = data || [];
-      const availableCount = rows.reduce((total, row) => {
-        const remaining = Number(row.remaining) || 0;
-        return remaining > 0 ? total + remaining : total;
-      }, 0);
-      return { availableCount, rows };
+    async function fetchAdultCredits(userId) {
+      if (!userId) return { availableCount: 0 };
+      const resp = await fetch(`/api/credits?user_id=${encodeURIComponent(userId)}`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (!resp.ok) {
+        throw new Error(`Failed to fetch credits (${resp.status})`);
+      }
+      const payload = await resp.json();
+      const availableCount = Number(payload.adult_credits) || 0;
+      return { availableCount };
     }
 
     return {
@@ -940,17 +998,15 @@
           return;
         }
 
-        if (!userId || !client) {
+        if (!userId) {
           lastUserId = null;
           deactivate();
           return;
         }
 
-        lastUserId = userId;
-
         let credits;
         try {
-          credits = await fetchAdultCredits(client, userId);
+          credits = await fetchAdultCredits(userId);
         } catch (error) {
           console.error('Failed to load premium credits', error);
           if (currentToken === updateToken) {
@@ -967,6 +1023,18 @@
           deactivate('Add an adult analysis credit to unlock detailed inputs.');
           return;
         }
+
+        if (!client) {
+          deactivate('Log in again to manage premium inputs.');
+          return;
+        }
+
+        if (lastUserId !== userId) {
+          applyCredit = false;
+          if (applyToggle) applyToggle.checked = false;
+        }
+
+        lastUserId = userId;
 
         let taxonomy;
         try {
@@ -989,10 +1057,17 @@
         preferenceList.setOptions(taxonomy.preferences || []);
         goalList.setOptions(taxonomy.goals || []);
         injuryList.setOptions(taxonomy.injuries || [], taxonomy.injurySubcategories || {});
+        if (toggleWrapper) toggleWrapper.hidden = false;
+        if (applyToggle) {
+          applyToggle.disabled = false;
+          applyToggle.checked = applyCredit;
+        }
         activate();
       },
       collect() {
-        if (!active) return null;
+        if (!active) {
+          return { applyCredit: false, data: null, errors: [] };
+        }
         const pref = preferenceList.collect();
         const goals = goalList.collect();
         const injuries = injuryList.collect();
@@ -1010,7 +1085,7 @@
             }
           : null;
 
-        return { data, errors };
+        return { applyCredit, data, errors };
       },
       setConsent(consent) {
         consentGranted = Boolean(consent);
@@ -1190,8 +1265,11 @@
         }
         seen.add(value);
         const priority = entry.priority && entry.priority.value ? entry.priority.value : 'nice_to_have';
+        const option = state.options.find((opt) => opt.id === value);
         data.push({
           [config.keyField]: value,
+          name: option && option.name ? option.name : value,
+          description: option && option.description ? option.description : undefined,
           priority,
         });
       });
@@ -1407,9 +1485,15 @@
         }
         seen.add(uniqueKey);
 
+        const injuryOption = state.injuries.find((injury) => injury.id === injuryId);
+        const subOptions = state.subcategories[injuryId] || [];
+        const subOption = subOptions.find((sub) => sub.id === subcategoryId);
+
         data.push({
           injury_id: injuryId,
+          injury_name: injuryOption && injuryOption.name ? injuryOption.name : injuryId,
           injury_subcategory_id: subcategoryId || null,
+          injury_subcategory_name: subOption && subOption.name ? subOption.name : null,
           severity,
           notes,
         });

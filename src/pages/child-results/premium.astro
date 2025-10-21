@@ -1,0 +1,251 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+<BaseLayout
+  title="Sporty — Child Premium Matches"
+  description="Premium sport matches based on the projected adult body for this child."
+>
+  <Fragment slot="head">
+    <style>
+      .page {
+        max-width: var(--max-width);
+        margin: clamp(2rem, 4vw, 3.5rem) auto;
+        padding: 0 clamp(1.5rem, 5vw, 3rem);
+        display: grid;
+        gap: clamp(2rem, 4vw, 3rem);
+      }
+      .hero {
+        display: grid;
+        gap: 0.75rem;
+      }
+      .hero .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-weight: 600;
+        color: var(--color-accent, #0f766e);
+      }
+      .hero h1 {
+        margin: 0;
+      }
+      .credit-summary {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        font-size: 0.95rem;
+        color: var(--color-muted);
+      }
+      .credit-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border-radius: 999px;
+        padding: 0.35rem 0.85rem;
+        background: rgba(14, 165, 165, 0.12);
+        border: 1px solid rgba(14, 165, 165, 0.2);
+        font-weight: 600;
+        color: var(--color-accent, #0f766e);
+      }
+      .summary-grid {
+        display: grid;
+        gap: 0.85rem;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      }
+      .summary-card {
+        border-radius: 18px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        background: rgba(241, 245, 249, 0.6);
+        padding: clamp(1.1rem, 3vw, 1.6rem);
+        display: grid;
+        gap: 0.35rem;
+      }
+      .summary-card span {
+        display: block;
+      }
+      .summary-card .label {
+        font-size: 0.85rem;
+        color: var(--color-muted);
+      }
+      .summary-card .value {
+        font-weight: 600;
+        font-size: 1rem;
+      }
+      .grid {
+        display: grid;
+        gap: clamp(1.5rem, 3vw, 2.5rem);
+      }
+      .card-stack {
+        display: grid;
+        gap: 1.2rem;
+      }
+      .card {
+        border-radius: 20px;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        background: linear-gradient(180deg, rgba(241, 245, 249, 0.6), rgba(255, 255, 255, 0.95));
+        padding: clamp(1.35rem, 3vw, 1.9rem);
+        display: grid;
+        gap: 0.85rem;
+      }
+      .list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.75rem;
+      }
+      .list-item {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        padding: 0.9rem 1rem;
+        display: grid;
+        gap: 0.35rem;
+      }
+      .list-meta {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        font-size: 0.85rem;
+        color: var(--color-muted);
+      }
+      .match-grid {
+        display: grid;
+        gap: clamp(1rem, 3vw, 1.5rem);
+      }
+      .match-card {
+        border-radius: 20px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        background: linear-gradient(180deg, rgba(241, 245, 249, 0.55), rgba(255, 255, 255, 0.95));
+        box-shadow: 0 24px 48px -38px rgba(15, 23, 42, 0.35);
+        padding: clamp(1.2rem, 2.6vw, 1.7rem);
+        display: grid;
+        gap: 0.6rem;
+      }
+      .match-header {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+      }
+      .match-rank {
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        background: rgba(14, 165, 165, 0.18);
+        color: var(--color-accent, #0f766e);
+      }
+      .match-title {
+        margin: 0;
+        font-size: 1.05rem;
+      }
+      .match-score {
+        margin-left: auto;
+        font-weight: 700;
+        font-size: 1.05rem;
+        color: var(--color-accent, #0f766e);
+      }
+      .match-summary {
+        margin: 0;
+        font-size: 0.95rem;
+      }
+      .cta-row {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .empty-state {
+        border-radius: 18px;
+        border: 1px dashed rgba(148, 163, 184, 0.35);
+        padding: clamp(1.6rem, 3vw, 2.2rem);
+        text-align: center;
+        color: var(--color-muted);
+      }
+      @media (min-width: 960px) {
+        .grid {
+          grid-template-columns: 2fr 1fr;
+        }
+        .match-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </Fragment>
+
+  <main class="page" data-child-premium-root>
+    <section class="hero" data-hero hidden>
+      <span class="badge">Child premium matches</span>
+      <h1 data-sport>Premium matches ready</h1>
+      <p class="lead-copy" data-reason>We’ll populate this with the premium rationale once your analysis loads.</p>
+      <div class="credit-summary" data-credit hidden>
+        <span class="credit-pill" data-credit-adult>Adult credits: —</span>
+        <span class="credit-pill" data-credit-child>Child credits: —</span>
+      </div>
+    </section>
+
+    <section class="summary-grid" data-measurement-summary hidden></section>
+
+    <section class="empty-state" data-empty-state hidden>
+      <h2>No premium run detected</h2>
+      <p>Run the child forecast, then apply a child credit on the premium step to unlock sport matches.</p>
+      <div class="cta-row" style="justify-content:center; margin-top:1.25rem;">
+        <a class="button" href="/child-intake">Go to child forecast</a>
+        <a class="button--ghost" href="/child-premium">Apply premium filters</a>
+      </div>
+    </section>
+
+    <section class="grid" data-results hidden>
+      <div class="card-stack">
+        <article class="card">
+          <h2>Component impact</h2>
+          <ul class="list" data-component-list></ul>
+        </article>
+        <article class="card">
+          <h2>Preferences</h2>
+          <ul class="list" data-preference-list></ul>
+        </article>
+        <article class="card">
+          <h2>Goals</h2>
+          <ul class="list" data-goal-list></ul>
+        </article>
+        <article class="card">
+          <h2>Injury considerations</h2>
+          <ul class="list" data-injury-list></ul>
+        </article>
+        <article class="card">
+          <h2>Child past sports</h2>
+          <ul class="list" data-past-sports-list></ul>
+        </article>
+        <article class="card">
+          <h2>Next actions</h2>
+          <ul class="list" data-next-steps-list></ul>
+        </article>
+      </div>
+      <div class="card-stack">
+        <article class="card">
+          <h2>Top sport matches</h2>
+          <div class="match-grid" data-match-grid></div>
+        </article>
+        <article class="card">
+          <h2>What’s next?</h2>
+          <div class="cta-row">
+            <a class="button" href="/child-results">View forecast details</a>
+            <a class="button--ghost" href="/child-premium">Adjust premium inputs</a>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <Fragment slot="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="/config.js" defer></script>
+    <script src="/assets/js/app.js" defer></script>
+    <script src="/assets/js/child-results-premium.js" defer></script>
+  </Fragment>
+</BaseLayout>

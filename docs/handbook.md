@@ -13,10 +13,13 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 - Keep navigation, typography, and layout consistent across all pages.
 - Proxy `/api/recommend-adult-free` and `/api/forecast-child` through the Cloudflare runtime so browsers never see backend secrets.
 - Free adult match now requires the full measurement set (birthday, sex, height, weight, arm span, leg inseam, shoulder width, hip width, hand length, foot length) and renders slider + number pairs for each. Premium-only inputs (preferences, goals, injuries) remain locked behind credits until a paid analysis is available.
+- When an authenticated user has credits, the intake toggles “Apply credit” to run `/api/recommend-adult-premium`; the premium journey redirects to `/results/premium` with component breakdowns pulled from the backend.
+- Child forecasts now focus on measurements only; guardians who want sport matches click through to `/child-premium`, apply a child credit, and add preferences/goals/injuries/past sports before reviewing matches in `/child-results/premium`.
 - The free results page now mirrors the journey vision with a component impact bar, three-up match grid, and highlight strip; interactive adjustment controls are deferred until preview endpoints exist.
-- Child forecast intake pulls in the deterministic test family (prefilled on preview branches) and posts to `/api/forecast-child`, then `/child-results` renders per-source contributions from the stored session payload.
+- Child forecast intake pulls in the deterministic test family (prefilled on preview branches) and posts to `/api/forecast-child`; `/child-premium` replays the forecast payload with premium inputs so `/child-results` can render both measurement projections and premium matches.
 - Logged-in intakes also capture past sports (searchable `sports_subcategories`, intensity, enjoyment/flair/skill flags) and sync them to Supabase before saving recommendations.
 - Logged-in free users can view history but are limited to one new stored analysis per day; anonymous runs still capture past-sport signals anonymously to fuel the data moat.
+- The dashboard views stored recommendations (free + premium) alongside updated credit balances so users and guardians can revisit previous analyses.
 - Premium flows will add performance factor inputs (muscle gain ease, endurance bias, recovery speed) and surface derived indexes (Monkey Index, discipline ratios) in the results dashboard.
 - Surface Supabase-powered auth/consent flows without persisting any sensitive keys client-side.
 - Honour explicit consent before storing measurements, preferences/goals, injuries, or child data; provide preview mode if consent is declined.
@@ -29,12 +32,21 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 | Layer                             | Responsibilities                                                                                                                                                                                                                             |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Astro**                         | Pages live in `src/pages`. Shared chrome (nav, footer, fonts) lives in `src/layouts/BaseLayout.astro`. Global design tokens are declared in `src/styles/tokens.css`, while `src/styles/global.css` provides base resets and utility classes. |
-| **Astro API routes**              | `src/pages/config.js.ts` publishes runtime Supabase config; `src/pages/api/recommend-adult-free.ts` proxies the backend `/v1/recommend-adult-free`; `src/pages/api/forecast-child.ts` proxies `/v1/forecast-child`; `src/pages/api/healthz.ts` exposes a health endpoint. |
-| **Public assets**                 | Vanilla JS (`public/assets/js/*.js`) handles Supabase auth, form submission, and DOM updates. `intake.js` manages the adult free + premium forms and the past-sport repeater, while `child-intake.js`/`child-results.js` drive the forecast QA flow. Images and other static assets also live under `public/`. |
+| **Astro API routes**              | `src/pages/config.js.ts` publishes runtime Supabase config; `src/pages/api/recommend-adult-free.ts` proxies the backend `/v1/recommend-adult-free`; `src/pages/api/recommend-adult-premium.ts` proxies `/v1/recommend-adult-premium`; `src/pages/api/forecast-child.ts` proxies `/v1/forecast-child`; `src/pages/api/credits.ts` proxies `/v1/credits`; `src/pages/api/healthz.ts` exposes a health endpoint. |
+| **Public assets**                 | Vanilla JS (`public/assets/js/*.js`) handles Supabase auth, form submission, and DOM updates. `intake.js` manages the adult free + premium forms and the past-sport repeater, `child-intake.js` handles the measurement-only forecast, `child-premium.js` powers the credit-backed refinement, `child-results.js` renders stored runs, `child-results-premium.js` renders the premium matches, and `dashboard.js` hydrates credit balances + saved runs. Images and other static assets also live under `public/`. |
 | **Cloudflare Worker (generated)** | `astro build` (Cloudflare adapter) emits `dist/_worker.js/index.js`, wiring runtime env, asset serving, and the proxy routes above.                                                                                                          |
 | **Backend**                       | FastAPI service (`/v1/recommend-adult-free`) behind the Worker; see backend repo for implementation details.                                                                                                                                    |
 
 `npm run build` produces a server bundle (`dist/_worker.js/**`) plus static assets (`dist/`), ready for `wrangler dev`/`wrangler deploy`.
+
+Primary desktop MVP routes (marketing + app shell):
+
+- `/` — marketing home
+- `/about`, `/pricing`, `/terms` — supporting marketing content
+- `/intake`, `/results`, `/results/premium` — adult quick match and premium placeholders
+- `/dashboard` — logged-in history/credits shell
+- `/account` — consent and data privacy controls
+- `/child-intake`, `/child-results` — guardian flow
 
 ---
 

@@ -2,10 +2,12 @@
   const form = document.querySelector('[data-child-intake-form]');
   if (!form) return;
 
+  const sportyApp = window.SportyApp;
   const statusEl = form.querySelector('[data-status]');
   const submitBtn = form.querySelector('[data-submit]');
   const resetBtn = form.querySelector('[data-reset]');
   const bannerEl = document.querySelector('[data-child-banner]');
+  const guardianField = form.elements.guardian_user_id;
 
   function setStatus(message, type = 'info') {
     if (!statusEl) return;
@@ -15,9 +17,7 @@
   }
 
   function collectMeasurements(group) {
-    const fields = form.querySelectorAll(
-      `[data-group="${group}"][data-measurement]`
-    );
+    const fields = form.querySelectorAll(`[data-group="${group}"][data-measurement]`);
     const output = {};
     fields.forEach((field) => {
       const key = field.getAttribute('data-measurement');
@@ -34,9 +34,7 @@
   }
 
   function hasAnyMeasurement(measurements) {
-    return Object.values(measurements).some(
-      (value) => value !== null && value !== undefined
-    );
+    return Object.values(measurements).some((value) => value !== null && value !== undefined);
   }
 
   function normalizeEthnicity(value) {
@@ -55,6 +53,15 @@
     );
   }
 
+  function populateGroup(group, values) {
+    Object.entries(values || {}).forEach(([key, value]) => {
+      const field = form.querySelector(`[data-group="${group}"][data-measurement="${key}"]`);
+      if (field) {
+        field.value = value ?? '';
+      }
+    });
+  }
+
   function prefillForTest() {
     const preset = {
       child_id: '5d9dc9fd-9f5b-4b5d-b4db-77056db48e5d',
@@ -64,6 +71,7 @@
       ethnicity: 'caucasian',
       adult_age_group: '25-35 years',
       child: {
+        weight_kg: 36.4,
         height_cm: 132.2,
         arm_span_cm: 134.0,
         leg_inseam_cm: 66.4,
@@ -73,6 +81,7 @@
         foot_length_cm: 21.1,
       },
       mother: {
+        weight_kg: 62.5,
         height_cm: 167.2,
         arm_span_cm: 167.8,
         leg_inseam_cm: 78.4,
@@ -82,6 +91,7 @@
         foot_length_cm: 24.0,
       },
       father: {
+        weight_kg: 82.1,
         height_cm: 184.6,
         arm_span_cm: 185.4,
         leg_inseam_cm: 86.7,
@@ -113,17 +123,6 @@
     }
   }
 
-  function populateGroup(group, values) {
-    Object.entries(values || {}).forEach(([key, value]) => {
-      const field = form.querySelector(
-        `[data-group="${group}"][data-measurement="${key}"]`
-      );
-      if (field) {
-        field.value = value ?? '';
-      }
-    });
-  }
-
   function resetForm() {
     form.reset();
     setStatus('');
@@ -134,7 +133,6 @@
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-
     if (!submitBtn) return;
 
     const childId = form.elements.child_id.value.trim();
@@ -185,21 +183,25 @@
         body: JSON.stringify(payload),
       });
       const bodyText = await response.text();
+      let resultJson = null;
+      try {
+        resultJson = JSON.parse(bodyText);
+      } catch (error) {
+        console.warn('Unable to parse forecast response JSON', error);
+      }
 
       if (!response.ok) {
         let detail = 'Unable to generate forecast right now.';
         try {
-          const json = JSON.parse(bodyText);
+          const json = resultJson || JSON.parse(bodyText);
           detail = json.detail || detail;
         } catch (_) {}
         throw new Error(detail);
       }
 
-      sessionStorage.setItem('sporty:lastChildForecast', bodyText);
-      sessionStorage.setItem(
-        'sporty:lastChildForecastRequest',
-        JSON.stringify(payload)
-      );
+      const serialized = resultJson ? JSON.stringify(resultJson) : bodyText;
+      sessionStorage.setItem('sporty:lastChildForecast', serialized);
+      sessionStorage.setItem('sporty:lastChildForecastRequest', JSON.stringify(payload));
 
       window.location.assign('/child-results');
     } catch (error) {
@@ -207,6 +209,7 @@
       setStatus(error.message || 'Unexpected error, please try again.', 'error');
       submitBtn.disabled = false;
       submitBtn.textContent = 'Forecast future body';
+      return;
     }
   });
 
@@ -218,5 +221,17 @@
 
   if (isTestBranch()) {
     prefillForTest();
+  }
+
+  if (sportyApp && sportyApp.ready) {
+    sportyApp.ready.then(() => {
+      if (typeof sportyApp.onAuthChange === 'function') {
+        sportyApp.onAuthChange((snapshot) => {
+          if (snapshot && snapshot.user && guardianField && !guardianField.value) {
+            guardianField.value = snapshot.user.id;
+          }
+        });
+      }
+    });
   }
 })();

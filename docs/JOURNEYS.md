@@ -153,16 +153,20 @@ Forecast a child’s likely sports suitability using their and their parents’ 
    - Step 1: Choose or create child profile.
    - Step 2: Input child measurements.
    - Step 3: Confirm or edit parent measurements.
-   - Credit check and consent if first use.
+   - Credit check and consent if first use (credits are not consumed yet).
 
 2. **Submit ➝ Results (Child Forecast)**
 
-   - Forecasted adult body profile and top matching sports.
-   - Visuals: growth projections, parental contribution chart.
-   - CTA to “Save forecast” or “Add co-guardian”.
+   - Forecasted adult body profile, percentile context, and contribution breakdowns.
+   - CTA to launch the premium step (“Get sports matches for child”).
 
-3. **Follow-Up**
-   - Dashboard updated with next recommended re-measure date.
+3. **Premium Step (Optional)**
+
+   - `/child-premium` preloads the forecast and lets guardians add preferences, goals, injuries, and past sports.
+   - Applying a child credit runs the blended premium analysis and redirects to `/child-results/premium`, highlighting sport matches anchored to the projected adult build.
+
+4. **Follow-Up**
+   - Dashboard updated with next recommended re-measure date and recent premium runs.
    - Notification prompt for future forecast.
 
 ### Key Pages Involved
@@ -170,6 +174,7 @@ Forecast a child’s likely sports suitability using their and their parents’ 
 - `/guardian` (dashboard)
 - `/child-intake`
 - `/child-results`
+- `/child-premium`
 
 ### Consent
 
@@ -204,6 +209,7 @@ Forecast a child’s likely sports suitability using their and their parents’ 
 | `/dashboard`       | Saved runs, credits, history         | Logged-in               |
 | `/child-intake`    | Child forecast input                 | Guardians               |
 | `/child-results`   | Child forecast results               | Guardians               |
+| `/child-premium`   | Child premium inputs + sport matches | Guardians (with credit) |
 | `/account`         | Profile, consent, data rights        | Logged-in               |
 
 ---
@@ -214,7 +220,7 @@ This document defines how users navigate through Sporty’s desktop MVP:
 
 - **Free adults** can quickly discover suitable sports.
 - **Paying adults** gain detailed, data-rich insights.
-- **Guardians** forecast sports for their children.
+- **Guardians** forecast sports for their children, then optionally refine the forecast with premium inputs to unlock credit-backed matches.
 - **Consent** is streamlined: once at signup, and once at first paid analysis.
 
 This hierarchy provides a clear framework for the frontend scaffold, ensuring all key routes, flows, and CTAs are aligned with Sporty’s product vision.

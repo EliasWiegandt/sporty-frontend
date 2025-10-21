@@ -1,0 +1,391 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout
+  title="Sporty — Child Premium Analysis"
+  description="Blend a child forecast with preferences, goals, injuries, and past sports to unlock premium matches."
+>
+  <Fragment slot="head">
+    <style>
+      .page {
+        max-width: 960px;
+        margin: clamp(2rem, 4vw, 3.5rem) auto;
+        padding: 0 clamp(1.5rem, 5vw, 3rem);
+        display: grid;
+        gap: 2rem;
+      }
+      .card {
+        border-radius: 20px;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        background: #fff;
+        padding: clamp(1.5rem, 3vw, 2.25rem);
+        display: grid;
+        gap: 1.25rem;
+      }
+      .summary-card {
+        background: rgba(14, 165, 165, 0.08);
+        border: 1px solid rgba(14, 165, 165, 0.18);
+      }
+      .summary-grid {
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      }
+      .metric {
+        display: grid;
+        gap: 0.3rem;
+        background: rgba(255, 255, 255, 0.85);
+        border-radius: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        padding: 0.85rem 1rem;
+      }
+      .metric span {
+        display: block;
+      }
+      .metric__label {
+        font-size: 0.85rem;
+        color: var(--color-muted);
+      }
+      .metric__value {
+        font-weight: 600;
+      }
+      form[data-child-premium-form] {
+        display: grid;
+        gap: 2rem;
+      }
+      .toggle-row {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .toggle-row__copy {
+        display: grid;
+        gap: 0.25rem;
+      }
+      .toggle-row__title {
+        margin: 0;
+        font-weight: 600;
+      }
+      .toggle-row__hint {
+        margin: 0;
+        font-size: 0.85rem;
+        color: var(--color-muted);
+      }
+      .premium-group {
+        border: 1px solid rgba(14, 165, 165, 0.25);
+        background: rgba(14, 165, 165, 0.08);
+        border-radius: 18px;
+        padding: clamp(1.1rem, 3vw, 1.6rem);
+        display: grid;
+        gap: 1rem;
+      }
+      .premium-group header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .premium-actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .premium-list {
+        display: grid;
+        gap: 0.75rem;
+      }
+      .premium-item {
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        padding: 0.85rem 1rem;
+      }
+      .field__label {
+        display: block;
+        font-weight: 600;
+        color: var(--color-text);
+        margin-bottom: 0.35rem;
+      }
+      .past-sport-item {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        padding: clamp(1rem, 2.5vw, 1.4rem);
+        display: grid;
+        gap: 1rem;
+      }
+      .past-sport-flags {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      }
+      .past-sport-picker {
+        position: relative;
+      }
+      .past-sport-picker__results {
+        position: absolute;
+        top: calc(100% + 0.4rem);
+        left: 0;
+        right: 0;
+        background: #fff;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        border-radius: 12px;
+        padding: 0.5rem;
+        box-shadow: 0 18px 32px -24px rgba(15, 23, 42, 0.35);
+        max-height: 220px;
+        overflow-y: auto;
+        z-index: 10;
+      }
+      .past-sport-picker__results button {
+        width: 100%;
+        text-align: left;
+        background: none;
+        border: none;
+        padding: 0.5rem 0.4rem;
+        border-radius: 0.65rem;
+        font: inherit;
+        cursor: pointer;
+      }
+      .past-sport-picker__results button:hover {
+        background: rgba(14, 165, 165, 0.1);
+      }
+      .actions {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .status-area {
+        min-height: 1.6rem;
+      }
+      .empty-state {
+        border-radius: 18px;
+        border: 1px dashed rgba(148, 163, 184, 0.4);
+        padding: clamp(1.5rem, 3vw, 2.25rem);
+        text-align: center;
+        color: var(--color-muted);
+      }
+    </style>
+  </Fragment>
+
+  <main class="page">
+    <section class="card summary-card" data-premium-summary hidden>
+      <div>
+        <span class="badge">Forecast ready</span>
+        <h1 class="section__title" style="margin:0;">Refine sport guidance</h1>
+        <p class="lead-copy" data-premium-copy>
+          Blend the projected adult body with tailored signals to unlock sport matches for this child.
+        </p>
+      </div>
+      <div class="summary-grid" data-measurement-summary></div>
+    </section>
+
+    <div class="empty-state" data-premium-empty hidden>
+      <h2>No forecast found</h2>
+      <p>Run the child forecast first, then come back here to apply premium inputs.</p>
+      <div class="actions" style="justify-content:center; margin-top:1.5rem;">
+        <a class="button" href="/child-intake">Go to child forecast</a>
+      </div>
+    </div>
+
+    <form class="card" data-child-premium-form hidden>
+      <header class="grid">
+        <div>
+          <span class="coach-ribbon coach-ribbon--accent">Premium tailoring</span>
+          <h2 class="section__title" style="margin:0;">Child sport alignment</h2>
+          <p class="lead-copy">Add preferences, goals, injuries, and past sports. Applying a child credit unlocks premium matches.</p>
+        </div>
+        <div class="toggle-row">
+          <label class="toggle">
+            <input type="checkbox" data-child-premium-apply checked />
+            <span class="toggle__track"></span>
+          </label>
+          <div class="toggle-row__copy">
+            <p class="toggle-row__title">Apply one child analysis credit</p>
+            <p class="toggle-row__hint">Switch on to consume a credit and retrieve sport matches.</p>
+          </div>
+        </div>
+      </header>
+
+      <div class="status-area" data-status></div>
+
+      <section class="premium-group" data-child-preferences>
+        <header>
+          <h3 style="margin:0;">Preferences</h3>
+          <div class="premium-actions">
+            <button type="button" class="button--ghost button--sm" data-add-preference>Add preference</button>
+            <span class="premium-note" data-preference-count>0 / 10</span>
+          </div>
+        </header>
+        <div class="premium-list" data-preference-list></div>
+        <template data-preference-template>
+          <div class="premium-item" data-item>
+            <label>
+              <span class="field__label">Preference</span>
+              <select data-field="preference_id" required></select>
+            </label>
+            <label>
+              <span class="field__label">Priority</span>
+              <select data-field="priority">
+                <option value="must_have">Must have</option>
+                <option value="nice_to_have" selected>Nice to have</option>
+              </select>
+            </label>
+            <button type="button" class="button--ghost button--sm" data-remove>Remove</button>
+          </div>
+        </template>
+      </section>
+
+      <section class="premium-group" data-child-goals>
+        <header>
+          <h3 style="margin:0;">Goals</h3>
+          <div class="premium-actions">
+            <button type="button" class="button--ghost button--sm" data-add-goal>Add goal</button>
+            <span class="premium-note" data-goal-count>0 / 10</span>
+          </div>
+        </header>
+        <div class="premium-list" data-goal-list></div>
+        <template data-goal-template>
+          <div class="premium-item" data-item>
+            <label>
+              <span class="field__label">Goal</span>
+              <select data-field="goal_id" required></select>
+            </label>
+            <label>
+              <span class="field__label">Priority</span>
+              <select data-field="priority">
+                <option value="must_have">Must have</option>
+                <option value="nice_to_have" selected>Nice to have</option>
+              </select>
+            </label>
+            <button type="button" class="button--ghost button--sm" data-remove>Remove</button>
+          </div>
+        </template>
+      </section>
+
+      <section class="premium-group" data-child-injuries>
+        <header>
+          <h3 style="margin:0;">Injury considerations</h3>
+          <div class="premium-actions">
+            <button type="button" class="button--ghost button--sm" data-add-injury>Add injury</button>
+            <span class="premium-note" data-injury-count>0 / 10</span>
+          </div>
+        </header>
+        <div class="premium-list" data-injury-list></div>
+        <template data-injury-template>
+          <div class="premium-item" data-item>
+            <label>
+              <span class="field__label">Injury</span>
+              <select data-field="injury_id" required></select>
+            </label>
+            <label>
+              <span class="field__label">Subcategory</span>
+              <select data-field="injury_subcategory_id"></select>
+            </label>
+            <label>
+              <span class="field__label">Severity</span>
+              <select data-field="severity">
+                <option value="mostly_healed">Mostly healed</option>
+                <option value="somewhat_bad" selected>Somewhat bad</option>
+                <option value="severe">Severe</option>
+              </select>
+            </label>
+            <label class="field">
+              <span class="field__label">Notes (optional)</span>
+              <input type="text" data-field="notes" placeholder="Recovery notes" />
+            </label>
+            <button type="button" class="button--ghost button--sm" data-remove>Remove</button>
+          </div>
+        </template>
+      </section>
+
+      <section class="premium-group" data-child-past>
+        <header>
+          <h3 style="margin:0;">Past sports</h3>
+          <div class="premium-actions">
+            <button type="button" class="button--ghost button--sm" data-child-past-add>Add sport</button>
+            <span class="premium-note" data-child-past-count>0 / 5</span>
+          </div>
+        </header>
+        <p class="lead-copy" data-child-past-empty>Sign in as a guardian to add child past sports.</p>
+        <div class="premium-list" data-child-past-items></div>
+        <template data-child-past-template>
+          <div class="past-sport-item" data-item>
+            <label class="field">
+              <span class="field__label">Sport or discipline</span>
+              <div class="past-sport-picker" data-picker>
+                <input type="text" class="past-sport-picker__input" data-field="sport_label" placeholder="Search sports…" autocomplete="off" />
+                <input type="hidden" data-field="sport_subcategory_id" />
+                <div class="past-sport-picker__results" data-search-results hidden></div>
+              </div>
+            </label>
+            <div class="past-sport-flags">
+              <label class="field">
+                <span class="field__label">Years played</span>
+                <input type="number" step="0.5" min="0" max="80" data-field="years_played" />
+              </label>
+              <label class="field">
+                <span class="field__label">Starting age</span>
+                <input type="number" min="0" max="80" data-field="age_started_years" />
+              </label>
+              <label class="field">
+                <span class="field__label">Intensity</span>
+                <select data-field="intensity">
+                  <option value="">Select</option>
+                  <option value="light">Casual / recreational</option>
+                  <option value="moderate">Regular weekly sessions</option>
+                  <option value="intense">Competitive season</option>
+                  <option value="elite">High performance / elite</option>
+                </select>
+              </label>
+            </div>
+            <div class="past-sport-flags">
+              <label class="field">
+                <span class="field__label">Enjoyed it?</span>
+                <select data-field="liked">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field__label">Felt natural?</span>
+                <select data-field="had_flair">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field__label">Became good?</span>
+                <select data-field="achieved_skill">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              </label>
+            </div>
+            <button type="button" class="button--ghost button--sm" data-remove>Remove</button>
+          </div>
+        </template>
+      </section>
+
+      <div class="actions">
+        <button type="submit" class="button" data-submit>Get sport matches</button>
+        <a class="button--ghost" href="/child-results">Back to forecast</a>
+      </div>
+    </form>
+  </main>
+
+  <Fragment slot="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="/config.js" defer></script>
+    <script src="/assets/js/app.js" defer></script>
+    <script src="/assets/js/child-premium.js" defer></script>
+  </Fragment>
+</BaseLayout>

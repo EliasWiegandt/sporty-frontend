@@ -28,8 +28,9 @@ interface Props {
 }
 
 const defaultNavLinks: NavLink[] = [
-  { href: '/#why', label: 'About' },
-  { href: '/#tiers', label: 'Pricing' },
+  { href: '/about', label: 'About' },
+  { href: '/pricing', label: 'Pricing' },
+  { href: '/dashboard', label: 'Dashboard' },
 ];
 
 const defaultPrimaryAction: NavAction = { href: '/intake', label: 'Start free' };
@@ -113,13 +114,10 @@ const actionClassNames = (action: NavAction) => {
               ))}
               {showAuth && (
                 <div class="nav-auth" data-auth-controls>
-                  <button class="button button--sm" type="button" data-auth-open data-auth-mode="signin">
+                  <button class="button button--ghost button--sm" type="button" data-auth-open data-auth-mode="signin">
                     Log in
                   </button>
-                  <button class="button--ghost button--sm" type="button" data-auth-open data-auth-mode="signup">
-                    Create account
-                  </button>
-                  <button class="button--ghost button--sm" type="button" data-auth-signout hidden>
+                  <button class="button button--ghost button--sm" type="button" data-auth-signout hidden>
                     Log out
                   </button>
                 </div>

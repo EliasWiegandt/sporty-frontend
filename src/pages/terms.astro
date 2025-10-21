@@ -1,0 +1,48 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Sporty — Terms (Draft)" description="Draft terms of service for the Sporty MVP.">
+  <main class="section section--narrow terms-shell">
+    <h1 class="section__title">Terms of Service (Draft)</h1>
+    <p class="lead-copy">Formal legal terms will be published before launch. Until then, use this draft to understand how Sporty expects the product to be used.</p>
+
+    <section class="card">
+      <h2>Usage</h2>
+      <p>Sporty provides sport recommendations for personal discovery. Do not rely on Sporty for medical advice or high-risk decisions.</p>
+    </section>
+
+    <section class="card">
+      <h2>Data</h2>
+      <p>Measurements are processed transiently unless you opt in. Account holders can revoke storage in <a href="/account">Account → Data &amp; Privacy</a>.</p>
+    </section>
+
+    <section class="card">
+      <h2>Credits</h2>
+      <p>Premium credits support deeper analyses. Credits are non-transferable and tied to the purchasing account.</p>
+    </section>
+  </main>
+
+  <Fragment slot="head">
+    <style>
+      .terms-shell {
+        max-width: 820px;
+        margin: clamp(2rem, 5vw, 4rem) auto;
+        padding: 0 clamp(1.5rem, 4vw, 3rem);
+        display: grid;
+        gap: clamp(1.5rem, 3vw, 2.25rem);
+      }
+      .terms-shell .card {
+        border-radius: 24px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        background: rgba(226, 232, 240, 0.35);
+        padding: clamp(1.5rem, 3vw, 2.25rem);
+      }
+    </style>
+  </Fragment>
+
+  <Fragment slot="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="/config.js" defer></script>
+    <script src="/assets/js/app.js" defer></script>
+  </Fragment>
+</BaseLayout>

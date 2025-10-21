@@ -19,9 +19,10 @@ Marketing + intake experience for Sporty. Built with Astro + the Cloudflare adap
 
 Design tokens live in `src/styles/tokens.css`. Update tokens first before making ad-hoc style tweaks so every component stays in sync.
 
-- **Free adult match** collects birthdate, sex, height, weight, and optional body measurements (arm span, etc.). Premium adult analysis (credit required) lets signed-in users capture up to 20 goals, preferences, and injuries alongside those measurements.
-- **Child forecast QA flow** lives at `/child-intake` and `/child-results`. It posts to `/api/forecast-child` using the deterministic family seeded in the backend so we can validate the forecasting pipeline end-to-end.
-- **Logged-in past sports** section lets authenticated users add up to five past sports (with search over `sports_subcategories`, intensity, years played, and flair/skill flags) so we can blend experience into matching.
+- **Free adult match** collects birthdate, sex, height, weight, and optional body measurements (arm span, etc.).
+- **Premium adult analysis** (credit required via the dashboard) unlocks preferences, goals, and injuries, calls `/api/recommend-adult-premium`, and redirects to `/results/premium` with component impacts, alignments, and next steps.
+- **Child journey** now splits into two steps: `/child-intake` collects child + parent measurements and renders the forecast in `/child-results`; a follow-on CTA opens `/child-premium`, where guardians apply a child credit, add preferences/goals/injuries/past sports, and review the premium matches in `/child-results/premium`.
+- **Logged-in past sports** section lets authenticated users add up to five past sports (search over `sports_subcategories`, intensity, years played, flair/skill flags) so we can blend experience into matching and the stored recommendation history.
 
 ## Local Development
 
@@ -63,7 +64,9 @@ Environment values are unchanged:
 Cloudflare adapter outputs the Worker; no hand-written `src/worker.js` remains. Dynamic routes now live in `src/pages/api/`:
 - `config.js.ts` → `GET /config.js` (publishes Supabase URLs/key for browser code)
 - `api/recommend-adult-free.ts` → `POST /api/recommend-adult-free` proxy with `X-API-Key` to backend `/v1/recommend-adult-free`
-- `api/forecast-child.ts` → `POST /api/forecast-child` proxy with `X-API-Key` to backend `/v1/forecast-child`
+- `api/recommend-adult-premium.ts` → `POST /api/recommend-adult-premium` for credit-backed analyses
+- `api/forecast-child.ts` → `POST /api/forecast-child` (measurement-only forecast + premium re-run when credits are applied)
+- `api/credits.ts` → `GET /api/credits` (dashboard credit balances)
 - `api/healthz.ts` → `GET /api/healthz`
 
 All endpoints reuse the same request-id logic as the legacy Worker. Static assets are served from `public/` and baked into the build output.

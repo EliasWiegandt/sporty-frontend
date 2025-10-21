@@ -1,0 +1,193 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const historyPlaceholders = [
+  {
+    title: 'Adult premium analysis',
+    date: '2025-09-28',
+    summary: 'Highlighted trail running, rowing, and climbing with 68% body alignment.',
+  },
+  {
+    title: 'Child forecast — Casey',
+    date: '2025-08-12',
+    summary: 'Projected 6’1” adult height, strong wingspan, suggested volleyball and swimming.',
+  },
+];
+---
+<BaseLayout title="Sporty — Dashboard" description="Review saved analyses, credit balances, and measurement locker." showAuth={true}>
+  <main class="dashboard-shell" data-dashboard-root>
+    <section class="dashboard-card dashboard-card--full" data-dashboard-signed-out>
+      <h1 class="section__title" style="margin:0;">Sign in to view your dashboard</h1>
+      <p class="lead-copy">History, credits, and saved measurements live here. Sign in or create an account to continue.</p>
+      <div class="button-row">
+        <button class="button" type="button" data-auth-open data-auth-mode="signin">Log in</button>
+        <button class="button--ghost" type="button" data-auth-open data-auth-mode="signup">Create account</button>
+        <a class="button--ghost" href="/pricing">See pricing</a>
+      </div>
+    </section>
+
+    <div class="dashboard-layout" data-dashboard-signed-in hidden>
+      <aside class="dashboard-sidebar">
+        <section class="dashboard-card">
+          <h2>Credits</h2>
+          <p class="lead-copy">Adult: <span data-credits-adult>—</span></p>
+          <p class="lead-copy">Child: <span data-credits-child>—</span></p>
+          <div class="button-column">
+          <a class="button" href="/pricing">Buy credits</a>
+          <a class="button--ghost" href="/intake">Start new analysis</a>
+          <a class="button--ghost" href="/child-intake">Forecast a child</a>
+        </div>
+      </section>
+
+      <section class="dashboard-card">
+        <h2>Measurement locker</h2>
+        <p data-measurement-locker-empty>No saved measurements yet. Run an analysis to store your latest inputs.</p>
+        <ul class="measurement-list" data-measurement-locker hidden></ul>
+      </section>
+
+      <section class="dashboard-card">
+        <h2>Shortcuts</h2>
+        <ul class="shortcut-list">
+          <li><a href="/results">View latest results</a></li>
+          <li><a href="/account">Account → Data &amp; Privacy</a></li>
+          <li><a href="/pricing">Pricing &amp; credits</a></li>
+        </ul>
+      </section>
+    </aside>
+
+    <section class="dashboard-content">
+      <header class="dashboard-header">
+        <div>
+          <p class="badge">Saved analyses</p>
+          <h1 class="section__title">Your history</h1>
+          <p class="lead-copy">Track free and premium results, compare progress, and rerun analyses when you’re ready.</p>
+        </div>
+        <div class="button-row">
+          <a class="button" href="/intake">New adult analysis</a>
+          <a class="button--ghost" href="/child-intake">New child forecast</a>
+        </div>
+      </header>
+
+      <div class="history-grid" data-history-grid>
+        {historyPlaceholders.map((item) => (
+          <article class="history-card" data-history-placeholder>
+            <h2>{item.title}</h2>
+            <p class="meta">{item.date}</p>
+            <p>{item.summary}</p>
+            <div class="history-card__actions">
+              <button class="button button--sm" type="button" disabled>View details (stub)</button>
+              <button class="button--ghost button--sm" type="button" disabled>Delete</button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+    </div>
+  </main>
+
+  <Fragment slot="head">
+    <style is:global>
+      .dashboard-shell {
+        max-width: var(--max-width);
+        margin: clamp(2rem, 5vw, 4rem) auto;
+        padding: 0 clamp(1.5rem, 4vw, 3rem);
+        display: grid;
+        gap: clamp(1.5rem, 4vw, 2.5rem);
+      }
+      .dashboard-layout {
+        display: grid;
+        grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+        gap: clamp(1.5rem, 4vw, 2.5rem);
+      }
+      .dashboard-sidebar {
+        display: grid;
+        gap: clamp(1.5rem, 3vw, 2.25rem);
+        align-content: start;
+      }
+      .dashboard-card {
+        border-radius: 24px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        background: linear-gradient(180deg, rgba(241, 245, 249, 0.55), rgba(255, 255, 255, 0.95));
+        padding: clamp(1.5rem, 3vw, 2rem);
+        display: grid;
+        gap: 0.9rem;
+      }
+      .dashboard-card h2 {
+        margin: 0;
+        font-size: 1.1rem;
+      }
+      .button-column {
+        display: grid;
+        gap: 0.75rem;
+      }
+      .measurement-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.5rem;
+        color: var(--color-muted);
+      }
+      .shortcut-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.5rem;
+      }
+      .shortcut-list a {
+        font-weight: 600;
+      }
+      .dashboard-content {
+        display: grid;
+        gap: clamp(1.5rem, 3vw, 2.25rem);
+      }
+      .dashboard-header .badge {
+        display: inline-block;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--color-accent, #0f766e);
+      }
+      .history-grid {
+        display: grid;
+        gap: clamp(1.25rem, 3vw, 2rem);
+      }
+      .history-card {
+        border-radius: 24px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        padding: clamp(1.5rem, 3vw, 2rem);
+        background: rgba(226, 232, 240, 0.35);
+        display: grid;
+        gap: 0.75rem;
+      }
+      .history-card h2 {
+        margin: 0;
+        font-size: 1.1rem;
+      }
+      .history-card .meta {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--color-muted);
+      }
+      .history-card__actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .dashboard-card--full {
+        border-radius: 24px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        background: linear-gradient(180deg, rgba(241, 245, 249, 0.55), rgba(255, 255, 255, 0.95));
+        padding: clamp(1.75rem, 3vw, 2.25rem);
+      }
+    </style>
+  </Fragment>
+
+  <Fragment slot="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="/config.js" defer></script>
+    <script src="/assets/js/app.js" defer></script>
+    <script src="/assets/js/dashboard.js" defer></script>
+  </Fragment>
+</BaseLayout>

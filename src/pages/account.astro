@@ -3,13 +3,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
 ---
 <BaseLayout
-  title="Sporty — Profile & Consents"
-  description="Manage your Sporty profile, review saved consents, and control data retention."
+  title="Sporty — Account & Data Privacy"
+  description="Manage your Sporty account, control consent, and review saved analyses."
 >
-  <main class="section section--narrow" data-profile-root>
+  <main class="section section--narrow account-shell" data-profile-root>
     <section class="card" data-profile-signed-out hidden>
-      <h1 class="section__title" style="margin-top:0;">Your profile</h1>
-      <p class="lead-copy">Sign in to view saved measurements, manage data-retention consent, and control future analyses.</p>
+      <h1 class="section__title" style="margin-top:0;">Account</h1>
+      <p class="lead-copy">Sign in to review saved measurements, manage data-retention consent, and monitor analysis history.</p>
       <div class="button-row">
         <button class="button" type="button" data-auth-open>Log in</button>
         <button class="button--ghost" type="button" data-signup-open>Create account</button>
@@ -39,6 +39,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </div>
 
       <div class="profile-status" data-profile-consent-status></div>
+
+      <section class="account-links">
+        <h2 class="section__subtitle">Need something else?</h2>
+        <ul>
+          <li><a href="/dashboard">View dashboard &amp; history</a></li>
+          <li><a href="/pricing">Review pricing &amp; credits</a></li>
+          <li><a href="/privacy">Read the privacy policy</a></li>
+        </ul>
+      </section>
     </section>
   </main>
 
@@ -52,11 +61,31 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     </div>
   </footer>
 
+  <Fragment slot="head">
+    <style>
+      .account-shell {
+        max-width: 820px;
+        margin: clamp(2rem, 5vw, 4rem) auto;
+        padding: 0 clamp(1.5rem, 4vw, 3rem);
+      }
+      .account-links ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.5rem;
+      }
+      .account-links a {
+        font-weight: 600;
+      }
+    </style>
+  </Fragment>
+
   <Fragment slot="scripts">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="/config.js" defer></script>
     <script src="/assets/js/app.js" defer></script>
-    <script src="/assets/js/profile.js" defer></script>
+    <script src="/assets/js/account.js" defer></script>
     <script>
       const yearEl = document.getElementById('year');
     if (yearEl) {

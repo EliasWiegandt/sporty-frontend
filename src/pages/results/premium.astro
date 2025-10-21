@@ -1,0 +1,251 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+<BaseLayout
+  title="Sporty — Premium Analysis"
+  description="Detailed premium analysis with component breakdowns, alignment insights, and recommended next steps."
+>
+  <Fragment slot="head">
+    <style is:global>
+      .premium-shell {
+        max-width: var(--max-width);
+        margin: clamp(2rem, 5vw, 4rem) auto;
+        padding: 0 clamp(1.5rem, 5vw, 3rem);
+        display: grid;
+        gap: clamp(2rem, 4vw, 3rem);
+      }
+      .premium-hero {
+        display: grid;
+        gap: 0.75rem;
+      }
+      .premium-hero .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--color-accent, #0f766e);
+        font-weight: 600;
+      }
+      .premium-hero h1 {
+        margin: 0;
+      }
+      .premium-credit {
+        display: inline-flex;
+        gap: 0.75rem;
+        align-items: center;
+        font-size: 0.95rem;
+        color: var(--color-muted);
+      }
+      .premium-credit__pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border-radius: 999px;
+        padding: 0.35rem 0.85rem;
+        background: rgba(14, 165, 165, 0.12);
+        border: 1px solid rgba(14, 165, 165, 0.2);
+        font-weight: 600;
+        color: var(--color-accent, #0f766e);
+      }
+      .premium-grid {
+        display: grid;
+        gap: clamp(1.5rem, 3vw, 2.5rem);
+      }
+      .card-stack {
+        display: grid;
+        gap: 1rem;
+      }
+      .component-card,
+      .alignment-card,
+      .insight-card {
+        border-radius: 20px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        background: linear-gradient(180deg, rgba(241, 245, 249, 0.55), rgba(255, 255, 255, 0.95));
+        padding: clamp(1.35rem, 3vw, 1.85rem);
+        display: grid;
+        gap: 0.75rem;
+      }
+      .component-list,
+      .alignment-list,
+      .next-steps-list,
+      .injury-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.65rem;
+      }
+      .component-list li {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        font-size: 0.95rem;
+      }
+      .component-list li span {
+        font-weight: 600;
+        color: var(--color-accent, #0f766e);
+      }
+      .alignment-item {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        padding: 0.85rem 1rem;
+        display: grid;
+        gap: 0.3rem;
+      }
+      .alignment-item__meta {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        font-size: 0.85rem;
+        color: var(--color-muted);
+      }
+      .alignment-item__meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+      }
+      .next-step {
+        border-left: 4px solid rgba(14, 165, 165, 0.35);
+        padding-left: 0.75rem;
+        display: grid;
+        gap: 0.3rem;
+      }
+      .match-grid {
+        display: grid;
+        gap: clamp(1rem, 3vw, 1.5rem);
+      }
+      @media (min-width: 960px) {
+        .premium-grid {
+          grid-template-columns: 2fr 1fr;
+        }
+        .match-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+      .match-card {
+        width: 100%;
+        border-radius: 20px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        background: linear-gradient(180deg, rgba(241, 245, 249, 0.55), rgba(255, 255, 255, 0.95));
+        box-shadow: 0 28px 50px -38px rgba(15, 23, 42, 0.35);
+        display: grid;
+        gap: clamp(1rem, 2.2vw, 1.35rem);
+        padding: clamp(1.15rem, 2.4vw, 1.75rem);
+      }
+      .match-card__header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      .match-card__rank {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        background: rgba(15, 118, 110, 0.2);
+        color: var(--color-accent, #0f766e);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+      }
+      .match-card__header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+      }
+      .match-card__subtitle {
+        margin: 0.15rem 0 0;
+        font-size: 0.9rem;
+        color: var(--color-muted);
+      }
+      .match-card__score {
+        margin-left: auto;
+        font-weight: 700;
+        font-size: 1.15rem;
+        color: var(--color-accent, #0f766e);
+      }
+      .match-card__summary {
+        margin: 0;
+        color: var(--color-text);
+        font-size: 0.95rem;
+      }
+      .empty-state {
+        border-radius: 18px;
+        border: 1px dashed rgba(148, 163, 184, 0.35);
+        padding: clamp(1.6rem, 3vw, 2.2rem);
+        text-align: center;
+        color: var(--color-muted);
+      }
+    </style>
+  </Fragment>
+
+  <main class="premium-shell" data-premium-root>
+    <header class="premium-hero" data-premium-hero>
+      <span class="badge">Premium analysis</span>
+      <h1 data-sport>Premium analysis ready</h1>
+      <p class="lead-copy" data-reason>We’ll populate this with the detailed rationale once your analysis loads.</p>
+      <div class="premium-credit" data-credit-summary hidden>
+        <span class="premium-credit__pill" data-credit-adult>Adult credits: —</span>
+        <span class="premium-credit__pill" data-credit-child>Child credits: —</span>
+      </div>
+    </header>
+
+    <section class="premium-grid">
+      <div class="card-stack">
+        <article class="component-card">
+          <h2>Component impact</h2>
+          <ul class="component-list" data-component-list></ul>
+        </article>
+        <article class="alignment-card">
+          <h2>Preferences &amp; goals</h2>
+          <div class="card-stack">
+            <div>
+              <h3>Preferences</h3>
+              <ul class="alignment-list" data-preference-list></ul>
+            </div>
+            <div>
+              <h3>Goals</h3>
+              <ul class="alignment-list" data-goal-list></ul>
+            </div>
+          </div>
+        </article>
+        <article class="alignment-card">
+          <h2>Injury considerations</h2>
+          <ul class="injury-list" data-injury-list></ul>
+        </article>
+        <article class="insight-card">
+          <h2>Next steps</h2>
+          <ul class="next-steps-list" data-next-steps></ul>
+        </article>
+      </div>
+      <div class="card-stack">
+        <article class="alignment-card">
+          <h2>Past sports carried forward</h2>
+          <ul class="alignment-list" data-past-sports></ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="card-stack">
+      <h2>Match shortlist</h2>
+      <div class="match-grid" data-match-grid></div>
+    </section>
+
+    <div class="empty-state" data-empty-state hidden>
+      <h2>No premium analysis loaded</h2>
+      <p>Run a premium analysis with an adult credit to see detailed insights here.</p>
+      <div class="button-row" style="justify-content:center; margin-top:1.5rem;">
+        <a class="button" href="/intake">Start a new analysis</a>
+      </div>
+    </div>
+  </main>
+
+  <Fragment slot="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="/config.js" defer></script>
+    <script src="/assets/js/app.js" defer></script>
+    <script src="/assets/js/results-premium.js" defer></script>
+  </Fragment>
+</BaseLayout>

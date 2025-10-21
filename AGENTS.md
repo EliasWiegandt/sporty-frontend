@@ -10,6 +10,8 @@ Read this guide plus `docs/handbook.md` before contributing.
 - Prototype and validate the child forecast QA flow (`/child-intake` → `/child-results`) so backend forecasting can ship confidently.
 - Respect the one-stored-analysis-per-day cap for free accounts while still collecting anonymous past-sport inputs (without identity) to grow the data moat.
 - Build out premium intake/results UI for performance factors and derived indexes (Monkey Index, discipline ratios) as soon as backend contracts land.
+- Premium flow: when `usePremium` is toggled we now call `/api/recommend-adult-premium`; keep the intake toggle + premium results (`/results/premium`) aligned with backend payloads (component impacts, alignments, credit summaries).
+- Child forecasts also trigger `/v1/recommend-adult-premium` when a guardian applies a child credit; ensure `/child-intake` collects preferences/goals/injuries and `/child-results` renders the returned premium analysis block.
 - Coordinate any API or schema expectations with the backend team before shipping changes.
 
 ## Quick Facts
@@ -33,6 +35,7 @@ wrangler dev
 - Update `README.md` + `docs/handbook.md` whenever you add a page, tweak design tokens, or change build/deploy steps.
 - Keep `BaseLayout` as the single source of truth for the top nav and auth controls; add props instead of duplicating markup in pages.
 - Never expose Supabase service-role or Stripe secret keys in the frontend; only the Worker/backend should handle them.
+- Prefer the CLI’s built-in helpers (search/explore panels, file viewers, etc.) when inspecting the codebase; fall back to raw shell commands only when the helper can’t capture what you need so output stays easy to follow.
 
 ## Consent & Visual Asset Guidelines
 - Follow the consent flows documented in `docs/JOURNEYS.md`: always offer preview modes, gate storage behind explicit opt-ins (measurements, goals/preferences, injuries, child data), and surface revoke controls. UI copy must explain purpose, retention, and provide links to Privacy/Data Rights pages.

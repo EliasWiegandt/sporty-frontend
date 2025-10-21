@@ -240,6 +240,28 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         display: grid;
         gap: 0.5rem;
       }
+      .premium-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid rgba(14, 165, 165, 0.25);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.8);
+      }
+      .premium-toggle__copy {
+        display: grid;
+        gap: 0.25rem;
+      }
+      .premium-toggle__title {
+        margin: 0;
+        font-weight: 600;
+      }
+      .premium-toggle__hint {
+        margin: 0;
+        font-size: 0.85rem;
+        color: var(--color-muted);
+      }
       .premium-header__badge {
         display: inline-flex;
         align-items: center;
@@ -602,7 +624,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <div class="premium-lock__actions">
             <button type="button" class="button button--sm" data-auth-open data-auth-mode="signin">Log in</button>
             <button type="button" class="button--ghost button--sm" data-auth-open data-auth-mode="signup">Create account</button>
-            <a class="button--ghost button--sm" href="#tiers">View pricing</a>
+            <a class="button--ghost button--sm" href="/pricing">View pricing</a>
           </div>
         </div>
       </section>
@@ -614,6 +636,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <h2 class="section__subtitle" style="margin:0;">Tell us what matters most</h2>
             <p class="premium-note">Add up to 20 entries per category. We’ll blend these with your measurements for the detailed analysis.</p>
             <p class="premium-note" data-premium-summary></p>
+            <div class="premium-toggle" data-premium-toggle hidden>
+              <label class="toggle">
+                <input type="checkbox" data-premium-apply />
+                <span class="toggle__track"></span>
+              </label>
+              <div class="premium-toggle__copy">
+                <p class="premium-toggle__title">Apply one adult analysis credit</p>
+                <p class="premium-toggle__hint">Switch on when you’re ready to run the detailed analysis. Turn it off to stick with the free quick match.</p>
+              </div>
+            </div>
           </div>
           <div class="premium-groups">
             <div class="premium-group" data-list="preferences">

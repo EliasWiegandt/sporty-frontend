@@ -1,0 +1,160 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const tiers = [
+  {
+    name: 'Free quick match',
+    price: '$0',
+    description: 'Anonymous or logged-in. Measurements processed transiently unless you opt in.',
+    includes: [
+      'Desktop intake with required measurements',
+      'Instant top 3 sport matches with rationale',
+      'Optional past sport signals (anonymous or saved)',
+      'Upgrade prompts for premium analysis',
+    ],
+    cta: { href: '/intake', label: 'Start free', primary: true },
+  },
+  {
+    name: 'Adult premium analysis',
+    price: '$5 / credit',
+    description: 'One credit unlocks one detailed adult analysis with rich inputs and breakdowns.',
+    includes: [
+      'Everything in free quick match',
+      'Goals, preferences, injuries, performance factors',
+      'Component impact bars, radar charts, derived indexes',
+      'Saved history in Dashboard with measurement locker',
+    ],
+    cta: { href: '/dashboard', label: 'Use a credit' },
+  },
+  {
+    name: 'Child forecast',
+    price: '$5 / credit',
+    description: 'Guardians forecast a child’s adult build using cohort and parent data.',
+    includes: [
+      'Child + parent measurement intake',
+      'Growth projection and contribution matrix',
+      'Sport recommendations aligned to projected build',
+      'Dashboard reminders for re-measure windows',
+    ],
+    cta: { href: '/child-intake', label: 'Forecast a child' },
+  },
+];
+---
+<BaseLayout title="Sporty — Pricing" description="Compare the free quick match with premium adult analyses and child forecast credits.">
+  <main class="section section--wide pricing-shell">
+    <header class="pricing-hero">
+      <p class="badge">Pricing &amp; credits</p>
+      <h1 class="section__title">Start free. Upgrade when you want deeper insights.</h1>
+      <p class="lead-copy">
+        Every adult gets a free biomechanical quick match. Premium analyses and child forecasts use credits so you only pay when you need richer guidance.
+      </p>
+    </header>
+
+    <div class="pricing-grid">
+      {tiers.map((tier) => (
+        <article class={`pricing-card ${tier.name === 'Free quick match' ? 'pricing-card--highlight' : ''}`}>
+          <header>
+            <h2>{tier.name}</h2>
+            <p class="pricing-card__price">{tier.price}</p>
+            <p class="pricing-card__description">{tier.description}</p>
+          </header>
+          <ul>
+            {tier.includes.map((item) => (
+              <li>{item}</li>
+            ))}
+          </ul>
+          <a class={`button ${tier.cta.primary ? '' : 'button--ghost'}`} href={tier.cta.href}>
+            {tier.cta.label}
+          </a>
+        </article>
+      ))}
+    </div>
+
+    <section class="pricing-faq card">
+      <h2>How credits work</h2>
+      <ul>
+        <li>Credits are per analysis. One adult premium analysis consumes one adult credit.</li>
+        <li>Credits never expire and can be purchased via Stripe checkout (coming soon).</li>
+        <li>Child credits are scoped to guardian accounts and their linked children.</li>
+        <li>Log in to the <a href="/dashboard">Dashboard</a> to view balances and history.</li>
+      </ul>
+    </section>
+  </main>
+
+  <Fragment slot="head">
+    <style is:global>
+      .pricing-shell {
+        max-width: var(--max-width);
+        margin: clamp(2rem, 5vw, 4rem) auto;
+        padding: 0 clamp(1.5rem, 4vw, 3rem);
+        display: grid;
+        gap: clamp(2rem, 4vw, 3rem);
+      }
+      .pricing-hero .badge {
+        display: inline-block;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--color-accent, #0f766e);
+      }
+      .pricing-grid {
+        display: grid;
+        gap: clamp(1.5rem, 4vw, 2.5rem);
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      }
+      .pricing-card {
+        padding: clamp(1.75rem, 3vw, 2.25rem);
+        border-radius: 28px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        background: linear-gradient(180deg, rgba(241, 245, 249, 0.55), rgba(255, 255, 255, 0.95));
+        display: grid;
+        gap: 1.25rem;
+      }
+      .pricing-card--highlight {
+        border-color: rgba(14, 165, 165, 0.35);
+        background: rgba(14, 165, 165, 0.08);
+      }
+      .pricing-card__price {
+        font-size: 2rem;
+        margin: 0.5rem 0;
+        font-weight: 700;
+      }
+      .pricing-card__description {
+        margin: 0;
+        color: var(--color-muted);
+      }
+      .pricing-card ul {
+        margin: 0;
+        padding-left: 1.1rem;
+        color: var(--color-muted);
+        display: grid;
+        gap: 0.6rem;
+      }
+      .pricing-card .button {
+        justify-self: start;
+      }
+      .pricing-faq {
+        border-radius: 24px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        background: rgba(226, 232, 240, 0.35);
+        padding: clamp(1.5rem, 3vw, 2.25rem);
+      }
+      .pricing-faq ul {
+        margin: 1rem 0 0;
+        padding-left: 1.1rem;
+        color: var(--color-muted);
+        display: grid;
+        gap: 0.5rem;
+      }
+      .pricing-faq a {
+        font-weight: 600;
+      }
+    </style>
+  </Fragment>
+
+  <Fragment slot="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="/config.js" defer></script>
+    <script src="/assets/js/app.js" defer></script>
+  </Fragment>
+</BaseLayout>

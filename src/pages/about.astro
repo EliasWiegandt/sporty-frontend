@@ -1,0 +1,153 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const pillars = [
+  {
+    title: 'AI-first craft',
+    description:
+      'Sporty leans on AI agents for research, illustration, and development so we can iterate quickly while staying grounded in biomechanics.',
+  },
+  {
+    title: 'Data with consent',
+    description:
+      'Measurements stay transient until you opt in. Account holders control retention, revocation, and export from the Account → Data & Privacy view.',
+  },
+  {
+    title: 'Desktop MVP focus',
+    description:
+      'The initial release prioritizes a polished desktop experience for intakes, dashboards, and child forecasts. Mobile refinements follow after launch.',
+  },
+];
+
+const milestones = [
+  {
+    label: 'Free quick match',
+    detail: 'Anonymous or logged-in adults can see sport matches in under a minute.',
+  },
+  {
+    label: 'Premium analysis',
+    detail: 'Paid adults unlock goals, preferences, injuries, and performance factors for deeper insights.',
+  },
+  {
+    label: 'Child forecast',
+    detail: 'Guardians forecast a child’s future build using cohort data and parent measurements.',
+  },
+];
+---
+<BaseLayout title="Sporty — About" description="Learn how Sporty blends biomechanics, AI, and consent-first design to match people with sports.">
+  <main class="section section--wide about-shell">
+    <header class="about-hero">
+      <p class="badge">About Sporty</p>
+      <h1 class="section__title">AI-built sport recommendations, consent first.</h1>
+      <p class="lead-copy">
+        Sporty pairs curated athlete data with consent-aware design to help every body find fitting sports. The MVP focuses on desktop so we can ship polished marketing, intake, and results experiences quickly.
+      </p>
+      <div class="button-row">
+        <a class="button" href="/intake">See my match</a>
+        <a class="button--ghost" href="/pricing">View pricing</a>
+      </div>
+    </header>
+
+    <section class="card-grid">
+      {pillars.map((item) => (
+        <article class="card about-card">
+          <h2>{item.title}</h2>
+          <p>{item.description}</p>
+        </article>
+      ))}
+    </section>
+
+    <section class="about-milestones">
+      <h2 class="section__subtitle">What ships in the MVP</h2>
+      <ul>
+        {milestones.map((item) => (
+          <li>
+            <strong>{item.label}</strong>
+            <p>{item.detail}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="about-consent card">
+      <h2>Consent flows in two moments</h2>
+      <p>
+        Sign-up consent covers storing adult measurements and past sports. The first paid analysis adds explicit consent for sensitive inputs (injuries, child data).
+        Manage or revoke everything anytime in <a href="/account">Account → Data &amp; Privacy</a>.
+      </p>
+    </section>
+  </main>
+
+  <Fragment slot="head">
+    <style is:global>
+      .about-shell {
+        max-width: var(--max-width);
+        margin: clamp(2rem, 5vw, 4rem) auto;
+        padding: 0 clamp(1.5rem, 4vw, 3rem);
+        display: grid;
+        gap: clamp(2rem, 4vw, 3rem);
+      }
+      .about-hero .badge {
+        display: inline-block;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--color-accent, #0f766e);
+      }
+      .about-hero .section__title {
+        margin-bottom: 0.75rem;
+      }
+      .about-hero .lead-copy {
+        max-width: 48ch;
+      }
+      .card-grid {
+        display: grid;
+        gap: clamp(1.5rem, 4vw, 2.5rem);
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+      .about-card {
+        padding: clamp(1.5rem, 3vw, 2rem);
+        border-radius: 24px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        background: linear-gradient(180deg, rgba(241, 245, 249, 0.55), rgba(255, 255, 255, 0.95));
+      }
+      .about-card h2 {
+        margin: 0 0 0.5rem;
+      }
+      .about-card p {
+        margin: 0;
+        color: var(--color-muted);
+      }
+      .about-milestones ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 1.5rem;
+      }
+      .about-milestones li {
+        border-left: 4px solid rgba(15, 118, 110, 0.4);
+        padding-left: 1rem;
+      }
+      .about-milestones p {
+        margin: 0.2rem 0 0;
+        color: var(--color-muted);
+      }
+      .about-consent {
+        border-radius: 24px;
+        border: 1px solid rgba(14, 165, 165, 0.35);
+        background: rgba(14, 165, 165, 0.08);
+        padding: clamp(1.5rem, 3vw, 2.25rem);
+      }
+      .about-consent a {
+        font-weight: 600;
+      }
+    </style>
+  </Fragment>
+
+  <Fragment slot="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="/config.js" defer></script>
+    <script src="/assets/js/app.js" defer></script>
+  </Fragment>
+</BaseLayout>

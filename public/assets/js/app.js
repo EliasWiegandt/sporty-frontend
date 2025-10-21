@@ -79,6 +79,15 @@
         autoRefreshToken: true,
         detectSessionInUrl: true,
       },
+      db: {
+        schema: 'public',
+      },
+      global: {
+        headers: {
+          'Accept-Profile': 'public',
+          'Content-Profile': 'public',
+        },
+      },
     });
 
     try {
@@ -374,36 +383,19 @@
       const openButtons = container.querySelectorAll('[data-auth-open]');
       const signout = container.querySelector('[data-auth-signout]');
 
-      if (!state.client) {
-        openButtons.forEach((btn) => {
-          btn.disabled = true;
-          btn.hidden = false;
-        });
-        if (signout) {
-          signout.hidden = true;
-          signout.disabled = true;
-        }
-        return;
-      }
+      const showSignout = Boolean(state.client && state.user);
 
-      if (state.user) {
-        openButtons.forEach((btn) => {
-          btn.hidden = true;
-          btn.disabled = false;
-        });
-        if (signout) {
-          signout.hidden = false;
-          signout.disabled = false;
-        }
-      } else {
-        openButtons.forEach((btn) => {
-          btn.hidden = false;
-          btn.disabled = false;
-        });
-        if (signout) {
-          signout.hidden = true;
-          signout.disabled = true;
-        }
+      openButtons.forEach((btn) => {
+        const shouldShow = !showSignout;
+        btn.disabled = !state.client;
+        btn.hidden = !shouldShow;
+        btn.style.display = shouldShow ? '' : 'none';
+      });
+
+      if (signout) {
+        signout.disabled = !state.client;
+        signout.hidden = !showSignout;
+        signout.style.display = showSignout ? '' : 'none';
       }
     });
   }
@@ -627,6 +619,8 @@
 
     const pastSportsInput = Array.isArray(extras.pastSports) ? extras.pastSports : [];
 
+    const isPremiumResult = extras && extras.analysisType === 'premium';
+
     try {
       await persistPastSports(pastSportsInput);
     } catch (error) {
@@ -668,6 +662,10 @@
         }
       }
 
+      if (isPremiumResult) {
+        return { saved: true, reason: 'premium-stored-server' };
+      }
+
       const submissionRes = await state.client
         .from('submissions')
         .insert([
@@ -690,6 +688,7 @@
         reason: resultPayload.reason,
         matches: resultPayload.matches || [],
         total_considered: resultPayload.total_considered,
+        analysis_type: extras.analysisType || 'free',
       };
 
       const recommendationRes = await state.client
