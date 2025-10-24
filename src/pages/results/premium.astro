@@ -8,7 +8,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   <Fragment slot="head">
     <style is:global>
       .premium-shell {
-        max-width: var(--max-width);
+        max-width: min(var(--size-xl), 70rem);
         margin: clamp(2rem, 5vw, 4rem) auto;
         padding: 0 clamp(1.5rem, 5vw, 3rem);
         display: grid;
@@ -25,7 +25,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         font-size: 0.8rem;
         text-transform: uppercase;
         letter-spacing: 0.12em;
-        color: var(--color-accent, #0f766e);
+        color: var(--teal-7);
         font-weight: 600;
       }
       .premium-hero h1 {
@@ -36,7 +36,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         gap: 0.75rem;
         align-items: center;
         font-size: 0.95rem;
-        color: var(--color-muted);
+        color: var(--gray-6);
       }
       .premium-credit__pill {
         display: inline-flex;
@@ -47,7 +47,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         background: rgba(14, 165, 165, 0.12);
         border: 1px solid rgba(14, 165, 165, 0.2);
         font-weight: 600;
-        color: var(--color-accent, #0f766e);
+        color: var(--teal-7);
       }
       .premium-grid {
         display: grid;
@@ -85,7 +85,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       }
       .component-list li span {
         font-weight: 600;
-        color: var(--color-accent, #0f766e);
+        color: var(--teal-7);
       }
       .alignment-item {
         background: #fff;
@@ -100,7 +100,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         gap: 0.5rem;
         flex-wrap: wrap;
         font-size: 0.85rem;
-        color: var(--color-muted);
+        color: var(--gray-6);
       }
       .alignment-item__meta span {
         display: inline-flex;
@@ -145,7 +145,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         height: 34px;
         border-radius: 999px;
         background: rgba(15, 118, 110, 0.2);
-        color: var(--color-accent, #0f766e);
+        color: var(--teal-7);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -158,17 +158,17 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       .match-card__subtitle {
         margin: 0.15rem 0 0;
         font-size: 0.9rem;
-        color: var(--color-muted);
+        color: var(--gray-6);
       }
       .match-card__score {
         margin-left: auto;
         font-weight: 700;
         font-size: 1.15rem;
-        color: var(--color-accent, #0f766e);
+        color: var(--teal-7);
       }
       .match-card__summary {
         margin: 0;
-        color: var(--color-text);
+        color: var(--gray-12);
         font-size: 0.95rem;
       }
       .empty-state {
@@ -176,7 +176,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         border: 1px dashed rgba(148, 163, 184, 0.35);
         padding: clamp(1.6rem, 3vw, 2.2rem);
         text-align: center;
-        color: var(--color-muted);
+        color: var(--gray-6);
       }
     </style>
   </Fragment>
@@ -236,8 +236,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     <div class="empty-state" data-empty-state hidden>
       <h2>No premium analysis loaded</h2>
       <p>Run a premium analysis with an adult credit to see detailed insights here.</p>
-      <div class="button-row" style="justify-content:center; margin-top:1.5rem;">
-        <a class="button" href="/intake">Start a new analysis</a>
+      <div class="btn-row justify-center">
+        <a class="btn-primary" href="/intake">Start a new analysis</a>
       </div>
     </div>
   </main>

@@ -47,14 +47,14 @@ export default function ImpactBar({
         domain: data.map((d) => d.label).reverse(),
       },
       color: {
-        range: ['var(--color-accent, #0f766e)'],
+        range: ['var(--teal-7)'],
       },
       marks: [
         Plot.ruleX([0], { stroke: '#d4d4d8' }),
         Plot.barX(data, {
           x: 'value',
           y: 'label',
-          fill: 'var(--color-accent, #0f766e)',
+          fill: 'var(--teal-7)',
         }),
         Plot.text(
           data,

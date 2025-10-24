@@ -26,7 +26,7 @@ const adultGroups = [
       }
       .lead {
         font-size: 1.05rem;
-        color: var(--color-muted);
+        color: var(--gray-6);
         margin: 0;
       }
       .grid {
@@ -46,7 +46,7 @@ const adultGroups = [
       }
       .intake-card__empty {
         font-size: 0.9rem;
-        color: var(--color-muted);
+        color: var(--gray-6);
       }
       .past-sports__items {
         display: grid;
@@ -98,7 +98,7 @@ const adultGroups = [
       label span {
         display: block;
         font-weight: 600;
-        color: var(--color-text);
+        color: var(--gray-12);
         margin-bottom: 0.35rem;
       }
       input,
@@ -175,14 +175,14 @@ const adultGroups = [
       .toggle-row__hint {
         margin: 0;
         font-size: 0.85rem;
-        color: var(--color-muted);
+        color: var(--gray-6);
       }
       .banner {
         border-radius: 18px;
         padding: clamp(1.2rem, 3vw, 1.8rem);
         background: rgba(14, 165, 165, 0.12);
         border: 1px solid rgba(14, 165, 165, 0.25);
-        color: var(--color-accent-dark);
+        color: var(--teal-9);
       }
       .status-area {
         min-height: 2.2rem;
@@ -210,14 +210,14 @@ const adultGroups = [
       Combine a child’s current measurements with parent data to project their adult body profile. Use the prefilled test family to validate the flow, or overwrite with your own numbers.
     </section>
 
-    <form class="card grid" data-child-intake-form>
+    <form class="card-shell grid" data-child-intake-form>
       <header>
-        <h1 class="section__title" style="margin:0;">Child forecast intake</h1>
+        <h1 class="section-title" style="margin:0;">Child forecast intake</h1>
         <p class="lead">Provide age, optional ethnicity, and measurements for the child plus any available parent data.</p>
       </header>
 
       <section class="grid" aria-labelledby="who">
-        <h2 id="who" class="section__subtitle" style="margin:0;">Who are we forecasting?</h2>
+        <h2 id="who" class="section-subtitle" style="margin:0;">Who are we forecasting?</h2>
         <div class="input-row">
           <label>
             <span>Existing child ID</span>
@@ -371,7 +371,7 @@ const adultGroups = [
         </div>
       </fieldset>
 
-      <section class="card">
+      <section class="card-shell">
         <div class="grid">
           <div>
             <h2 style="margin:0;">Ready to forecast?</h2>
@@ -382,9 +382,9 @@ const adultGroups = [
 
       <div class="status-area" data-status></div>
       <div class="input-row" style="align-items:center;">
-        <button class="button" type="submit" data-submit>Forecast future body</button>
-        <button class="button--ghost" type="button" data-reset>Clear all</button>
-        <a class="button--ghost" href="/child-results">View last forecast</a>
+        <button class="btn-primary" type="submit" data-submit>Forecast future body</button>
+        <button class="btn-ghost" type="button" data-reset>Clear all</button>
+        <a class="btn-ghost" href="/child-results">View last forecast</a>
       </div>
     </form>
   </main>

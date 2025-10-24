@@ -119,17 +119,18 @@
     }
     components.forEach((item) => {
       const li = document.createElement('li');
-      li.className = 'list-item';
+      li.className = 'list-card';
       const title = document.createElement('strong');
+      title.className = 'font-semibold text-[var(--gray-12)]';
       title.textContent = item.component || 'Component';
       const meta = document.createElement('div');
-      meta.className = 'list-meta';
+      meta.className = 'meta-muted';
       meta.appendChild(createMetaChip(`Weight ${formatPercent(item.weight_percent)}`));
       if (item.score_percent != null) {
         meta.appendChild(createMetaChip(`Score ${formatPercent(item.score_percent)}`));
       }
       const summary = document.createElement('p');
-      summary.style.margin = '0';
+      summary.className = 'text-muted text-sm';
       summary.textContent = item.summary || '';
       li.appendChild(title);
       li.appendChild(meta);
@@ -155,16 +156,17 @@
     }
     items.forEach((item) => {
       const li = document.createElement('li');
-      li.className = 'list-item';
+      li.className = 'list-card';
       const title = document.createElement('strong');
+      title.className = 'font-semibold text-[var(--gray-12)]';
       title.textContent = item.name || item.preference_id || item.goal_id || 'Entry';
       const meta = document.createElement('div');
-      meta.className = 'list-meta';
+      meta.className = 'meta-muted';
       if (item.priority) meta.appendChild(createMetaChip(`Priority: ${item.priority}`));
       if (item.alignment) meta.appendChild(createMetaChip(`Alignment: ${item.alignment}`));
       if (item.score_percent != null) meta.appendChild(createMetaChip(`Score ${formatPercent(item.score_percent)}`));
       const summary = document.createElement('p');
-      summary.style.margin = '0';
+      summary.className = 'text-muted text-sm';
       summary.textContent = item.summary || '';
       li.appendChild(title);
       li.appendChild(meta);
@@ -182,11 +184,12 @@
     }
     items.forEach((item) => {
       const li = document.createElement('li');
-      li.className = 'list-item';
+      li.className = 'list-card';
       const title = document.createElement('strong');
+      title.className = 'font-semibold text-[var(--gray-12)]';
       title.textContent = item.injury_name || item.injury_id || 'Injury';
       const meta = document.createElement('div');
-      meta.className = 'list-meta';
+      meta.className = 'meta-muted';
       if (item.severity) meta.appendChild(createMetaChip(`Severity: ${item.severity}`));
       if (item.alignment) {
         Object.entries(item.alignment).forEach(([key, value]) => {
@@ -196,7 +199,7 @@
       if (item.score_percent != null) meta.appendChild(createMetaChip(`Score ${formatPercent(item.score_percent)}`));
       if (item.notes) meta.appendChild(createMetaChip(`Notes: ${item.notes}`));
       const summary = document.createElement('p');
-      summary.style.margin = '0';
+      summary.className = 'text-muted text-sm';
       summary.textContent = item.guidance || '';
       li.appendChild(title);
       li.appendChild(meta);
@@ -221,12 +224,13 @@
     }
     items.forEach((item) => {
       const li = document.createElement('li');
-      li.className = 'list-item';
+      li.className = 'list-card';
       const title = document.createElement('strong');
+      title.className = 'font-semibold text-[var(--gray-12)]';
       const label = item.sport_label || labels.get(item.sport_subcategory_id) || item.sport_subcategory_id || 'Sport';
       title.textContent = label;
       const meta = document.createElement('div');
-      meta.className = 'list-meta';
+      meta.className = 'meta-muted';
       if (item.years_played != null) meta.appendChild(createMetaChip(`${item.years_played} yrs`));
       if (item.age_started_years != null) meta.appendChild(createMetaChip(`Started @ ${item.age_started_years}`));
       if (item.intensity) meta.appendChild(createMetaChip(`Intensity: ${item.intensity}`));
@@ -248,11 +252,12 @@
     }
     items.forEach((item) => {
       const li = document.createElement('li');
-      li.className = 'list-item';
+      li.className = 'list-card';
       const title = document.createElement('strong');
+      title.className = 'font-semibold text-[var(--gray-12)]';
       title.textContent = item.title || 'Next step';
       const summary = document.createElement('p');
-      summary.style.margin = '0';
+      summary.className = 'text-muted text-sm';
       summary.textContent = item.description || '';
       li.appendChild(title);
       li.appendChild(summary);
@@ -265,7 +270,7 @@
     root.innerHTML = '';
     if (!matches || !matches.length) {
       const empty = document.createElement('p');
-      empty.className = 'match-summary';
+      empty.className = 'text-muted';
       empty.textContent = 'No sport matches returned for this premium run.';
       root.appendChild(empty);
       return;
@@ -279,7 +284,7 @@
       rank.className = 'match-rank';
       rank.textContent = index + 1;
       const title = document.createElement('h3');
-      title.className = 'match-title';
+      title.className = 'card-title';
       const sportName = ((match.optimal_body || {}).sport_slug || 'Sport').replace(/[-_]/g, ' ');
       title.textContent = sportName;
       const score = document.createElement('span');
@@ -289,7 +294,7 @@
       header.appendChild(title);
       header.appendChild(score);
       const summary = document.createElement('p');
-      summary.className = 'match-summary';
+      summary.className = 'text-muted text-sm';
       const spec = (match.optimal_body || {}).spec || {};
       summary.textContent = spec.rationale || spec.description || 'This sport aligns strongly with the projected adult build.';
       card.appendChild(header);
@@ -301,12 +306,13 @@
   function createMetaChip(label) {
     const span = document.createElement('span');
     span.textContent = label;
+    span.className = 'chip-muted';
     return span;
   }
 
   function createEmptyItem(message) {
     const li = document.createElement('li');
-    li.className = 'list-item';
+    li.className = 'list-card';
     li.textContent = message;
     return li;
   }

@@ -1,6 +1,8 @@
 import { defineConfig } from 'astro/config';
 import cloudflare from '@astrojs/cloudflare';
 import preact from '@astrojs/preact';
+import UnoCSS from 'unocss/astro';
+import { webcore } from 'webcoreui/integration';
 
 export default defineConfig({
   output: 'server',
@@ -13,5 +15,11 @@ export default defineConfig({
   session: {
     driver: 'null',
   },
-  integrations: [preact()],
+  integrations: [
+    preact(),
+    UnoCSS({
+      injectReset: false,
+    }),
+    webcore(),
+  ],
 });

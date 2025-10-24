@@ -1,6 +1,6 @@
 # Sporty Frontend (Astro + Cloudflare Adapter)
 
-Marketing + intake experience for Sporty. Built with Astro + the Cloudflare adapter so the Worker bundle and static assets are generated together. The UI is built with [Astro](https://astro.build/) and the Cloudflare adapter generates the Worker that serves the pages, exposes runtime config at `/config.js`, and proxies API calls to the FastAPI backend.
+Marketing + intake experience for Sporty (live at `sporty.plyml.com`, with the staging site on `sporty-test.plyml.com`). Built with Astro + the Cloudflare adapter so the Worker bundle and static assets are generated together. The UI is built with [Astro](https://astro.build/) and the Cloudflare adapter generates the Worker that serves the pages, exposes runtime config at `/config.js`, and proxies API calls to the FastAPI backend.
 
 ## Project Structure
 
@@ -9,20 +9,23 @@ Marketing + intake experience for Sporty. Built with Astro + the Cloudflare adap
 ├── src/
 │   ├── layouts/            # Shared page shells (nav, fonts, auth controls)
 │   ├── pages/              # `.astro` pages + API routes under `pages/api`
-│   ├── styles/             # `tokens.css` (design tokens) + `global.css`
+│   ├── styles/             # `global.css` (Open Props baseline), `brand.css`, `webcore.scss`
 │   └── env.d.ts            # Cloudflare runtime typings (env + locals)
+├── uno.config.ts          # UnoCSS configuration (presets, shortcuts, Open Props bindings)
 ├── public/
 │   └── assets/js/          # Vanilla browser scripts (Supabase auth, forms)
 ├── dist/                   # Build output (`_worker.js/**`, assets)
 └── .github/workflows/      # deploy.yml runs build + wrangler deploy
 ```
 
-Design tokens live in `src/styles/tokens.css`. Update tokens first before making ad-hoc style tweaks so every component stays in sync.
+[Open Props](https://open-props.style/) is imported globally via `src/styles/global.css`. Use variables like `--gray-7`, `--teal-7`, `--size-4`, `--ease-2`, and `--animation-fade-in` for colors, spacing, motion, and animations. UnoCSS (`uno.config.ts`) exposes shortcuts (`btn-primary`, `btn-ghost`, the intake layout helpers, etc.) and Iconify icons (`i-*` classes via `preset-icons`) that wrap those tokens, while Webcore UI (`src/styles/webcore.scss`) supplies ready-made components. Reserve `src/styles/brand.css` for brand-specific overrides.
 
 - **Free adult match** collects birthdate, sex, height, weight, and optional body measurements (arm span, etc.).
-- **Premium adult analysis** (credit required via the dashboard) unlocks preferences, goals, and injuries, calls `/api/recommend-adult-premium`, and redirects to `/results/premium` with component impacts, alignments, and next steps.
-- **Child journey** now splits into two steps: `/child-intake` collects child + parent measurements and renders the forecast in `/child-results`; a follow-on CTA opens `/child-premium`, where guardians apply a child credit, add preferences/goals/injuries/past sports, and review the premium matches in `/child-results/premium`.
+- **Premium adult analysis** (credit required via the dashboard) unlocks preferences, goals, injuries, calls `/api/recommend-adult-premium`, and redirects to `/results/premium` with component impacts, alignments, and next steps. Credits can now be purchased from the Pricing page or Dashboard via Stripe Checkout.
+- **Child journey** now splits into two steps: `/child-intake` collects child + parent measurements and renders the forecast in `/child-results`; a follow-on CTA opens `/child-premium`, where guardians apply a child credit, add preferences/goals/injuries/past sports, and review the premium matches in `/child-results/premium`. Linked guardians can purchase child credits via Stripe after choosing which child profile to assign the credit to.
 - **Logged-in past sports** section lets authenticated users add up to five past sports (search over `sports_subcategories`, intensity, years played, flair/skill flags) so we can blend experience into matching and the stored recommendation history.
+
+_Current scope_: the experience is designed for desktop browsers. Responsive layouts and mobile navigation will be prioritized after the desktop MVP ships.
 
 ## Local Development
 
@@ -37,8 +40,8 @@ Design tokens live in `src/styles/tokens.css`. Update tokens first before making
    Served at `http://localhost:4321`.
 3. Exercise the generated Worker + backend proxy:
    ```bash
-   npm run build          # emit dist/_worker.js and static assets
-   wrangler dev           # or `make run-frontend`
+   npm run build          # emit dist/_worker.js and static assets (or just run `make run-frontend`)
+   wrangler dev           # `make run-frontend` cleans dist/, rebuilds, and runs this command for you
    ```
    Provide `RENDER_URL`, `RENDER_API_KEY`, Supabase, and Stripe publishable vars via `.dev.vars` or CLI flags (same as production).
 
@@ -67,6 +70,7 @@ Cloudflare adapter outputs the Worker; no hand-written `src/worker.js` remains. 
 - `api/recommend-adult-premium.ts` → `POST /api/recommend-adult-premium` for credit-backed analyses
 - `api/forecast-child.ts` → `POST /api/forecast-child` (measurement-only forecast + premium re-run when credits are applied)
 - `api/credits.ts` → `GET /api/credits` (dashboard credit balances)
+- `api/create-checkout-session.ts` → `POST /api/create-checkout-session` to start Stripe Checkout for credit purchases
 - `api/healthz.ts` → `GET /api/healthz`
 
 All endpoints reuse the same request-id logic as the legacy Worker. Static assets are served from `public/` and baked into the build output.
@@ -74,7 +78,9 @@ All endpoints reuse the same request-id logic as the legacy Worker. Static asset
 ## Keeping Things Consistent
 
 - Always wrap pages in `BaseLayout` so nav/auth controls stay identical.
-- Pull colors, spacings, and typography from `src/styles/tokens.css`.
+- Pull colors, spacing, and typography from the Open Props variables surfaced through `src/styles/global.css`. Drop overrides in `src/styles/brand.css` only when brand-specific values are required.
+- Reach for UnoCSS utilities/shortcuts (`uno.config.ts`) and Webcore UI components for new surfaces instead of adding ad-hoc CSS.
+- The primary wordmark lives in `BaseLayout` and combines the Sporty logotype with an Iconify laurel (`i-mingcute-laurel-wreath-fill`). If you update the brand treatment, adjust it in one place and ensure the icon palette remains accessible on light backgrounds.
 - Scope page-specific styling with inline `<style>` blocks or dedicated components—edit `global.css` only for site-wide changes.
 - Update this README, `docs/handbook.md`, and `AGENTS.md` when introducing new pages, design tokens, or deployment steps.
 - When adding API calls, surface them through `src/pages/api/*` so the Worker injects the secret headers (see `api/forecast-child.ts` for the latest example).

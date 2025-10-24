@@ -165,7 +165,7 @@
             </span>
           </label>
           <div class="auth-modal__actions">
-            <button class="button" type="submit" data-auth-submit>Log in</button>
+            <button class="btn-primary" type="submit" data-auth-submit>Log in</button>
             <p class="auth-modal__switch">
               <button type="button" data-auth-switch>Need an account? Sign up</button>
             </p>
@@ -446,8 +446,8 @@
         <h2 id="consent-modal-title">Allow Sporty to store your results?</h2>
         <p>We only save your measurements and recommendations after you consent. You can revoke this later from your profile.</p>
         <div class="consent-modal__actions">
-          <button type="button" class="button--ghost" data-consent-decline>Not now</button>
-          <button type="button" class="button" data-consent-confirm>Allow storage</button>
+          <button type="button" class="btn-ghost" data-consent-decline>Not now</button>
+          <button type="button" class="btn-primary" data-consent-confirm>Allow storage</button>
         </div>
       </div>
     `;

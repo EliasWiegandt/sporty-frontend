@@ -4,7 +4,7 @@ Read this guide plus `docs/handbook.md` before contributing.
 
 ## Mission
 - Maintain the Astro-based marketing + intake experience.
-- Keep navigation, typography, and spacing consistent via `BaseLayout` and the tokens in `src/styles/tokens.css`.
+- Keep navigation, typography, and spacing consistent via `BaseLayout`, the Open Props variables surfaced in `src/styles/global.css`, and UnoCSS shortcuts defined in `uno.config.ts`.
 - Ensure the Cloudflare adapter Worker continues to serve `/config.js`, proxy `/api/recommend-adult-free`, and now `/api/forecast-child` with `X-API-Key` auth.
 - Capture and sync logged-in users’ past sports (searchable dropdown, intensity & flair flags) so the backend can incorporate prior experience.
 - Prototype and validate the child forecast QA flow (`/child-intake` → `/child-results`) so backend forecasting can ship confidently.
@@ -15,10 +15,11 @@ Read this guide plus `docs/handbook.md` before contributing.
 - Coordinate any API or schema expectations with the backend team before shipping changes.
 
 ## Quick Facts
+- Live prod is hosted at `https://sporty.plyml.com` (staging: `https://sporty-test.plyml.com`). When docs say “sporty,” they refer to that domain, not `sporty.ai`.
 - Build pipeline: `npm run build` emits `dist/_worker.js/index.js` + assets; `wrangler deploy` publishes the generated Worker (see `wrangler.toml`).
 - Node 20 is required in CI; commit `package-lock.json` with dependency changes.
 - Browser JS lives under `public/assets/js/` (no bundler—keep scripts compatible with plain browsers).
-- Design tokens → `src/styles/tokens.css`; base styles → `src/styles/global.css`.
+- Design system → Open Props in `src/styles/global.css`; UnoCSS shortcuts + Iconify (`preset-icons`, e.g. the laurel wreath logo) + Open Props animations in `uno.config.ts`; Webcore setup in `src/styles/webcore.scss`; optional overrides → `src/styles/brand.css`.
 
 ## Local Dev
 ```bash
@@ -32,7 +33,7 @@ wrangler dev
 - `make run-frontend` runs `npm run build` + `wrangler dev` in sequence.
 
 ## Collaboration
-- Update `README.md` + `docs/handbook.md` whenever you add a page, tweak design tokens, or change build/deploy steps.
+- Update `README.md` + `docs/handbook.md` whenever you add a page, adjust Open Props/UnoCSS/Webcore usage, or change build/deploy steps.
 - Keep `BaseLayout` as the single source of truth for the top nav and auth controls; add props instead of duplicating markup in pages.
 - Never expose Supabase service-role or Stripe secret keys in the frontend; only the Worker/backend should handle them.
 - Prefer the CLI’s built-in helpers (search/explore panels, file viewers, etc.) when inspecting the codebase; fall back to raw shell commands only when the helper can’t capture what you need so output stays easy to follow.

@@ -65,32 +65,32 @@ const testimonials = [
   description="Free sport recommendations based on your body today, with optional paid deep analysis and child forecasts."
 >
   <main>
-    <section class="section hero" id="hero">
+    <section class="section-shell hero-shell" id="hero">
       <div class="hero__content">
-        <span class="hero__badge">Biomechanics-backed matches in under 60 seconds</span>
-        <h1 class="hero__headline">Find the sport your body is wired for.</h1>
-        <p class="hero__copy">Share a handful of measurements, then see free, science-backed sport matches tuned to your build. Upgrade later for saved histories, premium adult inputs, and child forecasts.</p>
-        <div class="hero__cta" role="group" aria-label="Primary calls to action">
-          <a class="button" href="/intake">See my match</a>
-          <a class="button--ghost" href="#how-it-works">How it works</a>
-          <a class="button--ghost" href="/child-intake">Forecast a child</a>
+        <span class="hero-badge">Biomechanics-backed matches in under 60 seconds</span>
+        <h1 class="hero-headline">Find the sport your body is wired for.</h1>
+        <p class="hero-copy">Share a handful of measurements, then see free, science-backed sport matches tuned to your build. Upgrade later for saved histories, premium adult inputs, and child forecasts.</p>
+        <div class="flex flex-wrap items-center gap-3" role="group" aria-label="Primary calls to action">
+          <a class="btn-primary" href="/intake">See my match</a>
+          <a class="btn-ghost" href="#how-it-works">How it works</a>
+          <a class="btn-ghost" href="/child-intake">Forecast a child</a>
         </div>
       </div>
-      <div class="hero__visual hero__mosaic" aria-label="Three-tile illustration mosaic showing basketball, swimming, and running athletes.">
-        <figure class="image-tile">
+      <div class="hero-visual" aria-label="Three-tile illustration mosaic showing basketball, swimming, and running athletes.">
+        <figure class="image-tile hero-visual-item">
           <img data-image-key="landing.hero.tile_a" alt="Square illustration of an adult basketball player warming up with a ball in hand inside a bright gym." loading="lazy" />
         </figure>
-        <figure class="image-tile hero__mosaic--center">
+        <figure class="image-tile hero-visual-item hero__mosaic--center">
           <img data-image-key="landing.hero.tile_b" alt="Square illustration of an adult swimmer stretching with a towel and goggles beside an indoor pool." loading="lazy" />
         </figure>
-        <figure class="image-tile">
+        <figure class="image-tile hero-visual-item">
           <img data-image-key="landing.hero.tile_c" alt="Square illustration of an adult runner tying their shoes beside starting blocks on an indoor track." loading="lazy" />
         </figure>
       </div>
     </section>
 
-    <section class="section section--accent" id="pillars" aria-labelledby="pillars-heading">
-      <h2 class="section__title" id="pillars-heading">Why Sporty hits different</h2>
+    <section class="section-shell section--accent" id="pillars" aria-labelledby="pillars-heading">
+      <h2 class="section-title" id="pillars-heading">Why Sporty hits different</h2>
       <div class="pillars">
         {valuePillars.map((pillar) => (
           <article class="pillar-card">
@@ -102,8 +102,8 @@ const testimonials = [
       </div>
     </section>
 
-    <section class="section" id="how-it-works">
-      <h2 class="section__title">How Sporty works</h2>
+    <section class="section-shell" id="how-it-works">
+      <h2 class="section-title">How Sporty works</h2>
       <div class="how-carousel" data-how-carousel>
         <div class="how-carousel__tabs" role="tablist" aria-label="How Sporty works steps">
           {howSteps.map((step, index) => (
@@ -142,8 +142,8 @@ const testimonials = [
       </div>
     </section>
 
-    <section class="section testimonial-strip" aria-labelledby="testimonial-heading">
-      <h2 class="section__title" id="testimonial-heading">People are already feeling the fit</h2>
+    <section class="section-shell testimonial-strip" aria-labelledby="testimonial-heading">
+      <h2 class="section-title" id="testimonial-heading">People are already feeling the fit</h2>
       <div class="testimonial-strip__inner">
         {testimonials.map((item) => (
           <figure class="testimonial-card">
@@ -154,64 +154,64 @@ const testimonials = [
       </div>
     </section>
 
-    <section class="section" id="tiers">
-      <h2 class="section__title">Choose the depth you need</h2>
+    <section class="section-shell" id="tiers">
+      <h2 class="section-title">Choose the depth you need</h2>
       <p class="lead-copy">Sporty starts free for every adult. Upgrade when you want richer analysis or forecasts for children.</p>
-      <div class="grid-cards grid-cards--balanced">
-        <article class="card card--highlight" aria-label="Free plan details">
-          <h3>Free · Adult Quick Match</h3>
-          <ul class="feature-list">
+      <div class="grid-cards grid-balanced">
+        <article class="card-shell card-highlight" aria-label="Free plan details">
+          <h3 class="card-title">Free · Adult Quick Match</h3>
+          <ul class="feature-list card-copy">
             <li><strong>Body-only scoring</strong> — instant matches from today’s measurements.</li>
             <li><strong>No login required</strong> — we don’t store anything yet.</li>
             <li><strong>Top three sports</strong> — see why they fit you and what to explore first.</li>
           </ul>
-          <div class="button-row" style="margin-top:1.5rem;">
-            <a class="button" href="/intake">Try it now</a>
+          <div class="btn-row">
+            <a class="btn-primary" href="/intake">Try it now</a>
           </div>
         </article>
-        <article class="card" aria-label="Paid plan overview">
-          <h3>$5 · Pro Analysis (coming soon)</h3>
-          <ul class="feature-list">
+        <article class="card-shell" aria-label="Paid plan overview">
+          <h3 class="card-title">$5 · Pro Analysis (coming soon)</h3>
+          <ul class="feature-list card-copy">
             <li><strong>Detailed adult intake</strong> — preferences, injuries, goals, past sports.</li>
             <li><strong>Child forecasts</strong> — invite another guardian, project future body metrics, and get child-specific sport pathways.</li>
             <li><strong>Stored history</strong> — save profiles, track analyses, and revisit recommendations anytime.</li>
           </ul>
-          <div class="button-row" style="margin-top:1.5rem;">
-            <a class="button--ghost" href="/pricing">See pricing</a>
+          <div class="btn-row">
+            <a class="btn-ghost" href="/pricing">See pricing</a>
           </div>
         </article>
       </div>
     </section>
 
-    <section class="section" id="sample-results">
-      <h2 class="section__title">What your free results look like</h2>
-      <div class="grid-cards grid-cards--balanced">
-        <article class="card">
-          <figure class="image-tile" aria-label="Square illustration of three sport recommendation cards fanned out on a desk.">
+    <section class="section-shell" id="sample-results">
+      <h2 class="section-title">What your free results look like</h2>
+      <div class="grid-cards grid-balanced">
+        <article class="card-shell">
+          <figure class="image-tile hero-visual-item" aria-label="Square illustration of three sport recommendation cards fanned out on a desk.">
             <img data-image-key="landing.sample_results.tile_matches" alt="Square illustration of three sport recommendation cards fanned out on a desk." loading="lazy" />
           </figure>
-          <h3>Top three matches</h3>
-          <p>Each card explains why your body aligns with a sport, highlights standout measurements, and lists athletes with similar builds.</p>
+          <h3 class="card-title">Top three matches</h3>
+          <p class="card-copy">Each card explains why your body aligns with a sport, highlights standout measurements, and lists athletes with similar builds.</p>
         </article>
-        <article class="card">
-          <figure class="image-tile" aria-label="Square illustration of a bar chart comparing body metrics to optimal sport ranges.">
+        <article class="card-shell">
+          <figure class="image-tile hero-visual-item" aria-label="Square illustration of a bar chart comparing body metrics to optimal sport ranges.">
             <img data-image-key="landing.sample_results.tile_metrics" alt="Square illustration of a bar chart comparing body metrics to optimal sport ranges." loading="lazy" />
           </figure>
-          <h3>Measurement breakdown</h3>
-          <p>See where you’re right in the sweet spot and where training can bridge the gap.</p>
+          <h3 class="card-title">Measurement breakdown</h3>
+          <p class="card-copy">See where you’re right in the sweet spot and where training can bridge the gap.</p>
         </article>
-        <article class="card">
-          <figure class="image-tile" aria-label="Square illustration of a clipboard checklist with sport-related next steps.">
+        <article class="card-shell">
+          <figure class="image-tile hero-visual-item" aria-label="Square illustration of a clipboard checklist with sport-related next steps.">
             <img data-image-key="landing.sample_results.tile_next_steps" alt="Square illustration of a clipboard checklist with sport-related next steps." loading="lazy" />
           </figure>
-          <h3>Actionable next steps</h3>
-          <p>We suggest starter drills, leagues, and areas to focus on so you can try a sport with confidence.</p>
+          <h3 class="card-title">Actionable next steps</h3>
+          <p class="card-copy">We suggest starter drills, leagues, and areas to focus on so you can try a sport with confidence.</p>
         </article>
       </div>
     </section>
 
-    <section class="section section--narrow" id="why">
-      <h2 class="section__title">Why body fit matters</h2>
+    <section class="section-shell section-narrow" id="why">
+      <h2 class="section-title">Why body fit matters</h2>
       <p class="lead-copy">When your frame matches the demands of a sport, skills stick faster and training feels better. Sporty uses anonymized athlete data, expert heuristics, and a growing knowledge base to line up your body with the sports that reward it.</p>
       <blockquote class="testimonial" aria-label="Founders quote placeholder">
         “Sporty helps demystify the path into movement. Whether you’re rediscovering sport as an adult or guiding a child, we highlight the activities that honor your body’s strengths.”
@@ -219,24 +219,24 @@ const testimonials = [
       </blockquote>
     </section>
 
-    <section class="section" id="faq">
-      <h2 class="section__title">Questions, answered</h2>
+    <section class="section-shell" id="faq">
+      <h2 class="section-title">Questions, answered</h2>
       <div class="grid-cards">
-        <article class="card">
-          <h3>Is the free version really free?</h3>
-          <p>Yes. You can generate as many quick matches as you like. We don’t store your data until Supabase consent flows ship.</p>
+        <article class="card-shell">
+          <h3 class="card-title">Is the free version really free?</h3>
+          <p class="card-copy">Yes. You can generate as many quick matches as you like. We don’t store your data until Supabase consent flows ship.</p>
         </article>
-        <article class="card">
-          <h3>What measurements do I need?</h3>
-          <p>At minimum: birthday (for age), height, and weight. Optional measurements—arm span, leg inseam, shoulder, hip, hand, foot-length—boost accuracy.</p>
+        <article class="card-shell">
+          <h3 class="card-title">What measurements do I need?</h3>
+          <p class="card-copy">At minimum: birthday (for age), height, and weight. Optional measurements—arm span, leg inseam, shoulder, hip, hand, foot-length—boost accuracy.</p>
         </article>
-        <article class="card">
-          <h3>When do paid features arrive?</h3>
-          <p>We’re finalizing Stripe Checkout now. Paid adult analysis and child forecasts launch soon after, with email waitlist rolling out first.</p>
+        <article class="card-shell">
+          <h3 class="card-title">When do paid features arrive?</h3>
+          <p class="card-copy">We’re finalizing Stripe Checkout now. Paid adult analysis and child forecasts launch soon after, with email waitlist rolling out first.</p>
         </article>
-        <article class="card">
-          <h3>How do child forecasts work?</h3>
-          <p>Two guardians consent, share the child’s measurements, and optionally include parent data. Sporty projects the child’s future body metrics to recommend sports that support long-term development.</p>
+        <article class="card-shell">
+          <h3 class="card-title">How do child forecasts work?</h3>
+          <p class="card-copy">Two guardians consent, share the child’s measurements, and optionally include parent data. Sporty projects the child’s future body metrics to recommend sports that support long-term development.</p>
         </article>
       </div>
     </section>
@@ -245,7 +245,7 @@ const testimonials = [
   <div class="sticky-cta" data-sticky-cta hidden>
     <div class="sticky-cta__inner">
       <span class="sticky-cta__copy">Ready? Start the free match.</span>
-      <a class="button" href="/intake">Start now</a>
+      <a class="btn-primary" href="/intake">Start now</a>
     </div>
   </div>
 

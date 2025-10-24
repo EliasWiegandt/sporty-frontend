@@ -9,7 +9,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   <Fragment slot="head">
     <style is:global>
       .result-header {
-        max-width: var(--max-width);
+        max-width: min(var(--size-xl), 70rem);
         margin: clamp(2rem, 4vw, 3.5rem) auto clamp(1rem, 3vw, 2.5rem);
         display: grid;
         gap: 1rem;
@@ -23,13 +23,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         gap: 0.75rem;
         align-items: center;
         font-size: 0.95rem;
-        color: var(--color-muted);
+        color: var(--gray-6);
       }
       .cta-inline a {
         font-weight: 600;
       }
       .results-shell {
-        max-width: var(--max-width);
+        max-width: min(var(--size-xl), 70rem);
         margin: 0 auto clamp(3rem, 6vw, 4.5rem);
         padding: 0 clamp(1.5rem, 5vw, 3rem);
         display: grid;
@@ -77,7 +77,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       }
       .results-impact__header p {
         margin: 0.15rem 0 0;
-        color: var(--color-muted);
+        color: var(--gray-6);
         font-size: 0.95rem;
       }
       .impact-bar {
@@ -144,7 +144,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         height: 34px;
         border-radius: 999px;
         background: rgba(15, 118, 110, 0.2);
-        color: var(--color-accent, #0f766e);
+        color: var(--teal-7);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -157,13 +157,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       .match-card__subtitle {
         margin: 0.15rem 0 0;
         font-size: 0.9rem;
-        color: var(--color-muted);
+        color: var(--gray-6);
       }
       .match-card__score {
         margin-left: auto;
         font-weight: 700;
         font-size: 1.15rem;
-        color: var(--color-accent, #0f766e);
+        color: var(--teal-7);
       }
       .match-card__media {
         position: relative;
@@ -192,13 +192,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       }
       .match-card__summary {
         margin: 0;
-        color: var(--color-text);
+        color: var(--gray-12);
         font-size: 0.95rem;
       }
       .match-card__list {
         margin: 0;
         padding-left: 1rem;
-        color: var(--color-muted);
+        color: var(--gray-6);
         display: grid;
         gap: 0.45rem;
         font-size: 0.9rem;
@@ -227,11 +227,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         border: 1px solid rgba(14, 116, 144, 0.2);
         padding: 0.9rem 1rem;
         font-size: 0.95rem;
-        color: var(--color-text);
+        color: var(--gray-12);
       }
       .results-highlights__item span:first-child {
         font-weight: 700;
-        color: var(--color-accent, #0f766e);
+        color: var(--teal-7);
       }
       .results-metrics {
         display: grid;
@@ -245,7 +245,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       .results-metrics__table {
         border-radius: 20px;
         border: 1px solid rgba(148, 163, 184, 0.22);
-        background: var(--color-surface, #ffffff);
+        background: var(--gray-0);
         box-shadow: 0 18px 36px -32px rgba(15, 23, 42, 0.4);
         overflow: hidden;
       }
@@ -285,7 +285,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   </Fragment>
 
   <header class="result-header">
-    <h1 class="section__title">Your sport matches</h1>
+    <h1 class="section-title">Your sport matches</h1>
     <p class="lead-copy">Here’s how your body lines up with pro-informed sport profiles. Each card shows why the sport fits you today and what to explore next.</p>
     <p class="cta-inline" data-results-message>Sign in to automatically store each run and revisit them anytime.</p>
     <div class="history-picker" data-history-picker hidden>
@@ -293,7 +293,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         <span>Saved runs</span>
         <select data-history-select></select>
       </label>
-      <button class="button--ghost button--sm" type="button" data-history-refresh>Refresh</button>
+      <button class="btn-ghost btn-sm" type="button" data-history-refresh>Refresh</button>
     </div>
   </header>
 
@@ -327,26 +327,26 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     <div class="empty-state" data-empty-state hidden>
       <h2>No matches yet</h2>
       <p>We couldn’t find any stored results. Run a new recommendation and we’ll populate this page automatically.</p>
-      <div class="button-row" style="justify-content:center; margin-top:1.5rem;">
-        <a class="button" href="/intake">Start a new match</a>
+      <div class="btn-row justify-center">
+        <a class="btn-primary" href="/intake">Start a new match</a>
       </div>
     </div>
   </main>
 
-  <section class="section section--narrow" id="whats-next">
-    <h2 class="section__title">Next steps</h2>
+  <section class="section-shell section-narrow" id="whats-next">
+    <h2 class="section-title">Next steps</h2>
     <div class="grid-cards">
-      <article class="card">
-        <h3>Share with a coach or friend</h3>
-        <p>Show them how your body stacks up and discuss drills or clubs to explore.</p>
+      <article class="card-shell">
+        <h3 class="card-title">Share with a coach or friend</h3>
+        <p class="card-copy">Show them how your body stacks up and discuss drills or clubs to explore.</p>
       </article>
-      <article class="card">
-        <h3>Track progress</h3>
-        <p>Jot down how the suggested sports feel. Once credits launch, revisit your <a href="/dashboard">dashboard</a> to compare saved runs.</p>
+      <article class="card-shell">
+        <h3 class="card-title">Track progress</h3>
+        <p class="card-copy">Jot down how the suggested sports feel. Once credits launch, revisit your <a href="/dashboard">dashboard</a> to compare saved runs.</p>
       </article>
-      <article class="card">
-        <h3>Expand the analysis</h3>
-        <p>Upgrade for deeper adult insights and child forecasts as soon as credits launch. Check <a href="/pricing">pricing</a> for details.</p>
+      <article class="card-shell">
+        <h3 class="card-title">Expand the analysis</h3>
+        <p class="card-copy">Upgrade for deeper adult insights and child forecasts as soon as credits launch. Check <a href="/pricing">pricing</a> for details.</p>
       </article>
     </div>
   </section>

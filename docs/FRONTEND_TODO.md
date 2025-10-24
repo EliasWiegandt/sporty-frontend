@@ -1,6 +1,6 @@
 # FRONTEND TODO (Desktop MVP Alignment)
 
-Last updated: 2025-10-14
+Last updated: 2025-10-24
 
 This checklist tracks the work needed to align the Astro frontend with the navigation and flows defined in `docs/JOURNEYS.md`.
 
@@ -32,6 +32,12 @@ This checklist tracks the work needed to align the Astro frontend with the navig
 - [ ] Ensure all “Save this run” or “View history” links route to `/dashboard`.
 - [x] Add “Account → Data & Privacy” link targets once the account page is renamed.
 - [ ] Render premium analysis history (stored recommendation rows) inside `/dashboard` once backend exposes the necessary fields.
+
+## UnoCSS Layout Migration
+
+- [x] Convert the remaining pages/components (intake flow + child premium form) to the shared Uno shortcuts and remove leftover legacy CSS.
+- [x] Resolve the `@import "open-props/forms"` build failure so `npm run build` passes.
+- [ ] Capture updated desktop screenshots after the layout migration for visual diff baselines.
 
 ## Cleanup & Consistency
 

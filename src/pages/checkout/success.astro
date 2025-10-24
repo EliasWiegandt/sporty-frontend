@@ -1,0 +1,113 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Sporty — Checkout Success" description="Your Sporty credit purchase is complete.">
+  <main class="section-shell checkout-success" data-checkout-success>
+    <header class="success-hero">
+      <p class="badge">Checkout</p>
+      <h1>Payment complete</h1>
+      <p class="lead-copy">
+        Thanks for supporting Sporty. We’re confirming your purchase and updating your credit balances.
+      </p>
+    </header>
+
+    <section class="card-shell success-card">
+      <dl>
+        <div>
+          <dt>Status</dt>
+          <dd data-status>Finalising your credits…</dd>
+        </div>
+        <div>
+          <dt>Stripe session</dt>
+          <dd data-session-id>—</dd>
+        </div>
+      </dl>
+
+      <div class="credit-summary" data-credit-summary hidden>
+        <h2>Your updated balances</h2>
+        <p>
+          Adult credits: <strong data-credit-adult>—</strong><br />
+          Child credits: <strong data-credit-child>—</strong>
+        </p>
+      </div>
+
+      <p class="redirect-note">
+        Head back to your <a href="/dashboard">dashboard</a> to run your next analysis, or explore the
+        <a href="/pricing">pricing page</a> for more details.
+      </p>
+    </section>
+  </main>
+
+  <Fragment slot="head">
+    <style is:global>
+      .checkout-success {
+        max-width: min(720px, 90vw);
+        margin: clamp(2rem, 6vw, 4rem) auto;
+        padding: 0 clamp(1.5rem, 4vw, 3rem);
+        display: grid;
+        gap: clamp(1.5rem, 4vw, 2.5rem);
+      }
+      .success-hero .badge {
+        display: inline-block;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--teal-7);
+      }
+      .success-card {
+        border-radius: 28px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        background: linear-gradient(180deg, rgba(241, 245, 249, 0.55), rgba(255, 255, 255, 0.95));
+        padding: clamp(1.75rem, 3vw, 2.25rem);
+        display: grid;
+        gap: 1.5rem;
+      }
+      .success-card dl {
+        margin: 0;
+        display: grid;
+        gap: 1rem;
+      }
+      .success-card dt {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--gray-6);
+        margin-bottom: 0.35rem;
+      }
+      .success-card dd {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+      .success-card [data-status][data-tone="success"] {
+        color: #0f766e;
+      }
+      .success-card [data-status][data-tone="warn"] {
+        color: #b45309;
+      }
+      .success-card [data-status][data-tone="error"] {
+        color: #b91c1c;
+      }
+      .credit-summary h2 {
+        margin: 0 0 0.5rem;
+        font-size: 1.25rem;
+      }
+      .credit-summary p {
+        margin: 0;
+        font-size: 1.1rem;
+      }
+      .redirect-note {
+        margin: 0;
+        color: var(--gray-6);
+      }
+    </style>
+  </Fragment>
+
+  <Fragment slot="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="/config.js" defer></script>
+    <script src="/assets/js/app.js" defer></script>
+    <script src="/assets/js/checkout-success.js" defer></script>
+  </Fragment>
+</BaseLayout>

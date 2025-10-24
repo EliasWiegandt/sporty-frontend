@@ -37,10 +37,7 @@ export default function ScoreDonut({
       datasets: [
         {
           data: [normalized, remainder],
-          backgroundColor: [
-            'var(--color-accent, #0f766e)',
-            'var(--color-muted, #e5e7eb)',
-          ],
+          backgroundColor: ['var(--teal-7)', 'var(--gray-4)'],
           borderWidth: 0,
           hoverOffset: 4,
         },

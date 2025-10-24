@@ -6,28 +6,28 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   title="Sporty — Account & Data Privacy"
   description="Manage your Sporty account, control consent, and review saved analyses."
 >
-  <main class="section section--narrow account-shell" data-profile-root>
-    <section class="card" data-profile-signed-out hidden>
-      <h1 class="section__title" style="margin-top:0;">Account</h1>
+  <main class="section-shell section-narrow account-shell" data-profile-root>
+    <section class="card-shell" data-profile-signed-out hidden>
+      <h1 class="section-title" style="margin-top:0;">Account</h1>
       <p class="lead-copy">Sign in to review saved measurements, manage data-retention consent, and monitor analysis history.</p>
-      <div class="button-row">
-        <button class="button" type="button" data-auth-open>Log in</button>
-        <button class="button--ghost" type="button" data-signup-open>Create account</button>
+      <div class="btn-row">
+        <button class="btn-primary" type="button" data-auth-open>Log in</button>
+        <button class="btn-ghost" type="button" data-signup-open>Create account</button>
       </div>
     </section>
 
-    <section class="card" data-profile-signed-in hidden>
+    <section class="card-shell" data-profile-signed-in hidden>
       <header class="profile-header">
         <div>
-          <h1 class="section__title" style="margin:0;">Account overview</h1>
+          <h1 class="section-title" style="margin:0;">Account overview</h1>
           <p class="lead-copy" data-profile-email></p>
         </div>
-        <button class="button--ghost" type="button" data-auth-signout>Log out</button>
+        <button class="btn-ghost" type="button" data-auth-signout>Log out</button>
       </header>
 
       <div class="profile-toggle-row">
         <div>
-          <h2 class="section__subtitle" style="margin:0;">Store my measurements &amp; free results</h2>
+          <h2 class="section-subtitle" style="margin:0;">Store my measurements &amp; free results</h2>
           <p class="profile-help" data-profile-toggle-help>
             Enable this if you want Sporty to remember your free matches. You can turn it off anytime.
           </p>
@@ -41,7 +41,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <div class="profile-status" data-profile-consent-status></div>
 
       <section class="account-links">
-        <h2 class="section__subtitle">Need something else?</h2>
+        <h2 class="section-subtitle">Need something else?</h2>
         <ul>
           <li><a href="/dashboard">View dashboard &amp; history</a></li>
           <li><a href="/pricing">Review pricing &amp; credits</a></li>

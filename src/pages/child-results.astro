@@ -7,222 +7,97 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 >
   <Fragment slot="head">
     <style>
-      .results {
-        max-width: var(--max-width);
-        margin: clamp(2rem, 4vw, 3.5rem) auto;
-        padding: 0 clamp(1.5rem, 5vw, 3rem);
-        display: grid;
-        gap: 2rem;
-      }
-      .summary {
-        background: rgba(14, 165, 165, 0.12);
-        border: 1px solid rgba(14, 165, 165, 0.2);
-        border-radius: 18px;
-        padding: clamp(1.4rem, 3vw, 2rem);
-        display: grid;
-        gap: 0.75rem;
-      }
-      .measurements {
-        display: grid;
-        gap: 1.25rem;
-      }
-      .measurement-card {
-        border-radius: 18px;
-        border: 1px solid rgba(148, 163, 184, 0.35);
-        padding: clamp(1.25rem, 3vw, 1.75rem);
-        background: #fff;
-        display: grid;
-        gap: 0.9rem;
-      }
-      .card-stack {
-        display: grid;
-        gap: 1.25rem;
-      }
-      .premium-card {
-        border-radius: 20px;
-        border: 1px solid rgba(14, 165, 165, 0.3);
-        background: rgba(14, 165, 165, 0.1);
-        padding: clamp(1.5rem, 3vw, 2rem);
-        display: grid;
-        gap: 1.25rem;
-      }
-      .premium-summary {
-        display: grid;
-        gap: 0.5rem;
-      }
-      .premium-credit {
-        display: inline-flex;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-        align-items: center;
-        font-size: 0.95rem;
-        color: var(--color-muted);
-      }
-      .premium-credit__pill {
-        display: inline-flex;
-        gap: 0.4rem;
-        align-items: center;
-        border-radius: 999px;
-        padding: 0.35rem 0.85rem;
-        background: rgba(255, 255, 255, 0.85);
-        border: 1px solid rgba(14, 165, 165, 0.3);
-        font-weight: 600;
-        color: var(--color-accent, #0f766e);
-      }
-      .premium-columns {
-        display: grid;
-        gap: clamp(1.25rem, 3vw, 2rem);
-      }
-      @media (min-width: 960px) {
-        .premium-columns {
-          grid-template-columns: 2fr 1fr;
-        }
-      }
-      .premium-list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: grid;
-        gap: 0.65rem;
-      }
-      .refine-card {
-        border-radius: 18px;
-        border: 1px solid rgba(14, 165, 165, 0.25);
-        background: rgba(14, 165, 165, 0.08);
-        padding: clamp(1.5rem, 3vw, 2rem);
-        display: grid;
-        gap: 0.85rem;
-      }
-      .refine-card__actions {
-        display: flex;
-        gap: 1rem;
-        flex-wrap: wrap;
-        align-items: center;
-      }
-      .premium-item {
-        border-radius: 14px;
-        background: #fff;
-        border: 1px solid rgba(148, 163, 184, 0.25);
-        padding: 0.85rem 1rem;
-        display: grid;
-        gap: 0.35rem;
-      }
-      .premium-item__meta {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        font-size: 0.85rem;
-        color: var(--color-muted);
-      }
-      .measurement-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-      }
       .contrib-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 0.95rem;
       }
       .contrib-table th,
       .contrib-table td {
         padding: 0.5rem 0.35rem;
         text-align: left;
       }
-      .contrib-table th {
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--color-muted);
-      }
       .contrib-table tbody tr:nth-child(2n) {
         background: rgba(148, 163, 184, 0.1);
-      }
-      .empty-state {
-        border-radius: 18px;
-        border: 1px dashed rgba(148, 163, 184, 0.35);
-        padding: clamp(1.6rem, 3vw, 2.2rem);
-        text-align: center;
-        color: var(--color-muted);
       }
     </style>
   </Fragment>
 
-  <main class="results">
-    <header class="summary" data-summary hidden>
+  <main class="section-shell grid gap-8">
+    <header class="summary-card" data-summary hidden>
       <div>
-        <h1 class="section__title" style="margin:0;">Child forecast</h1>
+        <h1 class="section-title" style="margin:0;">Child forecast</h1>
         <p class="lead-copy" data-summary-copy></p>
       </div>
-      <dl class="grid" style="grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:1rem;" data-summary-meta>
+      <dl class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-summary-meta>
       </dl>
     </header>
 
-    <section class="measurements" data-forecast-results hidden></section>
+    <section class="grid gap-5" data-forecast-results hidden></section>
 
-    <div class="empty-state" data-empty-state>
+    <div
+      class="grid gap-3 justify-items-center rounded-[18px] border border-dashed border-[rgba(148,163,184,0.35)] p-[clamp(1.6rem,3vw,2.2rem)] text-center text-[var(--gray-6)]"
+      data-empty-state
+    >
       <h2>No forecast loaded</h2>
       <p>Submit the child forecast form first. We keep the latest run locally so you can review it here.</p>
-      <div class="button-row" style="justify-content:center; margin-top:1.5rem;">
-        <a class="button" href="/child-intake">Back to intake</a>
+      <div class="btn-row justify-center">
+        <a class="btn-primary" href="/child-intake">Back to intake</a>
       </div>
     </div>
   </main>
 
-  <section class="premium-card" data-premium-section hidden>
-    <div class="premium-summary">
+  <section class="card-teal grid-stack" data-premium-section hidden>
+    <div class="grid gap-2">
       <span class="badge">Premium sport suggestions</span>
-      <h2 class="section__title" data-premium-title>Premium analysis</h2>
+      <h2 class="section-title" data-premium-title>Premium analysis</h2>
       <p class="lead-copy" data-premium-reason>When a child credit is applied we’ll summarise premium sport matches here.</p>
-      <div class="premium-credit" data-premium-credit hidden>
-        <span class="premium-credit__pill" data-premium-credit-adult>Adult credits: —</span>
-        <span class="premium-credit__pill" data-premium-credit-child>Child credits: —</span>
+      <div class="inline-flex flex-wrap items-center gap-3 text-sm text-[var(--gray-6)]" data-premium-credit hidden>
+        <span class="pill-teal" data-premium-credit-adult>Adult credits: —</span>
+        <span class="pill-teal" data-premium-credit-child>Child credits: —</span>
       </div>
     </div>
-    <div class="premium-columns">
-      <div class="card-stack">
-        <article class="measurement-card">
-          <h3>Component impact</h3>
-          <ul class="premium-list" data-premium-components></ul>
+    <div class="grid-stack lg:grid-cols-[2fr_1fr]">
+      <div class="grid-stack">
+        <article class="card-measurement">
+          <h3 class="card-title">Component impact</h3>
+          <ul class="list-reset grid gap-[0.65rem]" data-premium-components></ul>
         </article>
-        <article class="measurement-card">
-          <h3>Preferences</h3>
-          <ul class="premium-list" data-premium-preferences></ul>
+        <article class="card-measurement">
+          <h3 class="card-title">Preferences</h3>
+          <ul class="list-reset grid gap-[0.65rem]" data-premium-preferences></ul>
         </article>
-        <article class="measurement-card">
-          <h3>Goals</h3>
-          <ul class="premium-list" data-premium-goals></ul>
+        <article class="card-measurement">
+          <h3 class="card-title">Goals</h3>
+          <ul class="list-reset grid gap-[0.65rem]" data-premium-goals></ul>
         </article>
-        <article class="measurement-card">
-          <h3>Injury considerations</h3>
-          <ul class="premium-list" data-premium-injuries></ul>
+        <article class="card-measurement">
+          <h3 class="card-title">Injury considerations</h3>
+          <ul class="list-reset grid gap-[0.65rem]" data-premium-injuries></ul>
         </article>
-        <article class="measurement-card">
-          <h3>Next actions</h3>
-          <ul class="premium-list" data-premium-next-steps></ul>
+        <article class="card-measurement">
+          <h3 class="card-title">Next actions</h3>
+          <ul class="list-reset grid gap-[0.65rem]" data-premium-next-steps></ul>
         </article>
-        <article class="measurement-card">
-          <h3>Child past sports</h3>
-          <ul class="premium-list" data-premium-past-sports></ul>
+        <article class="card-measurement">
+          <h3 class="card-title">Child past sports</h3>
+          <ul class="list-reset grid gap-[0.65rem]" data-premium-past-sports></ul>
         </article>
       </div>
-      <div class="card-stack">
-        <article class="measurement-card">
-          <h3>Top sport matches</h3>
-          <div class="premium-list" data-premium-matches></div>
+      <div class="grid-stack">
+        <article class="card-measurement">
+          <h3 class="card-title">Top sport matches</h3>
+          <div class="grid gap-[0.65rem]" data-premium-matches></div>
         </article>
       </div>
     </div>
   </section>
 
-  <section class="refine-card" data-premium-cta hidden>
-    <h2 class="section__title" style="margin:0;">Get sports matches for this child</h2>
+  <section class="card-refine gap-3" data-premium-cta hidden>
+    <h2 class="section-title" style="margin:0;">Get sports matches for this child</h2>
     <p class="lead-copy">Use the forecasted adult build as a starting point, then add preferences, goals, injuries, and past sports to unlock tailored sport matches.</p>
-    <div class="refine-card__actions">
-      <a class="button" href="/child-premium">Get sports matches for child</a>
-      <a class="button--ghost" href="/pricing">Buy more child credits</a>
+    <div class="flex flex-wrap items-center gap-4">
+      <a class="btn-primary" href="/child-premium">Get sports matches for child</a>
+      <a class="btn-ghost" href="/pricing">Buy more child credits</a>
     </div>
   </section>
 

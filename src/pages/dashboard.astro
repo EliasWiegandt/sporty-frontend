@@ -17,27 +17,46 @@ const historyPlaceholders = [
 <BaseLayout title="Sporty — Dashboard" description="Review saved analyses, credit balances, and measurement locker." showAuth={true}>
   <main class="dashboard-shell" data-dashboard-root>
     <section class="dashboard-card dashboard-card--full" data-dashboard-signed-out>
-      <h1 class="section__title" style="margin:0;">Sign in to view your dashboard</h1>
+      <h1 class="section-title" style="margin:0;">Sign in to view your dashboard</h1>
       <p class="lead-copy">History, credits, and saved measurements live here. Sign in or create an account to continue.</p>
-      <div class="button-row">
-        <button class="button" type="button" data-auth-open data-auth-mode="signin">Log in</button>
-        <button class="button--ghost" type="button" data-auth-open data-auth-mode="signup">Create account</button>
-        <a class="button--ghost" href="/pricing">See pricing</a>
+      <div class="btn-row">
+        <button class="btn-primary" type="button" data-auth-open data-auth-mode="signin">Log in</button>
+        <button class="btn-ghost" type="button" data-auth-open data-auth-mode="signup">Create account</button>
+        <a class="btn-ghost" href="/pricing">See pricing</a>
       </div>
     </section>
 
     <div class="dashboard-layout" data-dashboard-signed-in hidden>
       <aside class="dashboard-sidebar">
-        <section class="dashboard-card">
+        <section class="dashboard-card" data-checkout-zone>
           <h2>Credits</h2>
           <p class="lead-copy">Adult: <span data-credits-adult>—</span></p>
           <p class="lead-copy">Child: <span data-credits-child>—</span></p>
+          <p class="credit-status" data-checkout-status hidden></p>
           <div class="button-column">
-          <a class="button" href="/pricing">Buy credits</a>
-          <a class="button--ghost" href="/intake">Start new analysis</a>
-          <a class="button--ghost" href="/child-intake">Forecast a child</a>
-        </div>
-      </section>
+            <button
+              class="btn-primary"
+              type="button"
+              data-checkout-product="single_adult_analysis"
+              data-checkout-credit-type="adult"
+              data-checkout-context="adult"
+            >
+              Buy adult credit
+            </button>
+            <button
+              class="btn-ghost"
+              type="button"
+              data-checkout-product="single_child_analysis"
+              data-checkout-credit-type="child"
+              data-checkout-context="child"
+            >
+              Buy child credit
+            </button>
+            <a class="btn-ghost" href="/pricing">Pricing overview</a>
+            <a class="btn-ghost" href="/intake">Start new analysis</a>
+            <a class="btn-ghost" href="/child-intake">Forecast a child</a>
+          </div>
+        </section>
 
       <section class="dashboard-card">
         <h2>Measurement locker</h2>
@@ -59,12 +78,12 @@ const historyPlaceholders = [
       <header class="dashboard-header">
         <div>
           <p class="badge">Saved analyses</p>
-          <h1 class="section__title">Your history</h1>
+          <h1 class="section-title">Your history</h1>
           <p class="lead-copy">Track free and premium results, compare progress, and rerun analyses when you’re ready.</p>
         </div>
-        <div class="button-row">
-          <a class="button" href="/intake">New adult analysis</a>
-          <a class="button--ghost" href="/child-intake">New child forecast</a>
+        <div class="btn-row">
+          <a class="btn-primary" href="/intake">New adult analysis</a>
+          <a class="btn-ghost" href="/child-intake">New child forecast</a>
         </div>
       </header>
 
@@ -75,8 +94,8 @@ const historyPlaceholders = [
             <p class="meta">{item.date}</p>
             <p>{item.summary}</p>
             <div class="history-card__actions">
-              <button class="button button--sm" type="button" disabled>View details (stub)</button>
-              <button class="button--ghost button--sm" type="button" disabled>Delete</button>
+              <button class="btn-primary btn-sm" type="button" disabled>View details (stub)</button>
+              <button class="btn-ghost btn-sm" type="button" disabled>Delete</button>
             </div>
           </article>
         ))}
@@ -88,7 +107,7 @@ const historyPlaceholders = [
   <Fragment slot="head">
     <style is:global>
       .dashboard-shell {
-        max-width: var(--max-width);
+        max-width: min(var(--size-xl), 70rem);
         margin: clamp(2rem, 5vw, 4rem) auto;
         padding: 0 clamp(1.5rem, 4vw, 3rem);
         display: grid;
@@ -120,13 +139,34 @@ const historyPlaceholders = [
         display: grid;
         gap: 0.75rem;
       }
+      .button-column .btn-primary[data-loading],
+      .button-column .btn-ghost[data-loading] {
+        opacity: 0.65;
+        pointer-events: none;
+      }
+      .credit-status {
+        margin: 0;
+        font-weight: 600;
+      }
+      .credit-status[data-tone="error"] {
+        color: #b91c1c;
+      }
+      .credit-status[data-tone="warn"] {
+        color: #b45309;
+      }
+      .credit-status[data-tone="info"] {
+        color: #0f766e;
+      }
+      .credit-status[data-tone="success"] {
+        color: #0f766e;
+      }
       .measurement-list {
         list-style: none;
         margin: 0;
         padding: 0;
         display: grid;
         gap: 0.5rem;
-        color: var(--color-muted);
+        color: var(--gray-6);
       }
       .shortcut-list {
         list-style: none;
@@ -147,7 +187,7 @@ const historyPlaceholders = [
         font-size: 0.75rem;
         text-transform: uppercase;
         letter-spacing: 0.14em;
-        color: var(--color-accent, #0f766e);
+        color: var(--teal-7);
       }
       .history-grid {
         display: grid;
@@ -168,7 +208,7 @@ const historyPlaceholders = [
       .history-card .meta {
         margin: 0;
         font-size: 0.9rem;
-        color: var(--color-muted);
+        color: var(--gray-6);
       }
       .history-card__actions {
         display: flex;
@@ -189,5 +229,6 @@ const historyPlaceholders = [
     <script src="/config.js" defer></script>
     <script src="/assets/js/app.js" defer></script>
     <script src="/assets/js/dashboard.js" defer></script>
+    <script src="/assets/js/checkout.js" defer></script>
   </Fragment>
 </BaseLayout>

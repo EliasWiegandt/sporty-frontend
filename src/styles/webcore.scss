@@ -1,0 +1,8 @@
+@use 'webcoreui/styles' as *;
+
+@include setup((
+  includeResets: false,
+  includeUtilities: false,
+  includeScrollbarStyles: false,
+  theme: 'light',
+));

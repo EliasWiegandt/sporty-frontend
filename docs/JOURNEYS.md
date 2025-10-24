@@ -3,6 +3,8 @@
 This document defines the **high-level navigation and user flows** for the Sporty MVP (desktop-only).  
 It focuses on how users move through the website to complete their core use cases — not on individual component design.
 
+> **Environment**: Production lives on `sporty.plyml.com` and staging on `sporty-test.plyml.com`. References to “the site” below point to those domains.
+
 ---
 
 ## Consent Strategy (Unified Across Journeys)

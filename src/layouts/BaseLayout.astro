@@ -1,5 +1,7 @@
 ---
 import '../styles/global.css';
+import '../styles/webcore.scss';
+import { Button } from 'webcoreui/astro';
 
 interface NavLink {
   href: string;
@@ -58,21 +60,8 @@ const actions = [primaryAction, secondaryAction].filter(
 const hasNavContent = navLinks.length > 0;
 const hasActionContent = actions.length > 0 || showAuth;
 
-const actionClassNames = (action: NavAction) => {
-  const classes: string[] = [];
-  if (action.variant === 'ghost') {
-    classes.push('button--ghost');
-  } else {
-    classes.push('button');
-  }
-  if (action.size === 'sm') {
-    classes.push('button--sm');
-  }
-  if (!classes.includes('button')) {
-    classes.unshift('button');
-  }
-  return classes.join(' ');
-};
+const buttonTheme = (variant?: NavAction['variant']) =>
+  variant === 'ghost' ? 'outline' : undefined;
 ---
 <!doctype html>
 <html lang="en">
@@ -95,7 +84,14 @@ const actionClassNames = (action: NavAction) => {
     {showHeader && (
       <header class="site-header">
         <nav class="nav-container" aria-label={navLabel}>
-          <a class="logo" href="/">Sporty</a>
+          <a
+            href="/"
+            class="group inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[1.25rem] font-semibold tracking-tight text-[var(--gray-12)] transition-colors hover:bg-[rgba(14,165,165,0.12)] hover:text-[var(--teal-9)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--teal-7)] focus-visible:ring-offset-2"
+            aria-label="Sporty home"
+          >
+            <i class="i-mingcute-laurel-wreath-fill pointer-events-none text-[1.45em] text-[#0a5f2a] transition-transform duration-150 ease-in-out group-hover:scale-105 group-hover:text-[var(--teal-8)] group-focus-visible:scale-105 group-focus-visible:text-[var(--teal-8)]" aria-hidden="true"></i>
+            <span class="leading-tight">sporty</span>
+          </a>
           {hasNavContent && (
             <div class="nav-links">
               {navLinks.map((link) => (
@@ -107,19 +103,37 @@ const actionClassNames = (action: NavAction) => {
           )}
           {hasActionContent && (
             <div class="nav-actions">
-              {actions.map((action) => (
-                <a class={actionClassNames(action)} href={action.href}>
-                  {action.label}
-                </a>
-              ))}
+              {actions.map((action) => {
+                const classes = ['nav-button'];
+                if (action.size === 'sm') {
+                  classes.push('nav-button--sm');
+                }
+                return (
+                  <Button href={action.href} theme={buttonTheme(action.variant)} className={classes.join(' ')}>
+                    {action.label}
+                  </Button>
+                );
+              })}
               {showAuth && (
                 <div class="nav-auth" data-auth-controls>
-                  <button class="button button--ghost button--sm" type="button" data-auth-open data-auth-mode="signin">
+                  <Button
+                    theme="outline"
+                    className="nav-button nav-button--sm"
+                    type="button"
+                    data-auth-open
+                    data-auth-mode="signin"
+                  >
                     Log in
-                  </button>
-                  <button class="button button--ghost button--sm" type="button" data-auth-signout hidden>
+                  </Button>
+                  <Button
+                    theme="outline"
+                    className="nav-button nav-button--sm"
+                    type="button"
+                    data-auth-signout
+                    hidden
+                  >
                     Log out
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>

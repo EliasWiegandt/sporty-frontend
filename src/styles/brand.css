@@ -1,0 +1,30 @@
+:root {
+  /* Webcore base palette mapped to Open Props */
+  --w-color-primary: var(--teal-7);
+  --w-color-primary-10: var(--teal-8);
+  --w-color-primary-20: var(--teal-9);
+  --w-color-primary-30: var(--teal-6);
+  --w-color-primary-40: var(--teal-5);
+  --w-color-primary-50: var(--gray-0);
+  --w-color-primary-60: var(--teal-1);
+  --w-color-primary-70: var(--teal-0);
+
+  --w-color-info: var(--cyan-6);
+  --w-color-info-accent: var(--cyan-4);
+  --w-color-info-fg: var(--gray-0);
+  --w-color-success: var(--green-6);
+  --w-color-success-accent: var(--green-4);
+  --w-color-success-fg: var(--gray-0);
+  --w-color-warning: var(--orange-6);
+  --w-color-warning-accent: var(--orange-4);
+  --w-color-warning-fg: var(--gray-12);
+  --w-color-alert: var(--red-6);
+  --w-color-alert-accent: var(--red-5);
+  --w-color-alert-fg: var(--gray-0);
+  --w-color-overlay: rgba(15, 23, 42, 0.65);
+
+  --w-sm-radius: var(--radius-2, 5px);
+  --w-md-radius: var(--radius-3, 1rem);
+  --w-lg-radius: var(--radius-4, 2rem);
+  --w-xl-radius: var(--radius-5, 4rem);
+}

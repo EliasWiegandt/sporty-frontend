@@ -35,22 +35,22 @@ const milestones = [
 ];
 ---
 <BaseLayout title="Sporty — About" description="Learn how Sporty blends biomechanics, AI, and consent-first design to match people with sports.">
-  <main class="section section--wide about-shell">
+  <main class="section-shell about-shell">
     <header class="about-hero">
       <p class="badge">About Sporty</p>
-      <h1 class="section__title">AI-built sport recommendations, consent first.</h1>
+      <h1 class="section-title">AI-built sport recommendations, consent first.</h1>
       <p class="lead-copy">
         Sporty pairs curated athlete data with consent-aware design to help every body find fitting sports. The MVP focuses on desktop so we can ship polished marketing, intake, and results experiences quickly.
       </p>
-      <div class="button-row">
-        <a class="button" href="/intake">See my match</a>
-        <a class="button--ghost" href="/pricing">View pricing</a>
+      <div class="btn-row">
+        <a class="btn-primary" href="/intake">See my match</a>
+        <a class="btn-ghost" href="/pricing">View pricing</a>
       </div>
     </header>
 
-    <section class="card-grid">
+    <section class="grid-cards">
       {pillars.map((item) => (
-        <article class="card about-card">
+        <article class="card-shell about-card">
           <h2>{item.title}</h2>
           <p>{item.description}</p>
         </article>
@@ -58,7 +58,7 @@ const milestones = [
     </section>
 
     <section class="about-milestones">
-      <h2 class="section__subtitle">What ships in the MVP</h2>
+      <h2 class="section-subtitle">What ships in the MVP</h2>
       <ul>
         {milestones.map((item) => (
           <li>
@@ -69,7 +69,7 @@ const milestones = [
       </ul>
     </section>
 
-    <section class="about-consent card">
+    <section class="about-consent card-shell">
       <h2>Consent flows in two moments</h2>
       <p>
         Sign-up consent covers storing adult measurements and past sports. The first paid analysis adds explicit consent for sensitive inputs (injuries, child data).
@@ -81,7 +81,7 @@ const milestones = [
   <Fragment slot="head">
     <style is:global>
       .about-shell {
-        max-width: var(--max-width);
+        max-width: min(var(--size-xl), 70rem);
         margin: clamp(2rem, 5vw, 4rem) auto;
         padding: 0 clamp(1.5rem, 4vw, 3rem);
         display: grid;
@@ -92,9 +92,9 @@ const milestones = [
         font-size: 0.85rem;
         text-transform: uppercase;
         letter-spacing: 0.12em;
-        color: var(--color-accent, #0f766e);
+        color: var(--teal-7);
       }
-      .about-hero .section__title {
+      .about-hero .section-title {
         margin-bottom: 0.75rem;
       }
       .about-hero .lead-copy {
@@ -116,7 +116,7 @@ const milestones = [
       }
       .about-card p {
         margin: 0;
-        color: var(--color-muted);
+        color: var(--gray-6);
       }
       .about-milestones ul {
         list-style: none;
@@ -131,7 +131,7 @@ const milestones = [
       }
       .about-milestones p {
         margin: 0.2rem 0 0;
-        color: var(--color-muted);
+        color: var(--gray-6);
       }
       .about-consent {
         border-radius: 24px;

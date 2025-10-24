@@ -24,7 +24,8 @@ const tiers = [
       'Component impact bars, radar charts, derived indexes',
       'Saved history in Dashboard with measurement locker',
     ],
-    cta: { href: '/dashboard', label: 'Use a credit' },
+    productId: 'single_adult_analysis',
+    creditType: 'adult',
   },
   {
     name: 'Child forecast',
@@ -36,18 +37,20 @@ const tiers = [
       'Sport recommendations aligned to projected build',
       'Dashboard reminders for re-measure windows',
     ],
-    cta: { href: '/child-intake', label: 'Forecast a child' },
+    productId: 'single_child_analysis',
+    creditType: 'child',
   },
 ];
 ---
 <BaseLayout title="Sporty — Pricing" description="Compare the free quick match with premium adult analyses and child forecast credits.">
-  <main class="section section--wide pricing-shell">
-    <header class="pricing-hero">
+  <main class="section-shell pricing-shell">
+    <header class="pricing-hero" data-checkout-zone>
       <p class="badge">Pricing &amp; credits</p>
-      <h1 class="section__title">Start free. Upgrade when you want deeper insights.</h1>
+      <h1 class="section-title">Start free. Upgrade when you want deeper insights.</h1>
       <p class="lead-copy">
         Every adult gets a free biomechanical quick match. Premium analyses and child forecasts use credits so you only pay when you need richer guidance.
       </p>
+      <p class="pricing-status" data-checkout-status hidden></p>
     </header>
 
     <div class="pricing-grid">
@@ -63,18 +66,30 @@ const tiers = [
               <li>{item}</li>
             ))}
           </ul>
-          <a class={`button ${tier.cta.primary ? '' : 'button--ghost'}`} href={tier.cta.href}>
-            {tier.cta.label}
-          </a>
+          {tier.productId ? (
+            <button
+              class="btn-primary"
+              data-checkout-product={tier.productId}
+              data-checkout-credit-type={tier.creditType}
+              data-checkout-context={tier.creditType}
+              type="button"
+            >
+              {tier.creditType === 'child' ? 'Buy child credit' : 'Buy adult credit'}
+            </button>
+          ) : (
+            <a class={tier.name === 'Free quick match' ? 'btn-primary' : 'btn-ghost'} href="/intake">
+              {tier.name === 'Free quick match' ? 'Start free' : 'Explore intake'}
+            </a>
+          )}
         </article>
       ))}
     </div>
 
-    <section class="pricing-faq card">
+    <section class="pricing-faq card-shell">
       <h2>How credits work</h2>
       <ul>
         <li>Credits are per analysis. One adult premium analysis consumes one adult credit.</li>
-        <li>Credits never expire and can be purchased via Stripe checkout (coming soon).</li>
+        <li>Credits never expire and can be purchased via Stripe checkout in test or live environments.</li>
         <li>Child credits are scoped to guardian accounts and their linked children.</li>
         <li>Log in to the <a href="/dashboard">Dashboard</a> to view balances and history.</li>
       </ul>
@@ -84,7 +99,7 @@ const tiers = [
   <Fragment slot="head">
     <style is:global>
       .pricing-shell {
-        max-width: var(--max-width);
+        max-width: min(var(--size-xl), 70rem);
         margin: clamp(2rem, 5vw, 4rem) auto;
         padding: 0 clamp(1.5rem, 4vw, 3rem);
         display: grid;
@@ -95,7 +110,7 @@ const tiers = [
         font-size: 0.85rem;
         text-transform: uppercase;
         letter-spacing: 0.12em;
-        color: var(--color-accent, #0f766e);
+        color: var(--teal-7);
       }
       .pricing-grid {
         display: grid;
@@ -121,17 +136,36 @@ const tiers = [
       }
       .pricing-card__description {
         margin: 0;
-        color: var(--color-muted);
+        color: var(--gray-6);
       }
       .pricing-card ul {
         margin: 0;
         padding-left: 1.1rem;
-        color: var(--color-muted);
+        color: var(--gray-6);
         display: grid;
         gap: 0.6rem;
       }
-      .pricing-card .button {
+      .pricing-card .btn-primary,
+      .pricing-card .btn-ghost {
         justify-self: start;
+      }
+      .pricing-card .btn-primary[data-loading],
+      .pricing-card .btn-ghost[data-loading] {
+        opacity: 0.65;
+        pointer-events: none;
+      }
+      .pricing-status {
+        margin-top: 1rem;
+        font-weight: 600;
+      }
+      .pricing-status[data-tone="error"] {
+        color: #b91c1c;
+      }
+      .pricing-status[data-tone="warn"] {
+        color: #b45309;
+      }
+      .pricing-status[data-tone="info"] {
+        color: #0f766e;
       }
       .pricing-faq {
         border-radius: 24px;
@@ -142,7 +176,7 @@ const tiers = [
       .pricing-faq ul {
         margin: 1rem 0 0;
         padding-left: 1.1rem;
-        color: var(--color-muted);
+        color: var(--gray-6);
         display: grid;
         gap: 0.5rem;
       }
@@ -156,5 +190,6 @@ const tiers = [
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="/config.js" defer></script>
     <script src="/assets/js/app.js" defer></script>
+    <script src="/assets/js/checkout.js" defer></script>
   </Fragment>
 </BaseLayout>

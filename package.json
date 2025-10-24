@@ -15,11 +15,19 @@
     "@astrojs/preact": "^4.1.1",
     "@observablehq/plot": "^0.6.17",
     "chart.js": "^4.5.1",
-    "preact": "^10.27.2"
+    "open-props": "^1.7.16",
+    "preact": "^10.27.2",
+    "webcoreui": "^1.1.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.8.2",
+    "@iconify-json/mingcute": "^1.2.5",
+    "@unocss/preset-icons": "^66.5.4",
+    "@unocss/preset-typography": "^66.5.4",
+    "@unocss/preset-wind": "^66.5.4",
     "astro": "^5.0.0",
-    "typescript": "^5.4.0"
+    "sass": "^1.80.5",
+    "typescript": "^5.4.0",
+    "unocss": "^66.5.4"
   }
 }
