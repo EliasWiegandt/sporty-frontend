@@ -11,7 +11,7 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 - Present Sporty’s marketing story and free adult intake experience.
 - Maintain the public site at `sporty.plyml.com` (staging: `sporty-test.plyml.com`); references to “sporty” in docs mean that domain unless specified.
 - Prototype the child forecast QA flow so backend forecasting can be exercised end-to-end.
-- Keep navigation, typography, and layout consistent across all pages. The primary navbar now uses the Sporty wordmark with the Iconify laurel wreath (`i-mingcute-laurel-wreath-fill`)—adjust `BaseLayout` if the brand lockup changes.
+- Keep navigation, typography, and layout consistent across all pages. The primary navbar now uses the Sporty wordmark with the Iconify laurel wreath (`i-mingcute-laurel-wreath-fill`)—adjust `BaseLayout` if the brand lockup changes. Brand teal tokens live in `src/styles/brand.css` as `--brand-*` and feed UnoCSS shortcuts. The default header CTA copy (“Try free analysis”) comes from `defaultPrimaryAction` in `BaseLayout`.
 - Proxy `/api/recommend-adult-free` and `/api/forecast-child` through the Cloudflare runtime so browsers never see backend secrets.
 - Free adult match now requires the full measurement set (birthday, sex, height, weight, arm span, leg inseam, shoulder width, hip width, hand length, foot length) and renders slider + number pairs for each. Premium-only inputs (preferences, goals, injuries) remain locked behind credits until a paid analysis is available.
 - When an authenticated user has credits, the intake toggles “Apply credit” to run `/api/recommend-adult-premium`; the premium journey redirects to `/results/premium` with component breakdowns pulled from the backend.

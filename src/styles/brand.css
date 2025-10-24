@@ -1,13 +1,24 @@
 :root {
-  /* Webcore base palette mapped to Open Props */
-  --w-color-primary: var(--teal-7);
-  --w-color-primary-10: var(--teal-8);
-  --w-color-primary-20: var(--teal-9);
-  --w-color-primary-30: var(--teal-6);
-  --w-color-primary-40: var(--teal-5);
+  /* Sporty brand teal palette */
+  --brand-1: #052f2a;
+  --brand-2: #063830;
+  --brand-3: #084239;
+  --brand-4: #0a4d42;
+  --brand-5: #0c5850;
+  --brand-6: #0e635b;
+  --brand-7: #106e66;
+  --brand-8: #118a7b;
+  --brand-9: #12a28f;
+
+  /* Webcore base palette mapped to Sporty brand teal */
+  --w-color-primary: var(--brand-6);
+  --w-color-primary-10: var(--brand-7);
+  --w-color-primary-20: var(--brand-8);
+  --w-color-primary-30: var(--brand-5);
+  --w-color-primary-40: var(--brand-4);
   --w-color-primary-50: var(--gray-0);
-  --w-color-primary-60: var(--teal-1);
-  --w-color-primary-70: var(--teal-0);
+  --w-color-primary-60: var(--brand-3);
+  --w-color-primary-70: var(--brand-2);
 
   --w-color-info: var(--cyan-6);
   --w-color-info-accent: var(--cyan-4);

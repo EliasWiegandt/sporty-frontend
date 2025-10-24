@@ -78,9 +78,9 @@ All endpoints reuse the same request-id logic as the legacy Worker. Static asset
 ## Keeping Things Consistent
 
 - Always wrap pages in `BaseLayout` so nav/auth controls stay identical.
-- Pull colors, spacing, and typography from the Open Props variables surfaced through `src/styles/global.css`. Drop overrides in `src/styles/brand.css` only when brand-specific values are required.
+- Pull colors, spacing, and typography from the Open Props variables surfaced through `src/styles/global.css`. Drop overrides in `src/styles/brand.css` only when brand-specific values are required. The Sporty brand palette is defined there (`--brand-*` teals) and powers UnoCSS shortcuts.
 - Reach for UnoCSS utilities/shortcuts (`uno.config.ts`) and Webcore UI components for new surfaces instead of adding ad-hoc CSS.
-- The primary wordmark lives in `BaseLayout` and combines the Sporty logotype with an Iconify laurel (`i-mingcute-laurel-wreath-fill`). If you update the brand treatment, adjust it in one place and ensure the icon palette remains accessible on light backgrounds.
+- The primary wordmark lives in `BaseLayout` and combines the Sporty logotype with an Iconify laurel (`i-mingcute-laurel-wreath-fill`). If you update the brand treatment, adjust it in one place and ensure the icon palette remains accessible on light backgrounds. The navbar CTA defaults to “Try free analysis”; change `defaultPrimaryAction` in `BaseLayout` if product copy shifts.
 - Scope page-specific styling with inline `<style>` blocks or dedicated components—edit `global.css` only for site-wide changes.
 - Update this README, `docs/handbook.md`, and `AGENTS.md` when introducing new pages, design tokens, or deployment steps.
 - When adding API calls, surface them through `src/pages/api/*` so the Worker injects the secret headers (see `api/forecast-child.ts` for the latest example).

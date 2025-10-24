@@ -19,7 +19,8 @@ Read this guide plus `docs/handbook.md` before contributing.
 - Build pipeline: `npm run build` emits `dist/_worker.js/index.js` + assets; `wrangler deploy` publishes the generated Worker (see `wrangler.toml`).
 - Node 20 is required in CI; commit `package-lock.json` with dependency changes.
 - Browser JS lives under `public/assets/js/` (no bundler—keep scripts compatible with plain browsers).
-- Design system → Open Props in `src/styles/global.css`; UnoCSS shortcuts + Iconify (`preset-icons`, e.g. the laurel wreath logo) + Open Props animations in `uno.config.ts`; Webcore setup in `src/styles/webcore.scss`; optional overrides → `src/styles/brand.css`.
+- Design system → Open Props in `src/styles/global.css`; UnoCSS shortcuts + Iconify (`preset-icons`, e.g. the laurel wreath logo) + Open Props animations in `uno.config.ts`; Webcore setup in `src/styles/webcore.scss`; optional overrides → `src/styles/brand.css` (brand teal palette lives there as `--brand-*`).
+- Navbar CTA copy defaults to “Try free analysis” via `defaultPrimaryAction` in `BaseLayout`; update that constant if marketing copy changes.
 
 ## Local Dev
 ```bash

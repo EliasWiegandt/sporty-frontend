@@ -22,7 +22,7 @@ figure {
 }
 
 a {
-  color: var(--teal-7);
+  color: var(--brand-7);
   text-decoration: none;
 }
 
@@ -198,7 +198,7 @@ main {
 }
 
 .how-carousel__tab:focus-visible {
-  outline: 2px solid var(--teal-7);
+  outline: 2px solid var(--brand-7);
   outline-offset: 3px;
 }
 
@@ -215,7 +215,7 @@ main {
   border-radius: 0.75rem;
   align-items: center;
   justify-content: center;
-  background: var(--teal-7);
+  background: var(--brand-7);
   color: #fff;
   font-weight: 600;
 }
@@ -319,7 +319,7 @@ main {
 .status--info {
   background: rgba(14, 165, 165, 0.12);
   border-color: rgba(14, 165, 165, 0.35);
-  color: var(--teal-9);
+  color: var(--brand-9);
 }
 
 .status--error {
@@ -335,7 +335,7 @@ main {
   width: 38px;
   height: 38px;
   border-radius: 999px;
-  background: var(--teal-7);
+  background: var(--brand-7);
   color: #fff;
   font-weight: 700;
   font-size: 1.1rem;
@@ -403,7 +403,7 @@ main {
   padding: 0.3rem 0.75rem;
   border-radius: 999px;
   background: rgba(15, 118, 110, 0.1);
-  color: var(--teal-9);
+  color: var(--brand-9);
   font-size: 0.85rem;
   font-weight: 600;
 }
@@ -474,7 +474,7 @@ blockquote.testimonial footer {
   height: 48px;
   border-radius: 14px;
   background: rgba(14, 165, 165, 0.12);
-  color: var(--teal-9);
+  color: var(--brand-9);
   font-weight: 700;
   font-size: 1.3rem;
 }
@@ -732,7 +732,7 @@ blockquote.testimonial footer {
 
 .auth-modal__status {
   font-size: 0.95rem;
-  color: var(--teal-9);
+  color: var(--brand-9);
 }
 
 .auth-modal__status--error {
@@ -742,7 +742,7 @@ blockquote.testimonial footer {
 .auth-modal__switch button {
   background: none;
   border: none;
-  color: var(--teal-7);
+  color: var(--brand-7);
   font: inherit;
   cursor: pointer;
   padding: 0;
@@ -784,7 +784,7 @@ blockquote.testimonial footer {
 
 .profile-status--active {
   background: rgba(14, 165, 165, 0.12);
-  color: var(--teal-9);
+  color: var(--brand-9);
 }
 
 .profile-status--missing {
@@ -830,7 +830,7 @@ blockquote.testimonial footer {
 }
 
 .toggle input:checked + .toggle__track {
-  background: var(--teal-7);
+  background: var(--brand-7);
 }
 
 .toggle input:checked + .toggle__track::after {
