@@ -63,6 +63,12 @@ Primary desktop MVP routes (marketing + app shell):
 - Reuse utility classes (`.section`, `.grid-cards`, `.card`, `.button`) whenever possible to avoid divergence.
 - Global CSS sets all `<img>` elements to span the full width of their container. When you need tighter art (e.g., match-card thumbnails), override width/height with explicit values and `!important` or inline styles; otherwise the default rule will stretch the asset.
 - **Uno shortcuts policy**: Treat layout-focused shortcuts in `uno.config.ts` as constraints, not conveniences. Before reusing them, inspect the underlying grid and max-width settings; avoid combining them with Webcore `Flex`/`Grid` components unless you have verified the generated class list. When a section needs bespoke sizing (e.g., the landing hero), prefer a dedicated stylesheet (see `src/styles/hero.css`) so we can reason about width/height limits in one place.
+- **Landing hero pattern**:
+  - Layout: `hero-shell` combines `section-shell` with a desktop split of roughly 40% copy / 60% visual (see `src/styles/global.css` media queries). Keep the flex breakpoints intact so mobile stacks vertically and large screens maintain the wider illustration.
+  - Badge: use the `hero-badge` shortcut (white background, teal border/text) to surface the primary product promise above the headline; never use Webcore badge themes here.
+  - Copy: two paragraphs max—first sentence states the biomechanics promise, second can bridge to guardian use cases. Headline always uses the shared `hero-headline` shortcut.
+  - CTA: render a single primary action with the `cta-primary` shortcut (alias for `btn-primary nav-button`) and anchor it with the `hero-cta` helper so it aligns with the text column. Avoid multiple hero CTAs unless marketing requests otherwise.
+  - Visual: hero art must preserve the 16:9 aspect ratio (`hero-visual img`), rely on Supabase-hosted assets keyed via `data-image-key`, and stay within the clamped min/max widths.
 
 ### Visual Asset Policy
 - **Illustrations (generative)**: Use the Sporty illustration pipeline for all human/sport scenes (landing hero, measurement helpers, sport spotlight art, guardian imagery). Maintain the shared backlog outlined in this handbook’s Visitor Journeys section and store assets in Supabase Storage with descriptive alt text.

@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { Badge, Button, Grid, Ribbon, Stepper, Accordion } from 'webcoreui/astro';
+import { Button, Grid, Ribbon, Stepper, Accordion } from 'webcoreui/astro';
 
 const valuePillars = [
   {
@@ -188,31 +188,25 @@ const stepperItems = howSteps.map((step) => ({
 }));
 ---
 <BaseLayout
-  title="Sporty — Discover sports that fit your body"
-  description="Unlimited free adult matches, $5 premium credits, and guardian-backed child analyses built on biomechanics."
+  title="Sporty — sports that fit your body"
+  description=""
 >
   <main>
     <section class="section-shell hero-shell" id="hero">
       <div class="hero__content">
-        <Badge theme="info" rounded>
-          Credits + guardian flows are live
-        </Badge>
-        <h1 class="hero-headline">Find the sports you, and your child, are wired for</h1>
+        <span class="hero-badge" role="text">AI-driven matching of bodies and sports</span>
+        <h1 class="hero-headline">Discover sports you are wired for</h1>
         <p class="hero-copy">
-        Free analysis based only on bodymeasurements for adults. 
-        Premium adult analysis that take goals, preferences, injuries (both healing them and avoiding them) and performance factors into account. 
-        Premium analysis to forecast child development match the child to the best sports.
+          Uncover activities where your body's unique build thrives — or help your child catch the early wins that grow lifelong confidence.
         </p>
         <div class="hero__actions">
-          <Button href="/intake" theme="primary">Free adult analysis</Button>
-          <Button href="/intake?premium=true" theme="outline">Premium adult analysis</Button>
-          <Button href="/child-intake" theme="secondary">Premium child forecast and analysis</Button>
+          <a href="/intake" class="cta-primary hero-cta">Try free analysis</a>
         </div>
       </div>
       <figure class="hero-visual" aria-label="Watercolor illustration highlighting a multi-sport training scene.">
         <img
           data-image-key="landing.hero.banner"
-          alt="Watercolor illustration blending basketball, swimming, and running training moments in a single panoramic scene."
+          alt="Watercolor illustarating a person being measured ant other people in a park caught in training moments, all in a single panoramic scene."
           loading="lazy"
         />
       </figure>

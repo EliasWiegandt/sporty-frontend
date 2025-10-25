@@ -50,10 +50,8 @@ export default defineConfig({
     ['section-subtitle', 'text-[clamp(1rem,2vw,1.25rem)] text-[var(--gray-6)] mt-2'],
     ['section__title', 'section-title'],
     ['section__subtitle', 'section-subtitle'],
-    [
-      'hero-badge',
-      'inline-flex items-center gap-2 rounded-full bg-[var(--brand-3)] px-[0.9rem] py-[0.35rem] text-[0.9rem] font-semibold text-[var(--gray-0)]',
-    ],
+    ['hero-badge', 'inline-flex items-center gap-2 rounded-full border border-[var(--brand-6)] bg-[var(--gray-0)] text-[var(--brand-7)] px-[0.9rem] py-[0.35rem] text-[0.85rem] font-semibold tracking-[0.08em] uppercase'],
+    ['cta-primary', 'btn-primary nav-button inline-flex justify-center'],
     ['hero-headline', 'text-[clamp(2rem,4vw,3rem)] font-bold leading-[1.1] my-[clamp(0.4rem,1.5vw,0.8rem)]'],
     ['hero-copy', 'text-[clamp(1rem,2vw,1.15rem)] text-[var(--gray-6)] max-w-[620px]'],
     ['grid-cards', 'grid items-stretch gap-[1.5rem] grid-cols-[repeat(auto-fit,minmax(240px,1fr))]'],

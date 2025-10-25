@@ -124,15 +124,20 @@ main {
 .hero__actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: clamp(0.75rem, 2vw, 1.1rem);
   margin-top: clamp(0.4rem, 1.3vw, 0.9rem);
+}
+
+.hero-cta {
+  align-self: flex-start;
 }
 
 .hero-visual {
   width: 100%;
   max-width: none;
   flex: 1 1 0;
-  min-width: clamp(320px, 38%, 560px);
+  min-width: clamp(320px, 50%, 720px);
   align-self: stretch;
   display: flex;
   align-items: center;
@@ -145,7 +150,14 @@ main {
 }
 
 @media (min-width: 1024px) {
+  .hero__content {
+    flex: 0 1 clamp(340px, 40%, 480px);
+    max-width: clamp(340px, 40%, 480px);
+  }
+
   .hero-visual {
+    flex: 1 1 clamp(520px, 60%, 780px);
+    min-width: 0;
     margin-left: auto;
   }
 }
@@ -153,8 +165,8 @@ main {
 .hero-visual img {
   width: 100%;
   height: auto;
-  max-height: clamp(260px, 44vw, 460px);
-  object-fit: contain;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
   display: block;
 }
 

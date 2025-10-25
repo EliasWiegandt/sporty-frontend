@@ -101,10 +101,14 @@ const hasActionContent = actions.length > 0 || showAuth;
           {hasActionContent && (
             <div class="nav-actions">
               {actions.map((action) => {
-                const variant = action.variant === 'ghost' ? 'btn-ghost' : 'btn-primary';
-                const size = action.size === 'sm' ? 'btn-sm' : '';
+                const isGhost = action.variant === 'ghost';
+                const classes = [isGhost ? 'nav-button' : 'cta-primary'];
+                classes.push(isGhost ? 'btn-ghost' : '');
+                if (action.size === 'sm') {
+                  classes.push('btn-sm');
+                }
                 return (
-                  <a href={action.href} class={`nav-button ${variant} ${size}`.trim()}>
+                  <a href={action.href} class={classes.filter(Boolean).join(' ')}>
                     {action.label}
                   </a>
                 );
