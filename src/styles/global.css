@@ -3,6 +3,7 @@
 @import "open-props/buttons";
 @import "open-props/animations";
 @import "./brand.css";
+@import "./hero.css";
 
 * {
   box-sizing: border-box;
@@ -114,17 +115,52 @@ main {
 .hero__content {
   display: flex;
   flex-direction: column;
-  gap: clamp(1.25rem, 3vw, 2rem);
+  gap: clamp(0.85rem, 2.4vw, 1.4rem);
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: clamp(500px, 56%, 660px);
 }
 
-.hero__mosaic--center {
-  transform: translateY(-12px);
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(0.75rem, 2vw, 1.1rem);
+  margin-top: clamp(0.4rem, 1.3vw, 0.9rem);
 }
 
-@media (max-width: 860px) {
-  .hero__mosaic--center {
-    transform: none;
+.hero-visual {
+  width: 100%;
+  max-width: none;
+  flex: 1 1 0;
+  min-width: clamp(320px, 38%, 560px);
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 26px 48px -36px rgba(14, 99, 91, 0.32);
+  background: rgba(14, 99, 91, 0.12);
+  margin-inline: auto;
+}
+
+@media (min-width: 1024px) {
+  .hero-visual {
+    margin-left: auto;
   }
+}
+
+.hero-visual img {
+  width: 100%;
+  height: auto;
+  max-height: clamp(260px, 44vw, 460px);
+  object-fit: contain;
+  display: block;
+}
+
+.pill-icon {
+  font-size: 1.8rem;
+  line-height: 1;
 }
 
 .section--accent {
@@ -161,90 +197,58 @@ main {
   font-size: 1.6rem;
 }
 
-.how-carousel {
+.how-shell {
+  align-items: start;
+}
+
+.stepper-card {
+  border: 1px solid rgba(14, 99, 91, 0.18);
+  box-shadow: 0 24px 48px -30px rgba(14, 99, 91, 0.35);
+}
+
+.how-detail {
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 18px 32px -26px rgba(15, 23, 42, 0.35);
   display: grid;
-  gap: clamp(1.25rem, 3vw, 1.75rem);
-  margin-top: clamp(1.75rem, 3vw, 2.5rem);
-  border-radius: 24px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: var(--gray-0);
-  padding: clamp(1.5rem, 4vw, 2.5rem);
-  box-shadow: var(--shadow-4);
+  gap: 0.5rem;
 }
 
-.how-carousel__tabs {
-  display: grid;
-  gap: 0.75rem;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-}
-
-.how-carousel__tab {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  padding: 1rem 1.1rem;
-  border-radius: 16px;
-  border: 1px solid rgba(15, 118, 110, 0.15);
-  background: rgba(15, 118, 110, 0.08);
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-}
-
-.how-carousel__tab:not(.is-active) {
-  background: rgba(241, 245, 249, 0.8);
-  border-color: rgba(148, 163, 184, 0.4);
-}
-
-.how-carousel__tab:focus-visible {
-  outline: 2px solid var(--brand-7);
-  outline-offset: 3px;
-}
-
-.how-carousel__tab.is-active {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 32px -18px rgba(15, 118, 110, 0.45);
-  background: rgba(15, 118, 110, 0.15);
-}
-
-.how-carousel__tab-index {
-  display: inline-flex;
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: 0.75rem;
-  align-items: center;
-  justify-content: center;
-  background: var(--brand-7);
-  color: #fff;
+.step-subtitle {
+  color: var(--brand-7);
   font-weight: 600;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
-.how-carousel__tab-label {
-  display: block;
-  font-weight: 600;
-}
-
-.how-carousel__tab-summary {
-  display: block;
-  font-size: 0.9rem;
-  color: var(--gray-6);
-}
-
-.how-carousel__panels {
+.plan-card {
   position: relative;
+  border: 1px solid rgba(14, 99, 91, 0.22);
+  box-shadow: 0 26px 44px -34px rgba(14, 99, 91, 0.3);
+  display: grid;
+  gap: 1rem;
 }
 
-.how-carousel__panel {
-  display: none;
-  gap: 0.75rem;
-  flex-direction: column;
-  padding: 1rem 0 0;
+.plan-card__ribbon {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
 }
 
-.how-carousel__panel.is-active {
-  display: flex;
+.plan-price {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  font-weight: 700;
+  color: var(--brand-7);
 }
+
+.sample-card {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 22px 40px -32px rgba(15, 23, 42, 0.35);
+}
+
 
 .testimonial-strip__inner {
   display: grid;

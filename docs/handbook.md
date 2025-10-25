@@ -1,8 +1,8 @@
 # Sporty Frontend Handbook
 
-_Last updated: 2025-10-24_
+_Last updated: 2025-10-25_
 
-This handbook tracks how the Sporty frontend is assembled and deployed. Pair it with the backend handbook (`../sporty-backend/docs/handbook.md`) for API details and shared operational notes.
+This handbook tracks how the Sporty frontend is assembled and deployed. Pair it with the backend handbook (`../sporty-backend/docs/handbook.md`) for API and entitlement details. (`../sporty-backend/docs/handbook.md`) for API details and shared operational notes.
 
 ---
 
@@ -15,11 +15,11 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 - Proxy `/api/recommend-adult-free` and `/api/forecast-child` through the Cloudflare runtime so browsers never see backend secrets.
 - Free adult match now requires the full measurement set (birthday, sex, height, weight, arm span, leg inseam, shoulder width, hip width, hand length, foot length) and renders slider + number pairs for each. Premium-only inputs (preferences, goals, injuries) remain locked behind credits until a paid analysis is available.
 - When an authenticated user has credits, the intake toggles “Apply credit” to run `/api/recommend-adult-premium`; the premium journey redirects to `/results/premium` with component breakdowns pulled from the backend.
-- Child forecasts now focus on measurements only; guardians who want sport matches click through to `/child-premium`, apply a child credit, and add preferences/goals/injuries/past sports before reviewing matches in `/child-results/premium`.
+- Child analysis now requires a child credit up front; guardians collect measurements, apply the credit, and receive both the forecast and premium sport matches in the same flow (`/child-intake` → `/child-results/premium`).
 - The free results page now mirrors the journey vision with a component impact bar, three-up match grid, and highlight strip; interactive adjustment controls are deferred until preview endpoints exist.
-- Child forecast intake pulls in the deterministic test family (prefilled on preview branches) and posts to `/api/forecast-child`; `/child-premium` replays the forecast payload with premium inputs so `/child-results` can render both measurement projections and premium matches.
+- Child intake primes the deterministic test family (prefilled on preview branches) and collects measurements; once a child credit is applied we post to `/api/forecast-child`, capture the forecast, and let `/child-premium` gather premium inputs before `/child-results/premium` renders the paid package.
 - Logged-in intakes also capture past sports (searchable `sports_subcategories`, intensity, enjoyment/flair/skill flags) and sync them to Supabase before saving recommendations.
-- Logged-in free users can view history but are limited to one new stored analysis per day; anonymous runs still capture past-sport signals anonymously to fuel the data moat.
+- Logged-in free users can run and store unlimited analyses once they grant consent; anonymous runs still capture past-sport signals anonymously to fuel the data moat.
 - The dashboard views stored recommendations (free + premium) alongside updated credit balances so users and guardians can revisit previous analyses.
 - Premium flows will add performance factor inputs (muscle gain ease, endurance bias, recovery speed) and surface derived indexes (Monkey Index, discipline ratios) in the results dashboard.
 - Surface Supabase-powered auth/consent flows without persisting any sensitive keys client-side.
@@ -34,7 +34,7 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Astro**                         | Pages live in `src/pages`. Shared chrome (nav, footer, fonts, laurel-mark wordmark) lives in `src/layouts/BaseLayout.astro`. `src/styles/global.css` imports Open Props, `uno.config.ts` wires UnoCSS utilities + Iconify presets, and `src/styles/brand.css` / `webcore.scss` handle optional overrides + Webcore setup. |
 | **Astro API routes**              | `src/pages/config.js.ts` publishes runtime Supabase config; `src/pages/api/recommend-adult-free.ts` proxies the backend `/v1/recommend-adult-free`; `src/pages/api/recommend-adult-premium.ts` proxies `/v1/recommend-adult-premium`; `src/pages/api/forecast-child.ts` proxies `/v1/forecast-child`; `src/pages/api/credits.ts` proxies `/v1/credits`; `src/pages/api/create-checkout-session.ts` starts Stripe Checkout; `src/pages/api/healthz.ts` exposes a health endpoint. |
-| **Public assets**                 | Vanilla JS (`public/assets/js/*.js`) handles Supabase auth, form submission, and DOM updates. `intake.js` manages the adult free + premium forms and the past-sport repeater, `child-intake.js` handles the measurement-only forecast, `child-premium.js` powers the credit-backed refinement, `child-results.js` renders stored runs, `child-results-premium.js` renders the premium matches, `dashboard.js` hydrates credit balances + saved runs, `checkout.js` triggers Stripe Checkout with child-profile selection, and `checkout-success.js` refreshes balances after payment. Images and other static assets also live under `public/`. |
+| **Public assets**                 | Vanilla JS (`public/assets/js/*.js`) handles Supabase auth, form submission, and DOM updates. `intake.js` manages the adult free + premium forms and the past-sport repeater, `child-intake.js` collects measurements and shepherds guardians into the credit flow, `child-premium.js` finalizes the paid submission after the credit is applied, `child-results.js` renders stored runs, `child-results-premium.js` renders the paid matches, `dashboard.js` hydrates credit balances + saved runs, `checkout.js` triggers Stripe Checkout with child-profile selection, and `checkout-success.js` refreshes balances after payment. Images and other static assets also live under `public/`. |
 | **Cloudflare Worker (generated)** | `astro build` (Cloudflare adapter) emits `dist/_worker.js/index.js`, wiring runtime env, asset serving, and the proxy routes above.                                                                                                          |
 | **Backend**                       | FastAPI service (`/v1/recommend-adult-free`) behind the Worker; see backend repo for implementation details.                                                                                                                                    |
 
@@ -62,9 +62,10 @@ Primary desktop MVP routes (marketing + app shell):
 - For page-specific tweaks, scope styles via inline `<style>` blocks in the `.astro` file so global CSS stays lean.
 - Reuse utility classes (`.section`, `.grid-cards`, `.card`, `.button`) whenever possible to avoid divergence.
 - Global CSS sets all `<img>` elements to span the full width of their container. When you need tighter art (e.g., match-card thumbnails), override width/height with explicit values and `!important` or inline styles; otherwise the default rule will stretch the asset.
+- **Uno shortcuts policy**: Treat layout-focused shortcuts in `uno.config.ts` as constraints, not conveniences. Before reusing them, inspect the underlying grid and max-width settings; avoid combining them with Webcore `Flex`/`Grid` components unless you have verified the generated class list. When a section needs bespoke sizing (e.g., the landing hero), prefer a dedicated stylesheet (see `src/styles/hero.css`) so we can reason about width/height limits in one place.
 
 ### Visual Asset Policy
-- **Illustrations (generative)**: Use the Sporty illustration pipeline for all human/sport scenes (landing hero, measurement helpers, sport spotlight art, guardian imagery). Maintain a shared backlog derived from `docs/JOURNEYS.md` and store assets in Supabase Storage with descriptive alt text.
+- **Illustrations (generative)**: Use the Sporty illustration pipeline for all human/sport scenes (landing hero, measurement helpers, sport spotlight art, guardian imagery). Maintain the shared backlog outlined in this handbook’s Visitor Journeys section and store assets in Supabase Storage with descriptive alt text.
 - **Data visualizations (engineered)**: Implement charts/tables with code so they stay dynamic, accessible, and themable (component impact bars, radar charts, growth curves, etc.). Provide textual summaries or data tables alongside each visualization.
 - **Separation**: never embed analytic data in static images; reserve illustrations for brand storytelling and instructional content.
 
@@ -133,6 +134,230 @@ Primary desktop MVP routes (marketing + app shell):
 4. Evaluate adding `astro:transitions` or partial hydration for future interactive dashboards once paid flows ship.
 5. Integrate authenticated storage of child forecasts once backend exposes guardian-scoped history APIs (replace sessionStorage stopgap).
 6. Coordinate with backend when Stripe + credits launch to surface purchase states in the UI.
+
+
+## Visitor Journeys (Desktop MVP)
+
+This document defines the **high-level navigation and user flows** for the Sporty MVP (desktop-only).  
+It focuses on how users move through the website to complete their core use cases — not on individual component design.
+
+> **Environment**: Production lives on `sporty.plyml.com` and staging on `sporty-test.plyml.com`. References to “the site” below point to those domains.
+
+---
+
+## Consent Strategy (Unified Across Journeys)
+
+To minimize friction, Sporty collects consent only at **two key moments**:
+
+1. **Account Creation / Sign-Up**
+
+   - Users grant general consent for measurement storage, analytics, and improvement.
+   - Includes acknowledgment of data policy and rights.
+   - Covers all standard body measurements and past sport history.
+
+2. **First Paid Analysis (Adult or Child)**
+   - Users grant explicit consent for storing and processing _sensitive data_ (injuries, health-related info, child data).
+   - This single consent applies to all subsequent paid analyses unless revoked in the profile.
+
+All other interactions — such as free, anonymous analyses — are purely transient (data processed but not stored).
+
+Users can manage or revoke consent anytime in **Account → Data & Privacy**.
+
+---
+
+## Top-Level Site Structure
+
+| Section            | Purpose                                                          |
+| ------------------ | ---------------------------------------------------------------- |
+| **Home**           | Marketing overview, free entry point to analysis.                |
+| **About**          | Explains Sporty’s AI approach and data ethics.                   |
+| **Pricing**        | Explains free vs paid analyses and credit system.                |
+| **Dashboard**      | Logged-in home for saved results, credits, and analysis history. |
+| **Intake**         | Form flow for measurements, past sports, and premium inputs.     |
+| **Results**        | Displays analysis outcomes, fit scores, and explanations.        |
+| **Child Forecast** | Guardian-only flow for forecasting child sports suitability.     |
+| **Account**        | Profile management, consent settings, and credit history.        |
+
+Top navigation (desktop):
+
+```
+
+Sporty    |    About    |    Pricing    |    Dashboard/Login
+
+```
+
+Contextual CTAs may lead directly into `/intake` or `/child`.
+
+---
+
+## 1. Free Adult Journey (Anonymous or Logged-In)
+
+### Goal
+
+Discover which sports match your body without paying or storing data.
+
+### Entry Points
+
+- “See my match” CTA on Home.
+- Marketing CTA banners or footer prompts.
+
+### Flow
+
+1. **Home ➝ Intake (Free Mode)**
+
+   - User enters body measurements.
+   - Optionally adds past sports (anonymous if not logged in).
+   - If logged in, results can be saved automatically.
+
+2. **Submit ➝ Results Page (Quick Match)**
+
+   - Displays top 3 sport matches with visual fit indicators and summaries.
+   - “Save this run” prompts login if anonymous.
+
+3. **Optional Next Steps**
+   - “Upgrade for detailed analysis” leads to Pricing.
+   - Logged-in users can revisit results from Dashboard.
+
+### Key Pages Involved
+
+- `/` (Home)
+- `/intake`
+- `/results`
+- `/login` (if saving)
+
+### Consent
+
+- No consent needed for anonymous use.
+- Logged-in users are already covered by sign-up consent.
+
+---
+
+## 2. Paid Adult Journey (Detailed Analysis)
+
+### Goal
+
+Get a deeper, personalized analysis including goals, preferences, injuries, and performance factors.
+
+### Entry Points
+
+- “Upgrade for detailed analysis” button on Results page.
+- “Start new analysis” from Dashboard (requires credits).
+- Direct purchase or Pricing page.
+
+### Flow
+
+1. **Dashboard ➝ Start New Analysis ➝ Intake (Premium)**
+
+   - Prefilled measurements from last run.
+   - User adds preferences, goals, injuries, and performance factors.
+   - Sidebar or top banner shows available credits.
+
+2. **Submit ➝ Results (Premium Analysis)**
+
+   - Results page includes charts, breakdowns, and insights (body, goals, preferences, injuries).
+   - User can compare with previous runs via History.
+
+3. **Optional Next Steps**
+   - “Start another analysis”
+   - “View history”
+   - “Share insights” (lightweight link copy only)
+
+### Key Pages Involved
+
+- `/dashboard`
+- `/intake?premium=true`
+- `/results/premium`
+- `/pricing`
+
+### Consent
+
+- Triggered once at first paid analysis, covering future detailed runs.
+
+---
+
+## 3. Guardian Journey (Child Analysis Package)
+
+### Goal
+
+Purchase a $5 child credit to forecast a child’s body trajectory and unlock sport matches with guardian consent.
+
+### Entry Points
+
+- “Start child analysis” CTA on Home.
+- “Forecast new child” from Guardian Dashboard.
+
+### Flow
+
+1. **Guardian Dashboard ➝ Start Child Analysis**
+
+   - Choose or create a child profile.
+   - Confirm guardian consent and apply a child credit (required before continuing).
+   - Input child measurements and, optionally, parent measurements in the same flow.
+
+2. **Submit ➝ Results (Child Analysis)**
+
+   - The paid run returns the forecasted adult body profile, percentile context, and contribution breakdowns.
+   - The same response includes premium sport matches blending preferences, goals, injuries, and past sports captured during intake.
+
+3. **Follow-Up**
+   - Dashboard updated with the next recommended re-measure date and recent child analyses.
+   - Notification prompt for future forecast windows.
+
+### Key Pages Involved
+
+- `/guardian` (dashboard)
+- `/child-intake`
+- `/child-results`
+- `/child-premium`
+
+### Consent
+
+- Collected once at the first child analysis purchase, tied to guardian account.
+- Co-guardians can later approve or revoke jointly in Account settings.
+
+---
+
+## Shared Navigation Principles
+
+- **Desktop-first**: fixed top navigation bar, secondary side navigation in Dashboard and Intake flows.
+- **Persistent CTAs**:
+  - “See my match” (free flow)
+  - “Start new analysis” (premium)
+  - “Start child analysis” (guardian)
+- **History access**: via Dashboard with sortable cards.
+- **Measurement Locker**: available in Dashboard sidebar for quick reuse of past data.
+- **Privacy & Consent Management**: under Account → Data & Privacy.
+
+---
+
+## Page Map (Summary)
+
+| Page               | Purpose                              | Accessible To           |
+| ------------------ | ------------------------------------ | ----------------------- |
+| `/`                | Marketing homepage, free entry point | All                     |
+| `/about`           | Mission & AI explanation             | All                     |
+| `/pricing`         | Explains tiers & credits             | All                     |
+| `/intake`          | Free or premium data input           | Logged-out or logged-in |
+| `/results`         | Free results                         | All                     |
+| `/results/premium` | Paid detailed analysis               | Logged-in               |
+| `/dashboard`       | Saved runs, credits, history         | Logged-in               |
+| `/child-intake`    | Child analysis intake + credit gate  | Guardians               |
+| `/child-results/premium` | Paid child analysis results     | Guardians (with credit) |
+| `/account`         | Profile, consent, data rights        | Logged-in               |
+
+---
+
+## Summary
+
+This document defines how users navigate through Sporty’s desktop MVP:
+
+- **Free adults** can quickly discover suitable sports.
+- **Paying adults** gain detailed, data-rich insights.
+- **Guardians** purchase a child credit to forecast body trajectories and receive premium sport matches in one paid package.
+- **Consent** is streamlined: once at signup, and once at the first paid adult or child analysis.
+
+This hierarchy provides a clear framework for the frontend scaffold, ensuring all key routes, flows, and CTAs are aligned with Sporty’s product vision.
+
 
 ---
 

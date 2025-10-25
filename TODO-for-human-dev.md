@@ -17,3 +17,4 @@
 - 00016 works :-) now I need to get Codex to build descriptions of the Journeys that we want to test + all relevant login to Gemini, etc.
   And all relevant context that gemini needs.
 - Decide on how we handle non-identifiability. Maybe remove birthdays?
+- view transitions from Astro in frontend? Would be good?

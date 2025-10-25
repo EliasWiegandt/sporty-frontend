@@ -1,0 +1,39 @@
+.hero-shell {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.5rem, 3.5vw, 2.75rem);
+  padding: clamp(1.6rem, 4vw, 3rem);
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.96), rgba(231, 246, 244, 0.96));
+  border-radius: 28px;
+  box-shadow: 0 26px 52px -34px rgba(15, 23, 42, 0.3);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+@media (min-width: 768px) {
+  .hero-shell {
+    padding: clamp(1.9rem, 4.5vw, 3.25rem);
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-shell {
+    flex-direction: row;
+    align-items: stretch;
+    gap: clamp(2.25rem, 4.5vw, 3.75rem);
+  }
+}
+
+@media (max-width: 767px) {
+  .hero-shell {
+    text-align: center;
+  }
+  .hero-shell .hero__content {
+    align-items: center;
+  }
+  .hero-shell .hero__actions {
+    justify-content: center;
+  }
+  .hero-shell .hero-visual {
+    max-width: 420px;
+  }
+}

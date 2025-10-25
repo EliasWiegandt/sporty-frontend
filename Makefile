@@ -18,5 +18,5 @@ dev-frontend:
 clean:
 	rm -rf dist
 
-run-frontend: clean build-frontend
+run-frontend: build-frontend
 	wrangler dev

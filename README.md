@@ -2,30 +2,11 @@
 
 Marketing + intake experience for Sporty (live at `sporty.plyml.com`, with the staging site on `sporty-test.plyml.com`). Built with Astro + the Cloudflare adapter so the Worker bundle and static assets are generated together. The UI is built with [Astro](https://astro.build/) and the Cloudflare adapter generates the Worker that serves the pages, exposes runtime config at `/config.js`, and proxies API calls to the FastAPI backend.
 
-## Project Structure
+## Overview
 
-```
-├── astro.config.mjs        # Astro config (Cloudflare adapter, SSR output)
-├── src/
-│   ├── layouts/            # Shared page shells (nav, fonts, auth controls)
-│   ├── pages/              # `.astro` pages + API routes under `pages/api`
-│   ├── styles/             # `global.css` (Open Props baseline), `brand.css`, `webcore.scss`
-│   └── env.d.ts            # Cloudflare runtime typings (env + locals)
-├── uno.config.ts          # UnoCSS configuration (presets, shortcuts, Open Props bindings)
-├── public/
-│   └── assets/js/          # Vanilla browser scripts (Supabase auth, forms)
-├── dist/                   # Build output (`_worker.js/**`, assets)
-└── .github/workflows/      # deploy.yml runs build + wrangler deploy
-```
+Sporty’s Astro frontend delivers the marketing experience and browser intake surfaces for adult and child analyses. For the complete product and architectural context, read `docs/handbook.md` (this repo) and `../sporty-backend/docs/handbook.md`.
 
-[Open Props](https://open-props.style/) is imported globally via `src/styles/global.css`. Use variables like `--gray-7`, `--teal-7`, `--size-4`, `--ease-2`, and `--animation-fade-in` for colors, spacing, motion, and animations. UnoCSS (`uno.config.ts`) exposes shortcuts (`btn-primary`, `btn-ghost`, the intake layout helpers, etc.) and Iconify icons (`i-*` classes via `preset-icons`) that wrap those tokens, while Webcore UI (`src/styles/webcore.scss`) supplies ready-made components. Reserve `src/styles/brand.css` for brand-specific overrides.
-
-- **Free adult match** collects birthdate, sex, height, weight, and optional body measurements (arm span, etc.).
-- **Premium adult analysis** (credit required via the dashboard) unlocks preferences, goals, injuries, calls `/api/recommend-adult-premium`, and redirects to `/results/premium` with component impacts, alignments, and next steps. Credits can now be purchased from the Pricing page or Dashboard via Stripe Checkout.
-- **Child journey** now splits into two steps: `/child-intake` collects child + parent measurements and renders the forecast in `/child-results`; a follow-on CTA opens `/child-premium`, where guardians apply a child credit, add preferences/goals/injuries/past sports, and review the premium matches in `/child-results/premium`. Linked guardians can purchase child credits via Stripe after choosing which child profile to assign the credit to.
-- **Logged-in past sports** section lets authenticated users add up to five past sports (search over `sports_subcategories`, intensity, years played, flair/skill flags) so we can blend experience into matching and the stored recommendation history.
-
-_Current scope_: the experience is designed for desktop browsers. Responsive layouts and mobile navigation will be prioritized after the desktop MVP ships.
+For automation or AI contributions, make sure to read `AGENTS.md` after the handbook.
 
 ## Local Development
 
@@ -68,7 +49,7 @@ Cloudflare adapter outputs the Worker; no hand-written `src/worker.js` remains. 
 - `config.js.ts` → `GET /config.js` (publishes Supabase URLs/key for browser code)
 - `api/recommend-adult-free.ts` → `POST /api/recommend-adult-free` proxy with `X-API-Key` to backend `/v1/recommend-adult-free`
 - `api/recommend-adult-premium.ts` → `POST /api/recommend-adult-premium` for credit-backed analyses
-- `api/forecast-child.ts` → `POST /api/forecast-child` (measurement-only forecast + premium re-run when credits are applied)
+- `api/forecast-child.ts` → `POST /api/forecast-child` (credit-gated child analysis returning forecast + premium matches)
 - `api/credits.ts` → `GET /api/credits` (dashboard credit balances)
 - `api/create-checkout-session.ts` → `POST /api/create-checkout-session` to start Stripe Checkout for credit purchases
 - `api/healthz.ts` → `GET /api/healthz`

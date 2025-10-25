@@ -1,145 +1,253 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { Badge, Button, Grid, Ribbon, Stepper, Accordion } from 'webcoreui/astro';
 
 const valuePillars = [
   {
-    title: 'Biomechanics-driven',
+    title: 'Biomechanics-first',
     copy:
-      'Our optimal body profiles blend reference cohorts with coach insights so every match starts with anatomy, not vibes.',
-    icon: '🧠',
+      'Our optimal body library blends athlete cohorts, parent-child deltas, and expert heuristics so every recommendation starts with anthropology-grade data.',
+    icon: '🧬',
   },
   {
-    title: 'Coach-approved',
+    title: 'Consent + control',
     copy:
-      'We validate every recommendation with specialists who train athletes across court, field, water, and endurance sports.',
+      'Unlimited free runs stay ephemeral until you opt in. Supabase-powered consent, exports, and deletion live in the account center when you decide to save.',
+    icon: '🛡️',
+  },
+  {
+    title: 'Premium clarity',
+    copy:
+      'Apply a $5 credit to surface component impact bars, alignment summaries, and actionable training next steps tuned to your goals and constraints.',
+    icon: '📊',
+  },
+  {
+    title: 'Built on lived sport',
+    copy:
+      'Past-sport history, intensity, and flair flags feed our recommendation moat so Sporty keeps learning from real bodies, not generic templates.',
     icon: '🏅',
-  },
-  {
-    title: 'Privacy-first',
-    copy:
-      'Measurements stay transient until you opt in. Consent controls and data deletion live front-and-center in our flows.',
-    icon: '🔒',
   },
 ];
 
 const howSteps = [
   {
-    id: 'measure',
-    label: 'Measure',
-    summary: 'Enter a few measurements with guided tips.',
-    detail:
-      'Start with age, height, and weight. Optional arm span, leg inseam, shoulder, hip, hand, and foot length sharpen your match. Tooltips and visual helpers keep the process quick.',
+    title: 'Measure',
+    subtitle: 'Capture the essentials',
+    description:
+      'Enter birthday, sex, height, weight, and the full measurement set (arm span, inseam, shoulder, hip, hand, foot) with guided ranges and tips.',
   },
   {
-    id: 'match',
-    label: 'Match',
-    summary: 'We crunch cohorts and expert heuristics.',
-    detail:
-      'Sporty maps your inputs against curated optimal body specs for dozens of sports, factoring in proportional ranges and standard deviations to score alignment.',
+    title: 'Layer context',
+    subtitle: 'Add the signals that matter',
+    description:
+      'When you apply a premium credit, blend in goals, preferences, injuries, past sports, and qualitative performance factors for richer alignment.',
   },
   {
-    id: 'explore',
-    label: 'Explore',
-    summary: 'Review personalized highlights and next steps.',
-    detail:
-      'See why each sport fits, where to focus training, and which pros share your build. Premium tiers unlock goals, injuries, and past sport overlays.',
+    title: 'Analyze',
+    subtitle: 'See how your body fits',
+    description:
+      'Sporty maps your data to curated optimal bodies, returning component impact charts, percentile comparisons, and athlete analogues you can study.',
+  },
+  {
+    title: 'Act + revisit',
+    subtitle: 'Save, compare, and share',
+    description:
+      'Saved runs live in your dashboard alongside credit balances. Guardians can swap between child profiles and rerun analyses as measurements evolve.',
   },
 ];
 
 const testimonials = [
   {
     quote:
-      '“The free match nailed my top three sports—and the rationale made it easy to pick what to try first.”',
-    name: 'Avery, 31 · Returning athlete',
+      '“Premium adult analysis gave me the component breakdown I needed. Seeing shoulder width vs. optimal ranges explained why certain drills click.”',
+    name: 'Morgan, 32 · Premium member',
   },
   {
     quote:
-      '“I finally know how my build stacks up. Sporty shows the why, not just a score.”',
-    name: 'Jordan, 27 · Weekend competitor',
+      '“The guardian flow let us forecast our daughter, apply a credit, and compare sport matches aligned to her projected build—game changer.”',
+    name: 'Elena, 39 · Guardian',
   },
 ];
 
+const offerings = [
+  {
+    ribbon: 'Included',
+    title: 'Free Adult Match',
+    price: '$0',
+    summary: 'Unlimited biomechanics-backed matches any time you want another perspective.',
+    features: [
+      'Run the full measurement set with instant sport suggestions.',
+      'Review component summaries and athlete analogues for each sport.',
+      'Stay anonymous until you opt in to save results.',
+    ],
+    cta: {
+      href: '/intake',
+      label: 'Start free match',
+      theme: 'primary',
+    },
+  },
+  {
+    ribbon: '$5 credit',
+    title: 'Premium Adult Analysis',
+    price: '$5',
+    summary: 'Apply a credit to unlock qualitative inputs and deeper insights.',
+    features: [
+      'Blend goals, preferences, injuries, past sports, and performance factors.',
+      'See component impact bars, alignment scores, and recommended focus areas.',
+      'Store runs in your dashboard with share-ready summaries.',
+    ],
+    cta: {
+      href: '/intake?premium=true',
+      label: 'Use an adult credit',
+      theme: 'secondary',
+    },
+    secondaryCta: {
+      href: '/pricing',
+      label: 'View pricing',
+      theme: 'outline',
+    },
+  },
+  {
+    ribbon: '$5 credit',
+    title: 'Child Analysis Package',
+    price: '$5',
+    summary: 'Forecast and refine a child’s sport path with guardian consent.',
+    features: [
+      'Project future body metrics using child + parent measurements.',
+      'Apply preferences, goals, injuries, and past sports to unlock matches.',
+      'Store guardian-backed runs and track credits per child.',
+    ],
+    cta: {
+      href: '/child-intake',
+      label: 'Start child analysis',
+      theme: 'secondary',
+    },
+    secondaryCta: {
+      href: '/pricing#child',
+      label: 'How credits work',
+      theme: 'outline',
+    },
+  },
+];
+
+const sampleHighlights = [
+  {
+    key: 'landing.sample_results.tile_matches',
+    alt: 'Square illustration of three sport recommendation cards fanned across a desk.',
+    title: 'Sport matches with narrative context',
+    copy:
+      'Each card surfaces body fit, comparable athletes, and the qualitative cues we considered so you can explain the recommendation to a coach or parent.',
+  },
+  {
+    key: 'landing.sample_results.tile_metrics',
+    alt: 'Square illustration of a component impact chart comparing measurements to optimal ranges.',
+    title: 'Component impact bar + percentiles',
+    copy:
+      'See the measurements driving your fit, with percentile bands and suggested training levers to move closer to the optimal window.',
+  },
+  {
+    key: 'landing.sample_results.tile_next_steps',
+    alt: 'Square illustration of a clipboard checklist with training next steps.',
+    title: 'Actionable next steps',
+    copy:
+      'Premium runs include drills, local leagues, and follow-up prompts so you always know what to try next.',
+  },
+];
+
+const faqItems = [
+  {
+    title: 'Are free adult matches really unlimited?',
+    content:
+      '<p>Yes. You can run the biomechanics-based quick match as often as you like. Runs stay anonymous until you opt in to save them to your dashboard.</p>',
+  },
+  {
+    title: 'How do premium credits work?',
+    content:
+      '<p>Premium adult analyses and child packages each cost a single $5 credit. Purchase credits through Stripe Checkout from Pricing or the dashboard, then apply them during intake.</p>',
+  },
+  {
+    title: 'What makes the premium analysis different?',
+    content:
+      '<p>Credits unlock inputs for goals, preferences, injuries, past sports, and performance factors. The results add component impact bars, alignment summaries, and tailored recommendations.</p>',
+  },
+  {
+    title: 'How does the child analysis package work?',
+    content:
+      '<p>Guardians measure the child, optionally add parent measurements, then apply a child credit to blend preferences, goals, injuries, and past sports into sport matches.</p><p>Child analyses are only stored when guardians consent, and you can revoke or export data anytime.</p>',
+  },
+  {
+    title: 'Can I control what data you store?',
+    content:
+      '<p>Absolutely. Consent is required before we store measurements, preferences, injuries, or child data. You can revoke consent, delete runs, or export data under Account → Data & Privacy.</p>',
+  },
+];
+
+const stepperItems = howSteps.map((step) => ({
+  title: step.title,
+  subTitle: step.subtitle,
+}));
 ---
 <BaseLayout
   title="Sporty — Discover sports that fit your body"
-  description="Free sport recommendations based on your body today, with optional paid deep analysis and child forecasts."
+  description="Unlimited free adult matches, $5 premium credits, and guardian-backed child analyses built on biomechanics."
 >
   <main>
     <section class="section-shell hero-shell" id="hero">
       <div class="hero__content">
-        <span class="hero-badge">Biomechanics-backed matches in under 60 seconds</span>
-        <h1 class="hero-headline">Find the sport your body is wired for.</h1>
-        <p class="hero-copy">Share a handful of measurements, then see free, science-backed sport matches tuned to your build. Upgrade later for saved histories, premium adult inputs, and child forecasts.</p>
-        <div class="flex flex-wrap items-center gap-3" role="group" aria-label="Primary calls to action">
-          <a class="btn-primary" href="/intake">See my match</a>
-          <a class="btn-ghost" href="#how-it-works">How it works</a>
-          <a class="btn-ghost" href="/child-intake">Forecast a child</a>
+        <Badge theme="info" rounded>
+          Credits + guardian flows are live
+        </Badge>
+        <h1 class="hero-headline">Find the sports you, and your child, are wired for</h1>
+        <p class="hero-copy">
+        Free analysis based only on bodymeasurements for adults. 
+        Premium adult analysis that take goals, preferences, injuries (both healing them and avoiding them) and performance factors into account. 
+        Premium analysis to forecast child development match the child to the best sports.
+        </p>
+        <div class="hero__actions">
+          <Button href="/intake" theme="primary">Free adult analysis</Button>
+          <Button href="/intake?premium=true" theme="outline">Premium adult analysis</Button>
+          <Button href="/child-intake" theme="secondary">Premium child forecast and analysis</Button>
         </div>
       </div>
-      <div class="hero-visual" aria-label="Three-tile illustration mosaic showing basketball, swimming, and running athletes.">
-        <figure class="image-tile hero-visual-item">
-          <img data-image-key="landing.hero.tile_a" alt="Square illustration of an adult basketball player warming up with a ball in hand inside a bright gym." loading="lazy" />
-        </figure>
-        <figure class="image-tile hero-visual-item hero__mosaic--center">
-          <img data-image-key="landing.hero.tile_b" alt="Square illustration of an adult swimmer stretching with a towel and goggles beside an indoor pool." loading="lazy" />
-        </figure>
-        <figure class="image-tile hero-visual-item">
-          <img data-image-key="landing.hero.tile_c" alt="Square illustration of an adult runner tying their shoes beside starting blocks on an indoor track." loading="lazy" />
-        </figure>
-      </div>
+      <figure class="hero-visual" aria-label="Watercolor illustration highlighting a multi-sport training scene.">
+        <img
+          data-image-key="landing.hero.banner"
+          alt="Watercolor illustration blending basketball, swimming, and running training moments in a single panoramic scene."
+          loading="lazy"
+        />
+      </figure>
     </section>
 
     <section class="section-shell section--accent" id="pillars" aria-labelledby="pillars-heading">
-      <h2 class="section-title" id="pillars-heading">Why Sporty hits different</h2>
-      <div class="pillars">
+      <h2 class="section-title" id="pillars-heading">Why Sporty leads the match</h2>
+      <Grid gap="lg" column={{ default: 1, md: 2, lg: 4 }}>
         {valuePillars.map((pillar) => (
           <article class="pillar-card">
-            <span class="pillar-card__icon" aria-hidden="true">{pillar.icon}</span>
+            <span class="pill-icon" aria-hidden="true">{pillar.icon}</span>
             <h3>{pillar.title}</h3>
             <p>{pillar.copy}</p>
           </article>
         ))}
-      </div>
+      </Grid>
     </section>
 
     <section class="section-shell" id="how-it-works">
       <h2 class="section-title">How Sporty works</h2>
-      <div class="how-carousel" data-how-carousel>
-        <div class="how-carousel__tabs" role="tablist" aria-label="How Sporty works steps">
-          {howSteps.map((step, index) => (
-            <button
-              class={`how-carousel__tab ${index === 0 ? 'is-active' : ''}`}
-              role="tab"
-              type="button"
-              data-step={step.id}
-              id={`step-tab-${step.id}`}
-              aria-controls={`step-panel-${step.id}`}
-              aria-selected={index === 0}
-              tabindex={index === 0 ? 0 : -1}
-            >
-              <span class="how-carousel__tab-index">{index + 1}</span>
-              <div>
-                <span class="how-carousel__tab-label">{step.label}</span>
-                <span class="how-carousel__tab-summary">{step.summary}</span>
-              </div>
-            </button>
-          ))}
+      <Grid gap="xl" column={{ default: 1, md: 2 }} className="how-shell">
+        <div class="card-shell stepper-card">
+          <h3>End-to-end in four steps</h3>
+          <Stepper items={stepperItems} vertical />
         </div>
-        <div class="how-carousel__panels">
-          {howSteps.map((step, index) => (
-            <article
-              id={`step-panel-${step.id}`}
-              class={`how-carousel__panel ${index === 0 ? 'is-active' : ''}`}
-              data-step-panel={step.id}
-              role="tabpanel"
-              aria-labelledby={`step-tab-${step.id}`}
-            >
-              <h3>{step.label}</h3>
-              <p>{step.detail}</p>
+        <Grid gap="md">
+          {howSteps.map((step) => (
+            <article class="card-shell how-detail">
+              <h3 class="card-title">{step.title}</h3>
+              <span class="step-subtitle">{step.subtitle}</span>
+              <p class="card-copy">{step.description}</p>
             </article>
           ))}
-        </div>
-      </div>
+        </Grid>
+      </Grid>
     </section>
 
     <section class="section-shell testimonial-strip" aria-labelledby="testimonial-heading">
@@ -155,97 +263,69 @@ const testimonials = [
     </section>
 
     <section class="section-shell" id="tiers">
-      <h2 class="section-title">Choose the depth you need</h2>
-      <p class="lead-copy">Sporty starts free for every adult. Upgrade when you want richer analysis or forecasts for children.</p>
-      <div class="grid-cards grid-balanced">
-        <article class="card-shell card-highlight" aria-label="Free plan details">
-          <h3 class="card-title">Free · Adult Quick Match</h3>
-          <ul class="feature-list card-copy">
-            <li><strong>Body-only scoring</strong> — instant matches from today’s measurements.</li>
-            <li><strong>No login required</strong> — we don’t store anything yet.</li>
-            <li><strong>Top three sports</strong> — see why they fit you and what to explore first.</li>
-          </ul>
-          <div class="btn-row">
-            <a class="btn-primary" href="/intake">Try it now</a>
-          </div>
-        </article>
-        <article class="card-shell" aria-label="Paid plan overview">
-          <h3 class="card-title">$5 · Pro Analysis (coming soon)</h3>
-          <ul class="feature-list card-copy">
-            <li><strong>Detailed adult intake</strong> — preferences, injuries, goals, past sports.</li>
-            <li><strong>Child forecasts</strong> — invite another guardian, project future body metrics, and get child-specific sport pathways.</li>
-            <li><strong>Stored history</strong> — save profiles, track analyses, and revisit recommendations anytime.</li>
-          </ul>
-          <div class="btn-row">
-            <a class="btn-ghost" href="/pricing">See pricing</a>
-          </div>
-        </article>
-      </div>
+      <h2 class="section-title">Pick the depth you need</h2>
+      <p class="lead-copy">Start for free, then reach for adult or child credits when you want premium insights.</p>
+      <Grid gap="lg" column={{ default: 1, md: 3 }}>
+        {offerings.map((plan) => (
+          <article class="card-shell plan-card">
+            <div class="plan-card__ribbon">
+              <Ribbon theme="info">{plan.ribbon}</Ribbon>
+            </div>
+            <h3 class="card-title">{plan.title}</h3>
+            <p class="plan-price">{plan.price}</p>
+            <p class="card-copy">{plan.summary}</p>
+            <ul class="feature-list card-copy">
+              {plan.features.map((feature) => (
+                <li>{feature}</li>
+              ))}
+            </ul>
+            <div class="btn-row">
+              <Button href={plan.cta.href} theme={plan.cta.theme}>{plan.cta.label}</Button>
+              {plan.secondaryCta && (
+                <Button href={plan.secondaryCta.href} theme={plan.secondaryCta.theme}>
+                  {plan.secondaryCta.label}
+                </Button>
+              )}
+            </div>
+          </article>
+        ))}
+      </Grid>
     </section>
 
     <section class="section-shell" id="sample-results">
-      <h2 class="section-title">What your free results look like</h2>
-      <div class="grid-cards grid-balanced">
-        <article class="card-shell">
-          <figure class="image-tile hero-visual-item" aria-label="Square illustration of three sport recommendation cards fanned out on a desk.">
-            <img data-image-key="landing.sample_results.tile_matches" alt="Square illustration of three sport recommendation cards fanned out on a desk." loading="lazy" />
-          </figure>
-          <h3 class="card-title">Top three matches</h3>
-          <p class="card-copy">Each card explains why your body aligns with a sport, highlights standout measurements, and lists athletes with similar builds.</p>
-        </article>
-        <article class="card-shell">
-          <figure class="image-tile hero-visual-item" aria-label="Square illustration of a bar chart comparing body metrics to optimal sport ranges.">
-            <img data-image-key="landing.sample_results.tile_metrics" alt="Square illustration of a bar chart comparing body metrics to optimal sport ranges." loading="lazy" />
-          </figure>
-          <h3 class="card-title">Measurement breakdown</h3>
-          <p class="card-copy">See where you’re right in the sweet spot and where training can bridge the gap.</p>
-        </article>
-        <article class="card-shell">
-          <figure class="image-tile hero-visual-item" aria-label="Square illustration of a clipboard checklist with sport-related next steps.">
-            <img data-image-key="landing.sample_results.tile_next_steps" alt="Square illustration of a clipboard checklist with sport-related next steps." loading="lazy" />
-          </figure>
-          <h3 class="card-title">Actionable next steps</h3>
-          <p class="card-copy">We suggest starter drills, leagues, and areas to focus on so you can try a sport with confidence.</p>
-        </article>
-      </div>
+      <h2 class="section-title">What premium-ready results look like</h2>
+      <Grid gap="lg" column={{ default: 1, md: 3 }}>
+        {sampleHighlights.map((highlight) => (
+          <article class="card-shell sample-card">
+            <h3 class="card-title">{highlight.title}</h3>
+            <figure class="image-tile">
+              <img data-image-key={highlight.key} alt={highlight.alt} loading="lazy" />
+            </figure>
+            <p class="card-copy">{highlight.copy}</p>
+          </article>
+        ))}
+      </Grid>
     </section>
 
     <section class="section-shell section-narrow" id="why">
       <h2 class="section-title">Why body fit matters</h2>
-      <p class="lead-copy">When your frame matches the demands of a sport, skills stick faster and training feels better. Sporty uses anonymized athlete data, expert heuristics, and a growing knowledge base to line up your body with the sports that reward it.</p>
-      <blockquote class="testimonial" aria-label="Founders quote placeholder">
-        “Sporty helps demystify the path into movement. Whether you’re rediscovering sport as an adult or guiding a child, we highlight the activities that honor your body’s strengths.”
-        <footer>— Sporty Founders (quote placeholder)</footer>
+      <p class="lead-copy">When your build aligns with a sport’s demands, skill work sticks faster and training feels better. Sporty ties anthropometric data to lived experience so you can invest reps where your body thrives.</p>
+      <blockquote class="testimonial" aria-label="Founders quote">
+        “Sporty demystifies how bodies, preferences, and performance factors interact. Whether you’re exploring sport for yourself or guiding a child, we highlight the activities that honour your strengths.”
+        <footer>— Sporty Founders</footer>
       </blockquote>
     </section>
 
     <section class="section-shell" id="faq">
       <h2 class="section-title">Questions, answered</h2>
-      <div class="grid-cards">
-        <article class="card-shell">
-          <h3 class="card-title">Is the free version really free?</h3>
-          <p class="card-copy">Yes. You can generate as many quick matches as you like. We don’t store your data until Supabase consent flows ship.</p>
-        </article>
-        <article class="card-shell">
-          <h3 class="card-title">What measurements do I need?</h3>
-          <p class="card-copy">At minimum: birthday (for age), height, and weight. Optional measurements—arm span, leg inseam, shoulder, hip, hand, foot-length—boost accuracy.</p>
-        </article>
-        <article class="card-shell">
-          <h3 class="card-title">When do paid features arrive?</h3>
-          <p class="card-copy">We’re finalizing Stripe Checkout now. Paid adult analysis and child forecasts launch soon after, with email waitlist rolling out first.</p>
-        </article>
-        <article class="card-shell">
-          <h3 class="card-title">How do child forecasts work?</h3>
-          <p class="card-copy">Two guardians consent, share the child’s measurements, and optionally include parent data. Sporty projects the child’s future body metrics to recommend sports that support long-term development.</p>
-        </article>
-      </div>
+      <Accordion items={faqItems} />
     </section>
   </main>
 
   <div class="sticky-cta" data-sticky-cta hidden>
     <div class="sticky-cta__inner">
-      <span class="sticky-cta__copy">Ready? Start the free match.</span>
-      <a class="btn-primary" href="/intake">Start now</a>
+      <span class="sticky-cta__copy">Ready? Run your next free match.</span>
+      <Button href="/intake" theme="primary">Start now</Button>
     </div>
   </div>
 
@@ -253,7 +333,7 @@ const testimonials = [
     <div class="footer-inner">
       <div>
         <strong>Sporty</strong>
-        <p class="lead-copy">Helping every body find their sport. Free adult matches today, deeper analysis and child support tomorrow.</p>
+        <p class="lead-copy">Helping every body find their sport. Unlimited free adult matches, $5 premium credits, and guardian-backed child insights.</p>
       </div>
       <nav class="footer-nav" aria-label="Footer">
         <a href="/intake">Start free</a>
@@ -274,9 +354,9 @@ const testimonials = [
     <script src="/assets/js/landing.js" defer></script>
     <script>
       const yearEl = document.getElementById('year');
-    if (yearEl) {
-      yearEl.textContent = String(new Date().getFullYear());
-    }
+      if (yearEl) {
+        yearEl.textContent = String(new Date().getFullYear());
+      }
     </script>
   </Fragment>
 </BaseLayout>
