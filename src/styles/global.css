@@ -138,14 +138,13 @@ main {
   max-width: none;
   flex: 1 1 0;
   min-width: clamp(320px, 50%, 720px);
-  align-self: stretch;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  align-self: center;
+  display: block;
+  aspect-ratio: 16 / 9;
   border-radius: 22px;
   overflow: hidden;
   box-shadow: 0 26px 48px -36px rgba(14, 99, 91, 0.32);
-  background: rgba(14, 99, 91, 0.12);
+  background: transparent;
   margin-inline: auto;
 }
 
@@ -164,10 +163,10 @@ main {
 
 .hero-visual img {
   width: 100%;
-  height: auto;
-  aspect-ratio: 16 / 9;
+  height: 100%;
   object-fit: cover;
   display: block;
+  border-radius: inherit;
 }
 
 .pill-icon {
@@ -180,6 +179,31 @@ main {
   border-radius: 28px;
   padding: clamp(2rem, 4vw, 3rem);
   box-shadow: 0 24px 48px -36px rgba(15, 23, 42, 0.4);
+}
+
+.pillars-grid {
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 2.5rem);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.pillar-art {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(14, 99, 91, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0 1rem;
+}
+
+.pillar-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .pillars {

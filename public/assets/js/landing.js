@@ -13,6 +13,9 @@
     'landing.sample_results.tile_matches': 'frontend_images/landing/sample_tile_matches.webp',
     'landing.sample_results.tile_metrics': 'frontend_images/landing/sample_tile_metrics.webp',
     'landing.sample_results.tile_next_steps': 'frontend_images/landing/sample_tile_next_steps.webp',
+    'landing.pillars.ai_research': 'frontend_images/landing/pillar_ai_research.webp',
+    'landing.pillars.proprietary_data': 'frontend_images/landing/pillar_proprietary_data.webp',
+    'landing.pillars.privacy': 'frontend_images/landing/pillar_privacy.webp',
   };
 
   Object.entries(mapping).forEach(([key, path]) => {

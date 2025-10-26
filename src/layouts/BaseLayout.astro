@@ -102,8 +102,8 @@ const hasActionContent = actions.length > 0 || showAuth;
             <div class="nav-actions">
               {actions.map((action) => {
                 const isGhost = action.variant === 'ghost';
-                const classes = [isGhost ? 'nav-button' : 'cta-primary'];
-                classes.push(isGhost ? 'btn-ghost' : '');
+                const classes = ['nav-button'];
+                classes.push(isGhost ? 'btn-ghost' : 'cta-primary');
                 if (action.size === 'sm') {
                   classes.push('btn-sm');
                 }

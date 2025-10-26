@@ -4,28 +4,25 @@ import { Button, Grid, Ribbon, Stepper, Accordion } from 'webcoreui/astro';
 
 const valuePillars = [
   {
-    title: 'Biomechanics-first',
+    imageKey: 'landing.pillars.ai_research',
+    imageAlt: 'Abstract watercolor collage showing athlete silhouettes connected by data nodes.',
+    title: 'AI-driven research',
     copy:
-      'Our optimal body library blends athlete cohorts, parent-child deltas, and expert heuristics so every recommendation starts with anthropology-grade data.',
-    icon: '🧬',
+      'We use AI-agents to extensively research public information on anthropometrics, biomechanics, and sport science.',
   },
   {
-    title: 'Consent + control',
+    imageKey: 'landing.pillars.proprietary_data',
+    imageAlt: 'Collage of everyday athletes logging workouts alongside stylized data charts.',
+    title: 'Proprietary data',
     copy:
-      'Unlimited free runs stay ephemeral until you opt in. Supabase-powered consent, exports, and deletion live in the account center when you decide to save.',
-    icon: '🛡️',
+      "We have unique first-party data on amateurs' bodies and experiences with sports.",
   },
   {
-    title: 'Premium clarity',
+    imageKey: 'landing.pillars.privacy',
+    imageAlt: 'Abstract rendering of bubbles of information with options to delete flowing into a database with a padlock right before the database.',
+    title: 'Privacy by design',
     copy:
-      'Apply a $5 credit to surface component impact bars, alignment summaries, and actionable training next steps tuned to your goals and constraints.',
-    icon: '📊',
-  },
-  {
-    title: 'Built on lived sport',
-    copy:
-      'Past-sport history, intensity, and flair flags feed our recommendation moat so Sporty keeps learning from real bodies, not generic templates.',
-    icon: '🏅',
+      'Nothing happens without your consent. Run anonymous analyses, control consent and delete your data as you see fit.',
   },
 ];
 
@@ -200,7 +197,8 @@ const stepperItems = howSteps.map((step) => ({
           Uncover activities where your body's unique build thrives — or help your child catch the early wins that grow lifelong confidence.
         </p>
         <div class="hero__actions">
-          <a href="/intake" class="cta-primary hero-cta">Try free analysis</a>
+          <a href="/intake" class="cta-primary nav-button hero-cta">Try free analysis</a>
+          <a href="#tiers" class="cta-secondary nav-button hero-cta">Explore premium options</a>
         </div>
       </div>
       <figure class="hero-visual" aria-label="Watercolor illustration highlighting a multi-sport training scene.">
@@ -214,15 +212,21 @@ const stepperItems = howSteps.map((step) => ({
 
     <section class="section-shell section--accent" id="pillars" aria-labelledby="pillars-heading">
       <h2 class="section-title" id="pillars-heading">Why Sporty leads the match</h2>
-      <Grid gap="lg" column={{ default: 1, md: 2, lg: 4 }}>
+      <div class="pillars-grid">
         {valuePillars.map((pillar) => (
           <article class="pillar-card">
-            <span class="pill-icon" aria-hidden="true">{pillar.icon}</span>
+            {pillar.imageKey ? (
+              <figure class="pillar-art">
+                <img data-image-key={pillar.imageKey} alt={pillar.imageAlt} loading="lazy" />
+              </figure>
+            ) : (
+              <span class="pill-icon" aria-hidden="true">{pillar.icon}</span>
+            )}
             <h3>{pillar.title}</h3>
             <p>{pillar.copy}</p>
           </article>
         ))}
-      </Grid>
+      </div>
     </section>
 
     <section class="section-shell" id="how-it-works">
