@@ -1,21 +1,35 @@
 (function () {
-  const base = (typeof self !== 'undefined' && typeof self.SUPABASE_STORAGE_URL === 'string')
-    ? self.SUPABASE_STORAGE_URL.replace(/\/$/, '')
-    : '';
+  const base =
+    typeof self !== "undefined" && typeof self.SUPABASE_STORAGE_URL === "string"
+      ? self.SUPABASE_STORAGE_URL.replace(/\/$/, "")
+      : "";
 
   if (!base) {
-    console.warn('SUPABASE_STORAGE_URL missing; hero tiles will fall back to empty src');
+    console.warn(
+      "SUPABASE_STORAGE_URL missing; hero tiles will fall back to empty src"
+    );
     return;
   }
 
   const mapping = {
-    'landing.hero.banner': 'frontend_images/landing/hero_banner.webp',
-    'landing.sample_results.tile_matches': 'frontend_images/landing/sample_tile_matches.webp',
-    'landing.sample_results.tile_metrics': 'frontend_images/landing/sample_tile_metrics.webp',
-    'landing.sample_results.tile_next_steps': 'frontend_images/landing/sample_tile_next_steps.webp',
-    'landing.pillars.ai_research': 'frontend_images/landing/pillar_ai_research.webp',
-    'landing.pillars.proprietary_data': 'frontend_images/landing/pillar_proprietary_data.webp',
-    'landing.pillars.privacy': 'frontend_images/landing/pillar_privacy.webp',
+    "landing.hero.banner": "frontend_images/landing/hero_banner.webp",
+    "landing.sample_results.tile_matches":
+      "frontend_images/landing/sample_tile_matches.webp",
+    "landing.sample_results.tile_metrics":
+      "frontend_images/landing/sample_tile_metrics.webp",
+    "landing.sample_results.tile_next_steps":
+      "frontend_images/landing/sample_tile_next_steps.webp",
+    "landing.pillars.ai_research":
+      "frontend_images/landing/pillar_ai_research.webp",
+    "landing.pillars.proprietary_data":
+      "frontend_images/landing/pillar_proprietary_data.webp",
+    "landing.pillars.privacy": "frontend_images/landing/pillar_privacy.webp",
+    "landing.how_it_works.measure":
+      "frontend_images/landing/how_it_works_measure.webp",
+    "landing.how_it_works.results":
+      "frontend_images/landing/how_it_works_results.webp",
+    "landing.how_it_works.upgrade":
+      "frontend_images/landing/how_it_works_upgrade.webp",
   };
 
   Object.entries(mapping).forEach(([key, path]) => {
@@ -24,19 +38,8 @@
     img.src = `${base}/${path}`;
   });
 
-  const stickyCta = document.querySelector('[data-sticky-cta]');
+  const stickyCta = document.querySelector("[data-sticky-cta]");
   if (stickyCta) {
-    const hero = document.getElementById('hero');
-    let threshold = hero ? hero.offsetHeight : 320;
-
-    const evaluate = () => {
-      threshold = hero ? hero.offsetHeight : threshold;
-      const shouldShow = window.scrollY > threshold;
-      stickyCta.hidden = !shouldShow;
-    };
-
-    window.addEventListener('scroll', evaluate, { passive: true });
-    window.addEventListener('resize', evaluate);
-    evaluate();
+    stickyCta.remove();
   }
 })();

@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { Button, Grid, Ribbon, Stepper, Accordion } from 'webcoreui/astro';
+import { Button, Grid, Ribbon, Accordion } from 'webcoreui/astro';
 
 const valuePillars = [
   {
@@ -28,28 +28,22 @@ const valuePillars = [
 
 const howSteps = [
   {
-    title: 'Measure',
-    subtitle: 'Capture the essentials',
-    description:
-      'Enter birthday, sex, height, weight, and the full measurement set (arm span, inseam, shoulder, hip, hand, foot) with guided ranges and tips.',
+    title: 'Measure & Enter',
+    subtitle: 'Enter your body measurements and past-sport history in minutes.',
+    imageKey: 'landing.how_it_works.measure',
+    imageAlt: 'Guardian measuring an athlete with tape and digital overlays.',
   },
   {
-    title: 'Layer context',
-    subtitle: 'Add the signals that matter',
-    description:
-      'When you apply a premium credit, blend in goals, preferences, injuries, past sports, and qualitative performance factors for richer alignment.',
+    title: 'Get Your Matches',
+    subtitle: 'Instantly see sport matches tuned to your unique build and data.',
+    imageKey: 'landing.how_it_works.results',
+    imageAlt: 'Sport recommendation cards fanning out with fit scores.',
   },
   {
-    title: 'Analyze',
-    subtitle: 'See how your body fits',
-    description:
-      'Sporty maps your data to curated optimal bodies, returning component impact charts, percentile comparisons, and athlete analogues you can study.',
-  },
-  {
-    title: 'Act + revisit',
-    subtitle: 'Save, compare, and share',
-    description:
-      'Saved runs live in your dashboard alongside credit balances. Guardians can swap between child profiles and rerun analyses as measurements evolve.',
+    title: 'Discover & Upgrade',
+    subtitle: 'Review your free result, then upgrade for deeper insights or a forecast + analysis for a child.',
+    imageKey: 'landing.how_it_works.upgrade',
+    imageAlt: 'Guardian and athlete reviewing premium analysis insights together.',
   },
 ];
 
@@ -229,23 +223,27 @@ const stepperItems = howSteps.map((step) => ({
       </div>
     </section>
 
-    <section class="section-shell" id="how-it-works">
-      <h2 class="section-title">How Sporty works</h2>
-      <Grid gap="xl" column={{ default: 1, md: 2 }} className="how-shell">
-        <div class="card-shell stepper-card">
-          <h3>End-to-end in four steps</h3>
-          <Stepper items={stepperItems} vertical />
-        </div>
-        <Grid gap="md">
-          {howSteps.map((step) => (
-            <article class="card-shell how-detail">
-              <h3 class="card-title">{step.title}</h3>
-              <span class="step-subtitle">{step.subtitle}</span>
-              <p class="card-copy">{step.description}</p>
-            </article>
-          ))}
-        </Grid>
-      </Grid>
+    <section class="section-shell process-section" id="how-it-works">
+      <h2 class="section-title">How it works</h2>
+      <p class="section-subtitle">Try your free analysis for adults today — no credit card required.</p>
+      <div class="process">
+        {howSteps.map((step, index) => (
+          <article class="process__step">
+            <span class="process__marker" aria-hidden="true">{index + 1}</span>
+            <div class="process__body">
+              <div class="process__text">
+                <h3>{step.title}</h3>
+                <p>{step.subtitle}</p>
+              </div>
+              {step.imageKey && (
+                <figure class="process__media">
+                  <img data-image-key={step.imageKey} alt={step.imageAlt} loading="lazy" />
+                </figure>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
     </section>
 
     <section class="section-shell testimonial-strip" aria-labelledby="testimonial-heading">
@@ -319,13 +317,6 @@ const stepperItems = howSteps.map((step) => ({
       <Accordion items={faqItems} />
     </section>
   </main>
-
-  <div class="sticky-cta" data-sticky-cta hidden>
-    <div class="sticky-cta__inner">
-      <span class="sticky-cta__copy">Ready? Run your next free match.</span>
-      <Button href="/intake" theme="primary">Start now</Button>
-    </div>
-  </div>
 
   <footer class="footer">
     <div class="footer-inner">
