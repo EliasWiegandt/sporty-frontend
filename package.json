@@ -14,9 +14,12 @@
     "@astrojs/cloudflare": "^12.6.9",
     "@astrojs/preact": "^4.1.1",
     "@observablehq/plot": "^0.6.17",
+    "@tailwindcss/vite": "^4.1.16",
     "chart.js": "^4.5.1",
     "open-props": "^1.7.16",
     "preact": "^10.27.2",
+    "preline": "^3.2.3",
+    "tailwindcss": "^4.1.16",
     "webcoreui": "^1.1.0"
   },
   "devDependencies": {

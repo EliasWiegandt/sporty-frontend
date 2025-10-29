@@ -30,6 +30,8 @@
       "frontend_images/landing/how_it_works_results.webp",
     "landing.how_it_works.upgrade":
       "frontend_images/landing/how_it_works_upgrade.webp",
+    "landing.how_it_works.banner":
+      "frontend_images/landing/how_it_works_banner.webp",
   };
 
   Object.entries(mapping).forEach(([key, path]) => {

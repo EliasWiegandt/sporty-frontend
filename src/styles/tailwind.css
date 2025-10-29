@@ -1,0 +1,138 @@
+@import "tailwindcss";
+@import "preline/variants.css";
+
+@source "../components/**/*.{astro,tsx,jsx,ts,js}";
+@source "../layouts/**/*.{astro,tsx,jsx,ts,js}";
+@source "../pages/**/*.{astro,tsx,jsx,ts,js}";
+@source "../data/**/*.{ts}";
+@source "../../node_modules/preline/dist/*.js";
+
+@theme {
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-heading: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --color-brand-50: #f0fdfa;
+  --color-brand-100: #ccfbf1;
+  --color-brand-200: #99f6e4;
+  --color-brand-300: #5eead4;
+  --color-brand-400: #2dd4bf;
+  --color-brand-500: #14b8a6;
+  --color-brand-600: #0d9488;
+  --color-brand-700: #0f766e;
+  --color-brand-800: #115e59;
+  --color-brand-900: #134e4a;
+  --color-brand-950: #042f2a;
+
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.75rem;
+  --radius-2xl: 2.25rem;
+  --radius-3xl: 2.75rem;
+  --radius-pill: 9999px;
+
+  --spacing-18: 4.5rem;
+  --spacing-22: 5.5rem;
+
+  --shadow-soft: 0 22px 45px -25px rgb(15 118 110 / 0.45);
+  --shadow-card: 0 35px 80px -40px rgb(15 118 110 / 0.45);
+  --shadow-section: 0 50px 120px -60px rgb(15 118 110 / 0.55);
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    @apply font-sans text-slate-900 bg-slate-50 antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading text-slate-900 tracking-tight text-balance;
+  }
+
+  h1 {
+    @apply text-3xl md:text-4xl;
+  }
+
+  h2 {
+    @apply text-2xl md:text-3xl;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl;
+  }
+
+  p {
+    @apply text-slate-600;
+  }
+}
+
+@layer components {
+  .btn-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    padding: 0.625rem 1.5rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+
+  .btn-pill:focus-visible {
+    outline-color: rgba(94, 234, 212, 0.8);
+  }
+
+  .btn-pill-primary {
+    background-color: var(--color-brand-700);
+    color: #fff !important;
+    box-shadow: 0 18px 40px -20px rgba(15, 118, 110, 0.45);
+    border: 1px solid transparent;
+    text-decoration: none;
+  }
+
+  .btn-pill-primary:hover {
+    background-color: var(--color-brand-800);
+  }
+
+  .btn-pill-primary:focus-visible {
+    outline-color: rgba(94, 234, 212, 0.8);
+  }
+
+  .btn-pill-secondary {
+    background-color: transparent;
+    color: var(--color-brand-700);
+    border: 1px solid var(--color-brand-600) !important;
+    text-decoration: none;
+  }
+
+  .btn-pill-secondary:hover {
+    background-color: var(--color-brand-50);
+    border-color: var(--color-brand-700);
+  }
+
+  .btn-pill-secondary:focus-visible {
+    outline-color: rgba(94, 234, 212, 0.8);
+  }
+
+  .card-surface {
+    @apply rounded-3xl border border-slate-200 bg-white p-6 shadow-card;
+  }
+
+  .section-shell {
+    @apply rounded-[2.75rem] bg-white px-4 py-8 shadow-section md:px-8 md:py-10;
+  }
+}
+
+@layer utilities {
+  .bg-hero-sheen {
+    background-image: linear-gradient(135deg, rgb(240 253 250) 0%, rgb(255 255 255) 60%);
+  }
+
+}

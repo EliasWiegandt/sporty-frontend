@@ -1,0 +1,299 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import '../styles/tailwind.css';
+import {
+  valuePillars,
+  howSteps,
+  testimonials,
+  offerings,
+  sampleHighlights,
+  faqItems,
+} from '../data/landingContent';
+---
+
+<BaseLayout title="Sporty — Tailwind landing" description="Tailwind + Preline pilot for the Sporty landing page.">
+  <main class="bg-slate-50 text-slate-900">
+    <section class="px-4 pb-8 pt-8 sm:px-5 lg:px-6">
+      <div class="relative mx-auto flex max-w-7xl flex-col gap-10 overflow-hidden rounded-[3rem] bg-gradient-to-br from-white via-[var(--color-brand-50)]/35 to-white px-6 py-16 shadow-[0_40px_110px_-60px_rgba(15,118,110,0.45)] md:flex-row md:items-center md:gap-16 md:px-12">
+        <div class="md:w-5/12 lg:w-2/5">
+          <span class="inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-xs font-medium uppercase tracking-wide text-[var(--color-brand-700)] shadow-[0_20px_45px_-20px_rgba(13,148,136,0.4)] ring-1 ring-[var(--color-brand-100)]">
+            <span class="size-2.5 rounded-full bg-[var(--color-brand-400)]"></span>
+            AI-driven matching of bodies and sports
+          </span>
+          <h1 class="mt-5 text-2xl font-semibold leading-tight tracking-tight text-slate-900 md:text-[2.5rem] lg:text-[3rem]">
+            Discover sports you are wired for
+          </h1>
+          <p class="mt-5 text-base text-slate-600 md:text-lg">
+            Uncover activities where your body's unique build thrives — or help your child catch the early wins that grow lifelong confidence.
+          </p>
+          <div class="mt-7 flex flex-wrap items-center gap-3.5">
+            <a class="btn-pill btn-pill-primary" href="/intake">
+              Try free analysis
+            </a>
+            <a class="btn-pill btn-pill-secondary hover:-translate-y-0.5" href="#tiers">
+              Explore premium options
+            </a>
+          </div>
+        </div>
+        <figure
+          class="relative isolate overflow-hidden rounded-[2.5rem] shadow-[0_35px_90px_-40px_rgba(15,118,110,0.45)] md:w-7/12 lg:w-3/5"
+          aria-label="Watercolor illustration highlighting a multi-sport training scene."
+        >
+          <img
+            class="h-full w-full object-cover"
+            data-image-key="landing.hero.banner"
+            alt="Watercolor illustarating a person being measured ant other people in a park caught in training moments, all in a single panoramic scene."
+            loading="lazy"
+          />
+        </figure>
+      </div>
+    </section>
+
+    <section class="px-2 py-6 sm:px-4 lg:px-6">
+      <div class="relative mx-auto max-w-7xl section-shell bg-gradient-to-br from-white via-[var(--color-brand-50)]/30 to-white" id="pillars" aria-labelledby="pillars-heading">
+        <div class="mx-auto max-w-2xl text-center">
+          <h2 class="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl" id="pillars-heading">
+          Why Sporty leads the match
+          </h2>
+          <p class="mt-4 text-base text-slate-600 md:text-lg">
+            The right blend of AI research, proprietary signals, and privacy-first consent keeps every recommendation grounded and trustworthy.
+          </p>
+        </div>
+        <div class="mt-8 grid gap-6 md:grid-cols-3">
+          {valuePillars.map((pillar) => (
+            <article class="group card-surface flex h-full flex-col transition hover:-translate-y-1 hover:shadow-[0_45px_90px_-35px_rgba(15,118,110,0.45)]">
+              <figure class="aspect-square overflow-hidden rounded-3xl border border-slate-100">
+                <img class="size-full object-cover transition duration-500 group-hover:scale-[1.02]" data-image-key={pillar.imageKey} alt={pillar.imageAlt} loading="lazy" />
+              </figure>
+              <h3 class="mt-6 text-xl font-semibold text-slate-900">{pillar.title}</h3>
+              <p class="mt-3 text-sm text-slate-600 md:text-base">{pillar.copy}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="px-2 py-6 sm:px-4 lg:px-6" id="how-it-works">
+      <div class="mx-auto max-w-7xl section-shell">
+        <div class="grid gap-8 md:grid-cols-[minmax(0,1.1fr)_minmax(0,360px)] md:items-start md:gap-12">
+          <div>
+            <div class="text-left">
+              <h2 class="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">How it works</h2>
+              <p class="mt-4 text-base text-slate-600 md:text-lg">
+                Try your free analysis for adults today — no credit card required.
+              </p>
+            </div>
+            <ol class="mt-8 space-y-6">
+              {howSteps.map((step, index) => (
+                <li class="grid gap-4 rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-[0_30px_70px_-38px_rgba(15,118,110,0.45)] md:grid-cols-[auto_1fr] md:items-start">
+                  <span class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full border border-[var(--color-brand-200)] bg-[var(--color-brand-50)] text-base font-semibold text-[var(--color-brand-700)]">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <div>
+                    <h3 class="text-xl font-semibold text-slate-900 md:text-2xl">{step.title}</h3>
+                    <p class="mt-2 text-slate-600">{step.subtitle}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div class="relative mx-auto grid h-full w-full place-items-center">
+            <figure class="w-full max-w-[420px] overflow-hidden rounded-3xl border border-slate-200 bg-white/85 p-6 shadow-[0_40px_90px_-50px_rgba(15,118,110,0.5)] md:sticky md:top-16">
+              <img
+                class="h-auto w-full object-contain"
+                data-image-key="landing.how_it_works.banner"
+                alt="Collage illustration showing the three Sporty intake steps."
+                loading="lazy"
+              />
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="px-2 py-6 sm:px-4 lg:px-6" aria-labelledby="testimonial-heading">
+      <div class="mx-auto max-w-7xl flex flex-col gap-6 section-shell border border-slate-200 bg-gradient-to-br from-white via-emerald-50/30 to-white">
+        <div>
+          <h2 class="text-3xl font-semibold tracking-tight text-slate-900" id="testimonial-heading">
+            People are already feeling the fit
+          </h2>
+          <p class="mt-3 max-w-xl text-slate-600">
+            Premium analyses give clarity, while guardian flows forecast and match children with confidence.
+          </p>
+        </div>
+        <div class="flex flex-col gap-6 md:flex-row">
+          {testimonials.map((item) => (
+            <figure class="card-surface flex-1">
+              <blockquote class="text-lg text-slate-700 md:text-xl">{item.quote}</blockquote>
+              <figcaption class="mt-4 text-sm font-semibold text-slate-500">{item.name}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="px-2 py-6 sm:px-4 lg:px-6" id="tiers">
+      <div class="mx-auto max-w-7xl section-shell">
+      <div class="mx-auto max-w-2xl text-center">
+        <h2 class="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
+          Pick the depth you need
+        </h2>
+        <p class="mt-4 text-base text-slate-600 md:text-lg">
+          Start for free, then reach for adult or child credits when you want premium insights.
+        </p>
+      </div>
+      <div class="mt-8 grid gap-6 md:grid-cols-3">
+        {offerings.map((plan) => (
+          <article class="relative rounded-4xl border border-slate-200 bg-white p-8 shadow-[0_35px_80px_-35px_rgba(15,118,110,0.45)] transition hover:-translate-y-1 hover:shadow-[0_45px_90px_-35px_rgba(15,118,110,0.5)]">
+            <div class="absolute -top-4 left-6 inline-flex items-center gap-2 rounded-full bg-[var(--color-brand-50)] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[var(--color-brand-700)] ring-1 ring-[var(--color-brand-200)]">
+              {plan.ribbon}
+            </div>
+            <div class="mt-4">
+              <h3 class="text-2xl font-semibold text-slate-900">{plan.title}</h3>
+              <p class="mt-2 text-3xl font-bold text-[var(--color-brand-700)]">{plan.price}</p>
+              <p class="mt-3 text-sm text-slate-600">{plan.summary}</p>
+            </div>
+            <ul class="mt-6 space-y-3 text-sm text-slate-600">
+              {plan.features.map((feature) => (
+                <li class="flex items-start gap-3">
+              <span class="mt-1 inline-flex size-2.5 rounded-full bg-[var(--color-brand-300)]"></span>
+                  <span>{feature}</span>
+                </li>
+              ))}
+            </ul>
+            <div class="mt-7 flex flex-wrap gap-3">
+              <a class={`btn-pill ${plan.cta.theme === 'primary' ? 'btn-pill-primary' : 'btn-pill-secondary'}`} href={plan.cta.href}>
+                {plan.cta.label}
+              </a>
+              {plan.secondaryCta && (
+                <a
+                  class="inline-flex items-center justify-center rounded-full border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-[var(--color-brand-200)] hover:bg-[var(--color-brand-50)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-200)]"
+                  href={plan.secondaryCta.href}
+                >
+                  {plan.secondaryCta.label}
+                </a>
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+      </div>
+    </section>
+
+    <section class="px-2 py-6 sm:px-4 lg:px-6" id="sample-results">
+      <div class="mx-auto max-w-7xl section-shell">
+      <div class="mx-auto max-w-3xl text-center">
+        <h2 class="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
+          What premium-ready results look like
+        </h2>
+      </div>
+      <div class="mt-8 grid gap-6 md:grid-cols-3">
+        {sampleHighlights.map((highlight) => (
+          <article class="card-surface rounded-4xl transition hover:-translate-y-1">
+            <figure class="aspect-square overflow-hidden rounded-3xl border border-slate-100">
+              <img class="size-full object-cover transition duration-500 hover:scale-[1.02]" data-image-key={highlight.key} alt={highlight.alt} loading="lazy" />
+            </figure>
+            <h3 class="mt-6 text-xl font-semibold text-slate-900">{highlight.title}</h3>
+            <p class="mt-3 text-sm text-slate-600 md:text-base">{highlight.copy}</p>
+          </article>
+        ))}
+      </div>
+      </div>
+    </section>
+
+    <section class="px-2 py-6 sm:px-4 lg:px-6" id="why">
+      <div class="mx-auto max-w-5xl section-shell bg-gradient-to-br from-white via-[var(--color-brand-50)]/35 to-white">
+      <h2 class="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
+        Why body fit matters
+      </h2>
+      <p class="mt-4 text-lg text-slate-600">
+        When your build aligns with a sport’s demands, skill work sticks faster and training feels better. Sporty ties anthropometric data to lived experience so you can invest reps where your body thrives.
+      </p>
+      <blockquote class="mt-8 rounded-4xl border border-slate-200 bg-white px-8 py-10 text-lg text-slate-700 shadow-[0_35px_80px_-40px_rgba(15,118,110,0.45)]">
+        “Sporty demystifies how bodies, preferences, and performance factors interact. Whether you’re exploring sport for yourself or guiding a child, we highlight the activities that honour your strengths.”
+        <footer class="mt-6 text-sm font-semibold text-slate-500">— Sporty Founders</footer>
+      </blockquote>
+      </div>
+    </section>
+
+    <section class="px-2 pb-12 pt-10 sm:px-4 lg:px-6" id="faq">
+      <div class="mx-auto max-w-5xl section-shell">
+      <h2 class="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
+        Questions, answered
+      </h2>
+      <div class="mt-8 divide-y divide-slate-200 rounded-4xl border border-slate-200 bg-white shadow-[0_35px_80px_-45px_rgba(15,118,110,0.45)]">
+        <div class="hs-accordion-group divide-y divide-slate-200">
+          {faqItems.map((item, idx) => (
+            <div class="hs-accordion" id={`faq-tailwind-item-${idx}`}>
+              <button
+                class="hs-accordion-toggle group flex w-full items-center justify-between gap-x-3 px-6 py-5 text-left text-base font-semibold text-slate-900 transition hover:bg-[var(--color-brand-50)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-200)]"
+                aria-controls={`faq-tailwind-panel-${idx}`}
+              >
+                <span>{item.title}</span>
+                <svg
+                  class="size-5 text-[var(--color-brand-500)] transition group-[.hs-accordion-expanded]:rotate-45"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m7-7H5" />
+                </svg>
+              </button>
+              <div
+                class="hs-accordion-content hidden px-6 pb-6 text-sm text-slate-600 [&_p]:mt-3 [&_p:first-child]:mt-0"
+                id={`faq-tailwind-panel-${idx}`}
+              >
+                <div set:html={item.content}></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-slate-200 bg-white">
+    <div class="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-12 text-slate-600 md:flex-row md:items-start md:justify-between md:px-10">
+      <div class="max-w-sm space-y-4">
+        <strong class="text-xl font-semibold text-slate-900">Sporty</strong>
+        <p>Helping every body find their sport. Unlimited free adult matches, $5 premium credits, and guardian-backed child insights.</p>
+      </div>
+      <nav class="grid gap-2 text-sm font-medium" aria-label="Footer">
+        <a class="inline-flex items-center gap-1 rounded-full px-3 py-2 text-slate-700 transition hover:bg-[var(--color-brand-50)] hover:text-[var(--color-brand-700)]" href="/intake">Start free</a>
+        <a class="inline-flex items-center gap-1 rounded-full px-3 py-2 text-slate-700 transition hover:bg-[var(--color-brand-50)] hover:text-[var(--color-brand-700)]" href="/pricing">Pricing</a>
+        <a class="inline-flex items-center gap-1 rounded-full px-3 py-2 text-slate-700 transition hover:bg-[var(--color-brand-50)] hover:text-[var(--color-brand-700)]" href="#faq">FAQ</a>
+        <a class="inline-flex items-center gap-1 rounded-full px-3 py-2 text-slate-700 transition hover:bg-[var(--color-brand-50)] hover:text-[var(--color-brand-700)]" href="/privacy">Privacy (draft)</a>
+        <a class="inline-flex items-center gap-1 rounded-full px-3 py-2 text-slate-700 transition hover:bg-[var(--color-brand-50)] hover:text-[var(--color-brand-700)]" href="/terms">Terms (draft)</a>
+        <a class="inline-flex items-center gap-1 rounded-full px-3 py-2 text-slate-700 transition hover:bg-[var(--color-brand-50)] hover:text-[var(--color-brand-700)]" href="mailto:hello@sporty.test">Contact</a>
+      </nav>
+      <small class="text-xs text-slate-400">© <span id="tailwind-year">2025</span> Sporty. All rights reserved.</small>
+    </div>
+  </footer>
+
+  <Fragment slot="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="/config.js" defer></script>
+    <script src="/assets/js/app.js" defer></script>
+    <script src="/assets/js/landing.js" defer></script>
+    <script>
+      const tailwindYear = document.getElementById('tailwind-year');
+      if (tailwindYear) {
+        tailwindYear.textContent = String(new Date().getFullYear());
+      }
+    </script>
+    <script type="module">
+      import 'preline/preline';
+
+      const initPreline = () => {
+        window.HSStaticMethods?.autoInit();
+      };
+
+      initPreline();
+      document.addEventListener('astro:after-swap', initPreline);
+      document.addEventListener('astro:page-load', initPreline);
+    </script>
+  </Fragment>
+</BaseLayout>

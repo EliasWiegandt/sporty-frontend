@@ -4,17 +4,23 @@ import preact from '@astrojs/preact';
 import UnoCSS from 'unocss/astro';
 import { webcore } from 'webcoreui/integration';
 
+import tailwindcss from '@tailwindcss/vite';
+
 export default defineConfig({
   output: 'server',
+
   adapter: cloudflare({
     imageService: 'astro/assets/services/noop',
   }),
+
   server: {
     host: true,
   },
+
   session: {
     driver: 'null',
   },
+
   integrations: [
     preact(),
     UnoCSS({
@@ -22,4 +28,8 @@ export default defineConfig({
     }),
     webcore(),
   ],
+
+  vite: {
+    plugins: [tailwindcss()],
+  },
 });

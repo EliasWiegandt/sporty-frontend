@@ -44,7 +44,7 @@ export default defineConfig({
     ['button--ghost', 'btn-ghost'],
     ['button--sm', 'btn-sm'],
     ['btn-row', 'flex flex-wrap items-center gap-4 mt-6'],
-    ['section-shell', 'mx-auto my-[clamp(2rem,6vw,6rem)] w-full max-w-[min(var(--size-2xl,80rem),82rem)]'],
+    ['section-shell', 'mx-auto my-[clamp(1.5rem,4vw,3rem)] w-full max-w-[min(var(--size-2xl,80rem),82rem)]'],
     ['section-narrow', 'max-w-[840px]'],
     ['section-title', 'text-[clamp(1.8rem,4vw,3rem)] font-bold mb-4'],
     ['section-subtitle', 'text-[clamp(1rem,2vw,1.25rem)] text-[var(--gray-6)] mt-2'],

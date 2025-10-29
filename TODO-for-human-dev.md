@@ -18,3 +18,4 @@
   And all relevant context that gemini needs.
 - Decide on how we handle non-identifiability. Maybe remove birthdays?
 - view transitions from Astro in frontend? Would be good?
+- Have a look at returning sources for each datapoint I use + reasoning for the values I landed on.
