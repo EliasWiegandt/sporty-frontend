@@ -6,40 +6,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   title="Sporty — Privacy (Draft)"
   description="Draft privacy policy for Sporty."
 >
-  <Fragment slot="head">
-    <style>
-      main {
-        max-width: 760px;
-        margin: clamp(2rem, 5vw, 4rem) auto;
-        padding: 0 clamp(1rem, 4vw, 2.5rem);
-      }
-      h1 {
-        font-size: clamp(2rem, 4vw, 2.6rem);
-        margin-bottom: 1rem;
-      }
-      p {
-        color: var(--gray-6);
-        font-size: 1rem;
-      }
-      ul {
-        color: var(--gray-6);
-        line-height: 1.6;
-      }
-      .callout {
-        border-radius: 18px;
-        padding: 1.5rem;
-        background: rgba(14, 165, 165, 0.1);
-        border: 1px solid rgba(14, 165, 165, 0.25);
-        margin: 1.5rem 0;
-      }
-    </style>
-  </Fragment>
-
-  <main>
+  <main class="policy-page">
     <h1>Privacy Policy (Draft)</h1>
     <p>Sporty processes your measurements to generate sport recommendations. We store your data only when you create an account and explicitly consent to retention.</p>
 
-    <section class="callout">
+    <section class="policy-callout">
       <strong>Key points</strong>
       <ul>
         <li>Inputs collected: body measurements, optional preferences, injury notes, past sports, and goals.</li>

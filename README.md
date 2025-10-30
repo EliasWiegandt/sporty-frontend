@@ -59,12 +59,34 @@ All endpoints reuse the same request-id logic as the legacy Worker. Static asset
 ## Keeping Things Consistent
 
 - Always wrap pages in `BaseLayout` so nav/auth controls stay identical.
-- Pull colors, spacing, and typography from the Open Props variables surfaced through `src/styles/global.css`. Drop overrides in `src/styles/brand.css` only when brand-specific values are required. The Sporty brand palette is defined there (`--brand-*` teals) and powers UnoCSS shortcuts.
-- Reach for UnoCSS utilities/shortcuts (`uno.config.ts`) and Webcore UI components for new surfaces instead of adding ad-hoc CSS.
+- Pull colors, spacing, and typography from the Open Props variables surfaced through `src/styles/global.css`. Drop overrides in `src/styles/brand.css` only when brand-specific values are required. The Sporty brand palette is defined there (`--brand-*` teals) and feeds the Tailwind component layer in `src/styles/tailwind.css`.
+- Reach for the shared Tailwind utilities/components defined in `src/styles/tailwind.css` (buttons, cards, layout shells, etc.) instead of adding ad-hoc CSS.
 - The primary wordmark lives in `BaseLayout` and combines the Sporty logotype with an Iconify laurel (`i-mingcute-laurel-wreath-fill`). If you update the brand treatment, adjust it in one place and ensure the icon palette remains accessible on light backgrounds. The navbar CTA defaults to “Try free analysis”; change `defaultPrimaryAction` in `BaseLayout` if product copy shifts.
 - Scope page-specific styling with inline `<style>` blocks or dedicated components—edit `global.css` only for site-wide changes.
 - Update this README, `docs/handbook.md`, and `AGENTS.md` when introducing new pages, design tokens, or deployment steps.
 - When adding API calls, surface them through `src/pages/api/*` so the Worker injects the secret headers (see `api/forecast-child.ts` for the latest example).
 - Past sport search pulls directly from `sports_subcategories`; keep that taxonomy seeded so the dropdown stays accurate.
+
+### Shared Tailwind preset
+
+- Sporty’s theme tokens are centralised in `src/styles/tailwind.css`. For other apps/islands, reuse the preset exported from `tailwind.sporty-preset.mjs`:
+
+  ```js
+  // tailwind.config.mjs
+  import sportyPreset from './tailwind.sporty-preset.mjs';
+
+  export default {
+    presets: [sportyPreset],
+    content: ['src/**/*.{astro,tsx,jsx,ts,js}'],
+  };
+  ```
+
+- The preset mirrors the CSS variables, so updating the design tokens in `tailwind.css` keeps the preset in sync.
+
+### Preline interactivity
+
+- `BaseLayout` includes an inline module that imports Preline and runs `window.HSStaticMethods.autoInit()` after each page load (including `astro:page-load` swaps), so components only need the documented `data-hs-*` attributes.
+- When you add a Preline component, drop the documented `data-hs-*` attributes into the template—there’s no need for per-page bootstrapping.
+- If a component is rendered dynamically (e.g., after fetching data with vanilla JS), call `window.HSStaticMethods?.autoInit()` once the markup lands so Preline wires the behavior.
 
 Questions? Coordinate with the backend team before changing proxy behavior or API assumptions.

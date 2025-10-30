@@ -1,8 +1,6 @@
 import { defineConfig } from 'astro/config';
 import cloudflare from '@astrojs/cloudflare';
 import preact from '@astrojs/preact';
-import UnoCSS from 'unocss/astro';
-import { webcore } from 'webcoreui/integration';
 
 import tailwindcss from '@tailwindcss/vite';
 
@@ -23,10 +21,6 @@ export default defineConfig({
 
   integrations: [
     preact(),
-    UnoCSS({
-      injectReset: false,
-    }),
-    webcore(),
   ],
 
   vite: {

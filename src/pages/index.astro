@@ -1,7 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { Button, Grid, Ribbon, Accordion } from 'webcoreui/astro';
-
 import {
   valuePillars,
   howSteps,
@@ -94,11 +92,11 @@ import {
     <section class="section-shell" id="tiers">
       <h2 class="section-title">Pick the depth you need</h2>
       <p class="lead-copy">Start for free, then reach for adult or child credits when you want premium insights.</p>
-      <Grid gap="lg" column={{ default: 1, md: 3 }}>
+      <div class="pricing-grid">
         {offerings.map((plan) => (
           <article class="card-shell plan-card">
             <div class="plan-card__ribbon">
-              <Ribbon theme="info">{plan.ribbon}</Ribbon>
+              <span class="badge-subtle">{plan.ribbon}</span>
             </div>
             <h3 class="card-title">{plan.title}</h3>
             <p class="plan-price">{plan.price}</p>
@@ -109,21 +107,29 @@ import {
               ))}
             </ul>
             <div class="btn-row">
-              <Button href={plan.cta.href} theme={plan.cta.theme}>{plan.cta.label}</Button>
+              <a
+                href={plan.cta.href}
+                class={plan.cta.theme === 'primary' ? 'btn-primary' : 'btn-ghost'}
+              >
+                {plan.cta.label}
+              </a>
               {plan.secondaryCta && (
-                <Button href={plan.secondaryCta.href} theme={plan.secondaryCta.theme}>
+                <a
+                  href={plan.secondaryCta.href}
+                  class={plan.secondaryCta.theme === 'primary' ? 'btn-primary' : 'btn-ghost'}
+                >
                   {plan.secondaryCta.label}
-                </Button>
+                </a>
               )}
             </div>
           </article>
         ))}
-      </Grid>
+      </div>
     </section>
 
     <section class="section-shell" id="sample-results">
       <h2 class="section-title">What premium-ready results look like</h2>
-      <Grid gap="lg" column={{ default: 1, md: 3 }}>
+      <div class="grid-cards">
         {sampleHighlights.map((highlight) => (
           <article class="card-shell sample-card">
             <h3 class="card-title">{highlight.title}</h3>
@@ -133,7 +139,7 @@ import {
             <p class="card-copy">{highlight.copy}</p>
           </article>
         ))}
-      </Grid>
+      </div>
     </section>
 
     <section class="section-shell section-narrow" id="why">
@@ -147,7 +153,19 @@ import {
 
     <section class="section-shell" id="faq">
       <h2 class="section-title">Questions, answered</h2>
-      <Accordion items={faqItems} />
+      <div class="faq-list">
+        {faqItems.map((item) => (
+          <details class="faq-item">
+            <summary class="faq-item__summary">
+              <span>{item.title}</span>
+              <span aria-hidden="true">+</span>
+            </summary>
+            <div class="faq-item__content">
+              <p>{item.content}</p>
+            </div>
+          </details>
+        ))}
+      </div>
     </section>
   </main>
 

@@ -35,7 +35,7 @@ const milestones = [
 ];
 ---
 <BaseLayout title="Sporty — About" description="Learn how Sporty blends biomechanics, AI, and consent-first design to match people with sports.">
-  <main class="section-shell about-shell">
+  <main class="about-shell">
     <header class="about-hero">
       <p class="badge">About Sporty</p>
       <h1 class="section-title">AI-built sport recommendations, consent first.</h1>
@@ -59,11 +59,11 @@ const milestones = [
 
     <section class="about-milestones">
       <h2 class="section-subtitle">What ships in the MVP</h2>
-      <ul>
+      <ul class="about-milestones__list">
         {milestones.map((item) => (
-          <li>
+          <li class="about-milestones__item">
             <strong>{item.label}</strong>
-            <p>{item.detail}</p>
+            <p class="about-milestones__detail">{item.detail}</p>
           </li>
         ))}
       </ul>
@@ -73,78 +73,10 @@ const milestones = [
       <h2>Consent flows in two moments</h2>
       <p>
         Sign-up consent covers storing adult measurements and past sports. The first paid analysis adds explicit consent for sensitive inputs (injuries, child data).
-        Manage or revoke everything anytime in <a href="/account">Account → Data &amp; Privacy</a>.
+        Manage or revoke everything anytime in <a class="about-consent__link" href="/account">Account → Data &amp; Privacy</a>.
       </p>
     </section>
   </main>
-
-  <Fragment slot="head">
-    <style is:global>
-      .about-shell {
-        max-width: min(var(--size-xl), 70rem);
-        margin: clamp(2rem, 5vw, 4rem) auto;
-        padding: 0 clamp(1.5rem, 4vw, 3rem);
-        display: grid;
-        gap: clamp(2rem, 4vw, 3rem);
-      }
-      .about-hero .badge {
-        display: inline-block;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        color: var(--brand-7);
-      }
-      .about-hero .section-title {
-        margin-bottom: 0.75rem;
-      }
-      .about-hero .lead-copy {
-        max-width: 48ch;
-      }
-      .card-grid {
-        display: grid;
-        gap: clamp(1.5rem, 4vw, 2.5rem);
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      }
-      .about-card {
-        padding: clamp(1.5rem, 3vw, 2rem);
-        border-radius: 24px;
-        border: 1px solid rgba(148, 163, 184, 0.25);
-        background: linear-gradient(180deg, rgba(241, 245, 249, 0.55), rgba(255, 255, 255, 0.95));
-      }
-      .about-card h2 {
-        margin: 0 0 0.5rem;
-      }
-      .about-card p {
-        margin: 0;
-        color: var(--gray-6);
-      }
-      .about-milestones ul {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: grid;
-        gap: 1.5rem;
-      }
-      .about-milestones li {
-        border-left: 4px solid rgba(15, 118, 110, 0.4);
-        padding-left: 1rem;
-      }
-      .about-milestones p {
-        margin: 0.2rem 0 0;
-        color: var(--gray-6);
-      }
-      .about-consent {
-        border-radius: 24px;
-        border: 1px solid rgba(14, 165, 165, 0.35);
-        background: rgba(14, 165, 165, 0.08);
-        padding: clamp(1.5rem, 3vw, 2.25rem);
-      }
-      .about-consent a {
-        font-weight: 600;
-      }
-    </style>
-  </Fragment>
-
   <Fragment slot="scripts">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="/config.js" defer></script>

@@ -12,199 +12,7 @@ const adultGroups = [
   title="Sporty — Child Forecast Intake"
   description="Project a child’s future body metrics using parent measurements and cohort data."
 >
-  <Fragment slot="head">
-    <style>
-      .intake {
-        max-width: 960px;
-        margin: clamp(2rem, 4vw, 3.5rem) auto;
-        display: grid;
-        gap: 2rem;
-        padding: 0 clamp(1.5rem, 5vw, 3rem);
-      }
-      .card {
-        padding: clamp(1.5rem, 4vw, 2.5rem);
-      }
-      .lead {
-        font-size: 1.05rem;
-        color: var(--gray-6);
-        margin: 0;
-      }
-      .grid {
-        display: grid;
-        gap: 1.25rem;
-      }
-      .input-row {
-        display: grid;
-        gap: 1rem;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      }
-      .intake-card__actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        align-items: center;
-      }
-      .intake-card__empty {
-        font-size: 0.9rem;
-        color: var(--gray-6);
-      }
-      .past-sports__items {
-        display: grid;
-        gap: 1rem;
-      }
-      .past-sport-item {
-        background: #fff;
-        border-radius: 16px;
-        border: 1px solid rgba(148, 163, 184, 0.3);
-        padding: clamp(1rem, 2.5vw, 1.4rem);
-        display: grid;
-        gap: 1rem;
-      }
-      .past-sport-flags {
-        display: grid;
-        gap: 1rem;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      }
-      .past-sport-picker {
-        position: relative;
-      }
-      .past-sport-picker__results {
-        position: absolute;
-        top: calc(100% + 0.4rem);
-        left: 0;
-        right: 0;
-        background: #fff;
-        border: 1px solid rgba(148, 163, 184, 0.35);
-        border-radius: 12px;
-        padding: 0.5rem;
-        box-shadow: 0 18px 32px -24px rgba(15, 23, 42, 0.35);
-        max-height: 220px;
-        overflow-y: auto;
-        z-index: 10;
-      }
-      .past-sport-picker__results button {
-        width: 100%;
-        text-align: left;
-        background: none;
-        border: none;
-        padding: 0.5rem 0.4rem;
-        border-radius: 0.65rem;
-        font: inherit;
-        cursor: pointer;
-      }
-      .past-sport-picker__results button:hover {
-        background: rgba(14, 165, 165, 0.1);
-      }
-      label span {
-        display: block;
-        font-weight: 600;
-        color: var(--gray-12);
-        margin-bottom: 0.35rem;
-      }
-      input,
-      select {
-        width: 100%;
-        padding: 0.75rem 0.9rem;
-        border-radius: 14px;
-        border: 1px solid rgba(148, 163, 184, 0.45);
-        background: #fff;
-        font: inherit;
-      }
-      fieldset {
-        border: 1px solid rgba(148, 163, 184, 0.35);
-        border-radius: 16px;
-        padding: clamp(1.25rem, 3vw, 1.75rem);
-        display: grid;
-        gap: 1rem;
-      }
-      fieldset legend {
-        font-weight: 700;
-        padding: 0 0.25rem;
-      }
-      .measurements {
-        display: grid;
-        gap: 0.9rem;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      }
-      .premium-group {
-        border: 1px solid rgba(14, 165, 165, 0.25);
-        background: rgba(14, 165, 165, 0.08);
-        border-radius: 18px;
-        padding: clamp(1.1rem, 3vw, 1.6rem);
-        display: grid;
-        gap: 1rem;
-      }
-      .premium-group header {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        align-items: center;
-        justify-content: space-between;
-      }
-      .premium-actions {
-        display: flex;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-      }
-      .premium-list {
-        display: grid;
-        gap: 0.75rem;
-      }
-      .premium-item {
-        display: grid;
-        gap: 0.75rem;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        background: #fff;
-        border-radius: 14px;
-        border: 1px solid rgba(148, 163, 184, 0.3);
-        padding: 0.85rem 1rem;
-      }
-      .toggle-row {
-        display: flex;
-        gap: 0.75rem;
-        align-items: center;
-      }
-      .toggle-row__copy {
-        display: grid;
-        gap: 0.25rem;
-      }
-      .toggle-row__title {
-        margin: 0;
-        font-weight: 600;
-      }
-      .toggle-row__hint {
-        margin: 0;
-        font-size: 0.85rem;
-        color: var(--gray-6);
-      }
-      .banner {
-        border-radius: 18px;
-        padding: clamp(1.2rem, 3vw, 1.8rem);
-        background: rgba(14, 165, 165, 0.12);
-        border: 1px solid rgba(14, 165, 165, 0.25);
-        color: var(--brand-9);
-      }
-      .status-area {
-        min-height: 2.2rem;
-      }
-      .status {
-        border-radius: 14px;
-        padding: 0.8rem 1rem;
-        font-size: 0.95rem;
-      }
-      .status--error {
-        background: rgba(239, 68, 68, 0.12);
-        border: 1px solid rgba(239, 68, 68, 0.35);
-        color: #b91c1c;
-      }
-      .status--info {
-        background: rgba(37, 99, 235, 0.1);
-        border: 1px solid rgba(37, 99, 235, 0.25);
-        color: #1d4ed8;
-      }
-    </style>
-  </Fragment>
-
+  
   <main class="intake">
     <section class="banner" data-child-banner>
       Combine a child’s current measurements with parent data to project their adult body profile. Use the prefilled test family to validate the flow, or overwrite with your own numbers.
@@ -219,154 +27,154 @@ const adultGroups = [
       <section class="grid" aria-labelledby="who">
         <h2 id="who" class="section-subtitle" style="margin:0;">Who are we forecasting?</h2>
         <div class="input-row">
-          <label>
-            <span>Existing child ID</span>
-            <input type="text" name="child_id" data-required placeholder="UUID from Supabase" />
+          <label class="field">
+            <span class="field__label">Existing child ID</span>
+            <input class="input-base" type="text" name="child_id" data-required placeholder="UUID from Supabase" />
           </label>
-          <label>
-            <span>Guardian user ID (optional)</span>
-            <input type="text" name="guardian_user_id" placeholder="UUID of signed-in guardian" />
+          <label class="field">
+            <span class="field__label">Guardian user ID (optional)</span>
+            <input class="input-base" type="text" name="guardian_user_id" placeholder="UUID of signed-in guardian" />
           </label>
-          <label>
-            <span>Birthdate</span>
-            <input type="date" name="birthdate" data-required />
+          <label class="field">
+            <span class="field__label">Birthdate</span>
+            <input class="input-base" type="date" name="birthdate" data-required />
           </label>
-          <label>
-            <span>Sex</span>
-            <select name="sex" data-required>
+          <label class="field">
+            <span class="field__label">Sex</span>
+            <select class="input-base" name="sex" data-required>
               <option value="female">Female</option>
               <option value="male">Male</option>
               <option value="other">Other</option>
               <option value="prefer_not">Prefer not to say</option>
             </select>
           </label>
-          <label>
-            <span>Ethnicity (optional)</span>
-            <select name="ethnicity">
+          <label class="field">
+            <span class="field__label">Ethnicity (optional)</span>
+            <select class="input-base" name="ethnicity">
               <option value="">General population</option>
               <option value="caucasian">Caucasian</option>
               <option value="asian">Asian</option>
             </select>
           </label>
-          <label>
-            <span>Target adult cohort</span>
-            <select name="adult_age_group">
+          <label class="field">
+            <span class="field__label">Target adult cohort</span>
+            <select class="input-base" name="adult_age_group">
               {adultGroups.map((group) => <option value={group}>{group}</option>)}
             </select>
           </label>
         </div>
       </section>
 
-      <fieldset>
+      <fieldset class="intake-fieldset">
         <legend>Child measurements (cm)</legend>
         <div class="measurements">
-          <label>
-            <span>Weight (kg)</span>
-            <input type="number" step="0.1" name="child_weight_kg" data-group="child" data-measurement="weight_kg" required />
+          <label class="field">
+            <span class="field__label">Weight (kg)</span>
+            <input class="input-base" type="number" step="0.1" name="child_weight_kg" data-group="child" data-measurement="weight_kg" required />
           </label>
-          <label>
-            <span>Height</span>
-            <input type="number" step="0.1" name="child_height_cm" data-group="child" data-measurement="height_cm" required />
+          <label class="field">
+            <span class="field__label">Height</span>
+            <input class="input-base" type="number" step="0.1" name="child_height_cm" data-group="child" data-measurement="height_cm" required />
           </label>
-          <label>
-            <span>Arm span</span>
-            <input type="number" step="0.1" name="child_arm_span_cm" data-group="child" data-measurement="arm_span_cm" />
+          <label class="field">
+            <span class="field__label">Arm span</span>
+            <input class="input-base" type="number" step="0.1" name="child_arm_span_cm" data-group="child" data-measurement="arm_span_cm" />
           </label>
-          <label>
-            <span>Leg inseam</span>
-            <input type="number" step="0.1" name="child_leg_inseam_cm" data-group="child" data-measurement="leg_inseam_cm" />
+          <label class="field">
+            <span class="field__label">Leg inseam</span>
+            <input class="input-base" type="number" step="0.1" name="child_leg_inseam_cm" data-group="child" data-measurement="leg_inseam_cm" />
           </label>
-          <label>
-            <span>Shoulder width</span>
-            <input type="number" step="0.1" name="child_shoulder_width_cm" data-group="child" data-measurement="shoulder_width_cm" />
+          <label class="field">
+            <span class="field__label">Shoulder width</span>
+            <input class="input-base" type="number" step="0.1" name="child_shoulder_width_cm" data-group="child" data-measurement="shoulder_width_cm" />
           </label>
-          <label>
-            <span>Hip width</span>
-            <input type="number" step="0.1" name="child_hip_width_cm" data-group="child" data-measurement="hip_width_cm" />
+          <label class="field">
+            <span class="field__label">Hip width</span>
+            <input class="input-base" type="number" step="0.1" name="child_hip_width_cm" data-group="child" data-measurement="hip_width_cm" />
           </label>
-          <label>
-            <span>Hand length</span>
-            <input type="number" step="0.1" name="child_hand_length_cm" data-group="child" data-measurement="hand_length_cm" />
+          <label class="field">
+            <span class="field__label">Hand length</span>
+            <input class="input-base" type="number" step="0.1" name="child_hand_length_cm" data-group="child" data-measurement="hand_length_cm" />
           </label>
-          <label>
-            <span>Foot length</span>
-            <input type="number" step="0.1" name="child_foot_length_cm" data-group="child" data-measurement="foot_length_cm" />
+          <label class="field">
+            <span class="field__label">Foot length</span>
+            <input class="input-base" type="number" step="0.1" name="child_foot_length_cm" data-group="child" data-measurement="foot_length_cm" />
           </label>
         </div>
       </fieldset>
 
-      <fieldset>
+      <fieldset class="intake-fieldset">
         <legend>Mother measurements (optional)</legend>
         <div class="measurements">
-          <label>
-            <span>Weight (kg)</span>
-            <input type="number" step="0.1" name="mother_weight_kg" data-group="mother" data-measurement="weight_kg" />
+          <label class="field">
+            <span class="field__label">Weight (kg)</span>
+            <input class="input-base" type="number" step="0.1" name="mother_weight_kg" data-group="mother" data-measurement="weight_kg" />
           </label>
-          <label>
-            <span>Height</span>
-            <input type="number" step="0.1" name="mother_height_cm" data-group="mother" data-measurement="height_cm" />
+          <label class="field">
+            <span class="field__label">Height</span>
+            <input class="input-base" type="number" step="0.1" name="mother_height_cm" data-group="mother" data-measurement="height_cm" />
           </label>
-          <label>
-            <span>Arm span</span>
-            <input type="number" step="0.1" name="mother_arm_span_cm" data-group="mother" data-measurement="arm_span_cm" />
+          <label class="field">
+            <span class="field__label">Arm span</span>
+            <input class="input-base" type="number" step="0.1" name="mother_arm_span_cm" data-group="mother" data-measurement="arm_span_cm" />
           </label>
-          <label>
-            <span>Leg inseam</span>
-            <input type="number" step="0.1" name="mother_leg_inseam_cm" data-group="mother" data-measurement="leg_inseam_cm" />
+          <label class="field">
+            <span class="field__label">Leg inseam</span>
+            <input class="input-base" type="number" step="0.1" name="mother_leg_inseam_cm" data-group="mother" data-measurement="leg_inseam_cm" />
           </label>
-          <label>
-            <span>Shoulder width</span>
-            <input type="number" step="0.1" name="mother_shoulder_width_cm" data-group="mother" data-measurement="shoulder_width_cm" />
+          <label class="field">
+            <span class="field__label">Shoulder width</span>
+            <input class="input-base" type="number" step="0.1" name="mother_shoulder_width_cm" data-group="mother" data-measurement="shoulder_width_cm" />
           </label>
-          <label>
-            <span>Hip width</span>
-            <input type="number" step="0.1" name="mother_hip_width_cm" data-group="mother" data-measurement="hip_width_cm" />
+          <label class="field">
+            <span class="field__label">Hip width</span>
+            <input class="input-base" type="number" step="0.1" name="mother_hip_width_cm" data-group="mother" data-measurement="hip_width_cm" />
           </label>
-          <label>
-            <span>Hand length</span>
-            <input type="number" step="0.1" name="mother_hand_length_cm" data-group="mother" data-measurement="hand_length_cm" />
+          <label class="field">
+            <span class="field__label">Hand length</span>
+            <input class="input-base" type="number" step="0.1" name="mother_hand_length_cm" data-group="mother" data-measurement="hand_length_cm" />
           </label>
-          <label>
-            <span>Foot length</span>
-            <input type="number" step="0.1" name="mother_foot_length_cm" data-group="mother" data-measurement="foot_length_cm" />
+          <label class="field">
+            <span class="field__label">Foot length</span>
+            <input class="input-base" type="number" step="0.1" name="mother_foot_length_cm" data-group="mother" data-measurement="foot_length_cm" />
           </label>
         </div>
       </fieldset>
 
-      <fieldset>
+      <fieldset class="intake-fieldset">
         <legend>Father measurements (optional)</legend>
         <div class="measurements">
-          <label>
-            <span>Weight (kg)</span>
-            <input type="number" step="0.1" name="father_weight_kg" data-group="father" data-measurement="weight_kg" />
+          <label class="field">
+            <span class="field__label">Weight (kg)</span>
+            <input class="input-base" type="number" step="0.1" name="father_weight_kg" data-group="father" data-measurement="weight_kg" />
           </label>
-          <label>
-            <span>Height</span>
-            <input type="number" step="0.1" name="father_height_cm" data-group="father" data-measurement="height_cm" />
+          <label class="field">
+            <span class="field__label">Height</span>
+            <input class="input-base" type="number" step="0.1" name="father_height_cm" data-group="father" data-measurement="height_cm" />
           </label>
-          <label>
-            <span>Arm span</span>
-            <input type="number" step="0.1" name="father_arm_span_cm" data-group="father" data-measurement="arm_span_cm" />
+          <label class="field">
+            <span class="field__label">Arm span</span>
+            <input class="input-base" type="number" step="0.1" name="father_arm_span_cm" data-group="father" data-measurement="arm_span_cm" />
           </label>
-          <label>
-            <span>Leg inseam</span>
-            <input type="number" step="0.1" name="father_leg_inseam_cm" data-group="father" data-measurement="leg_inseam_cm" />
+          <label class="field">
+            <span class="field__label">Leg inseam</span>
+            <input class="input-base" type="number" step="0.1" name="father_leg_inseam_cm" data-group="father" data-measurement="leg_inseam_cm" />
           </label>
-          <label>
-            <span>Shoulder width</span>
-            <input type="number" step="0.1" name="father_shoulder_width_cm" data-group="father" data-measurement="shoulder_width_cm" />
+          <label class="field">
+            <span class="field__label">Shoulder width</span>
+            <input class="input-base" type="number" step="0.1" name="father_shoulder_width_cm" data-group="father" data-measurement="shoulder_width_cm" />
           </label>
-          <label>
-            <span>Hip width</span>
-            <input type="number" step="0.1" name="father_hip_width_cm" data-group="father" data-measurement="hip_width_cm" />
+          <label class="field">
+            <span class="field__label">Hip width</span>
+            <input class="input-base" type="number" step="0.1" name="father_hip_width_cm" data-group="father" data-measurement="hip_width_cm" />
           </label>
-          <label>
-            <span>Hand length</span>
-            <input type="number" step="0.1" name="father_hand_length_cm" data-group="father" data-measurement="hand_length_cm" />
+          <label class="field">
+            <span class="field__label">Hand length</span>
+            <input class="input-base" type="number" step="0.1" name="father_hand_length_cm" data-group="father" data-measurement="hand_length_cm" />
           </label>
-          <label>
-            <span>Foot length</span>
-            <input type="number" step="0.1" name="father_foot_length_cm" data-group="father" data-measurement="foot_length_cm" />
+          <label class="field">
+            <span class="field__label">Foot length</span>
+            <input class="input-base" type="number" step="0.1" name="father_foot_length_cm" data-group="father" data-measurement="foot_length_cm" />
           </label>
         </div>
       </fieldset>

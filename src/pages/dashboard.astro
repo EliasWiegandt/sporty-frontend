@@ -67,9 +67,9 @@ const historyPlaceholders = [
       <section class="dashboard-card">
         <h2>Shortcuts</h2>
         <ul class="shortcut-list">
-          <li><a href="/results">View latest results</a></li>
-          <li><a href="/account">Account → Data &amp; Privacy</a></li>
-          <li><a href="/pricing">Pricing &amp; credits</a></li>
+          <li><a class="shortcut-list__link" href="/results">View latest results</a></li>
+          <li><a class="shortcut-list__link" href="/account">Account → Data &amp; Privacy</a></li>
+          <li><a class="shortcut-list__link" href="/pricing">Pricing &amp; credits</a></li>
         </ul>
       </section>
     </aside>
@@ -91,7 +91,7 @@ const historyPlaceholders = [
         {historyPlaceholders.map((item) => (
           <article class="history-card" data-history-placeholder>
             <h2>{item.title}</h2>
-            <p class="meta">{item.date}</p>
+            <p class="history-card__meta">{item.date}</p>
             <p>{item.summary}</p>
             <div class="history-card__actions">
               <button class="btn-primary btn-sm" type="button" disabled>View details (stub)</button>
@@ -103,126 +103,6 @@ const historyPlaceholders = [
     </section>
     </div>
   </main>
-
-  <Fragment slot="head">
-    <style is:global>
-      .dashboard-shell {
-        max-width: min(var(--size-xl), 70rem);
-        margin: clamp(2rem, 5vw, 4rem) auto;
-        padding: 0 clamp(1.5rem, 4vw, 3rem);
-        display: grid;
-        gap: clamp(1.5rem, 4vw, 2.5rem);
-      }
-      .dashboard-layout {
-        display: grid;
-        grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
-        gap: clamp(1.5rem, 4vw, 2.5rem);
-      }
-      .dashboard-sidebar {
-        display: grid;
-        gap: clamp(1.5rem, 3vw, 2.25rem);
-        align-content: start;
-      }
-      .dashboard-card {
-        border-radius: 24px;
-        border: 1px solid rgba(148, 163, 184, 0.25);
-        background: linear-gradient(180deg, rgba(241, 245, 249, 0.55), rgba(255, 255, 255, 0.95));
-        padding: clamp(1.5rem, 3vw, 2rem);
-        display: grid;
-        gap: 0.9rem;
-      }
-      .dashboard-card h2 {
-        margin: 0;
-        font-size: 1.1rem;
-      }
-      .button-column {
-        display: grid;
-        gap: 0.75rem;
-      }
-      .button-column .btn-primary[data-loading],
-      .button-column .btn-ghost[data-loading] {
-        opacity: 0.65;
-        pointer-events: none;
-      }
-      .credit-status {
-        margin: 0;
-        font-weight: 600;
-      }
-      .credit-status[data-tone="error"] {
-        color: #b91c1c;
-      }
-      .credit-status[data-tone="warn"] {
-        color: #b45309;
-      }
-      .credit-status[data-tone="info"] {
-        color: #0f766e;
-      }
-      .credit-status[data-tone="success"] {
-        color: #0f766e;
-      }
-      .measurement-list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: grid;
-        gap: 0.5rem;
-        color: var(--gray-6);
-      }
-      .shortcut-list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: grid;
-        gap: 0.5rem;
-      }
-      .shortcut-list a {
-        font-weight: 600;
-      }
-      .dashboard-content {
-        display: grid;
-        gap: clamp(1.5rem, 3vw, 2.25rem);
-      }
-      .dashboard-header .badge {
-        display: inline-block;
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.14em;
-        color: var(--brand-7);
-      }
-      .history-grid {
-        display: grid;
-        gap: clamp(1.25rem, 3vw, 2rem);
-      }
-      .history-card {
-        border-radius: 24px;
-        border: 1px solid rgba(148, 163, 184, 0.25);
-        padding: clamp(1.5rem, 3vw, 2rem);
-        background: rgba(226, 232, 240, 0.35);
-        display: grid;
-        gap: 0.75rem;
-      }
-      .history-card h2 {
-        margin: 0;
-        font-size: 1.1rem;
-      }
-      .history-card .meta {
-        margin: 0;
-        font-size: 0.9rem;
-        color: var(--gray-6);
-      }
-      .history-card__actions {
-        display: flex;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-      }
-      .dashboard-card--full {
-        border-radius: 24px;
-        border: 1px solid rgba(148, 163, 184, 0.25);
-        background: linear-gradient(180deg, rgba(241, 245, 249, 0.55), rgba(255, 255, 255, 0.95));
-        padding: clamp(1.75rem, 3vw, 2.25rem);
-      }
-    </style>
-  </Fragment>
 
   <Fragment slot="scripts">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>

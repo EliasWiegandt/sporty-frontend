@@ -5,38 +5,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   title="Sporty — Child Premium Analysis"
   description="Blend a child forecast with preferences, goals, injuries, and past sports to unlock premium matches."
 >
-    <Fragment slot="head">
-    <style>
-      .past-sport-picker__results {
-        position: absolute;
-        top: calc(100% + 0.4rem);
-        left: 0;
-        right: 0;
-        background: #fff;
-        border: 1px solid rgba(148, 163, 184, 0.35);
-        border-radius: 12px;
-        padding: 0.5rem;
-        box-shadow: 0 18px 32px -24px rgba(15, 23, 42, 0.35);
-        max-height: 220px;
-        overflow-y: auto;
-        z-index: 10;
-      }
-      .past-sport-picker__results button {
-        width: 100%;
-        text-align: left;
-        background: none;
-        border: none;
-        padding: 0.5rem 0.4rem;
-        border-radius: 0.65rem;
-        font: inherit;
-        cursor: pointer;
-      }
-      .past-sport-picker__results button:hover {
-        background: rgba(14, 165, 165, 0.1);
-      }
-    </style>
-  </Fragment>
-
   <main class="page">
     <section class="card-shell summary-card" data-premium-summary hidden>
       <div>
