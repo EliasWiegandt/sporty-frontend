@@ -58,11 +58,14 @@ All endpoints reuse the same request-id logic as the legacy Worker. Static asset
 
 ## Keeping Things Consistent
 
+- Typography tokens live in `src/styles/tailwind.css`; use the existing `type-*` utilities (display, title, lead, body, small) for all copy, including navbar and CTAs.
+- Reusable shells such as `section-shell`, `card-shell`, and `btn-pill` centralise container spacing and button styling—extend those instead of creating section-specific classes.
+- Landing sections (hero, pillars, how it works) now rely on shared Tailwind utilities only; avoid reintroducing bespoke CSS unless absolutely necessary.
 - Always wrap pages in `BaseLayout` so nav/auth controls stay identical.
-- Pull colors, spacing, and typography from the Open Props variables surfaced through `src/styles/global.css`. Drop overrides in `src/styles/brand.css` only when brand-specific values are required. The Sporty brand palette is defined there (`--brand-*` teals) and feeds the Tailwind component layer in `src/styles/tailwind.css`.
+- Pull colors, spacing, and typography from the shared Tailwind tokens defined in `src/styles/tailwind.css`; extend the component layer there if you need a new primitive.
 - Reach for the shared Tailwind utilities/components defined in `src/styles/tailwind.css` (buttons, cards, layout shells, etc.) instead of adding ad-hoc CSS.
-- The primary wordmark lives in `BaseLayout` and combines the Sporty logotype with an Iconify laurel (`i-mingcute-laurel-wreath-fill`). If you update the brand treatment, adjust it in one place and ensure the icon palette remains accessible on light backgrounds. The navbar CTA defaults to “Try free analysis”; change `defaultPrimaryAction` in `BaseLayout` if product copy shifts.
-- Scope page-specific styling with inline `<style>` blocks or dedicated components—edit `global.css` only for site-wide changes.
+- The primary wordmark lives in `BaseLayout` and combines the Sporty logotype with an Iconify laurel (`<iconify-icon icon="mingcute:laurel-wreath-fill">`). If you update the brand treatment, adjust it in one place and ensure the icon palette remains accessible on light backgrounds. The navbar CTA defaults to “Try free analysis”; change `defaultPrimaryAction` in `BaseLayout` if product copy shifts.
+- If a page truly needs bespoke styling, prefer scoped `<style>` blocks or new Tailwind component entries—avoid scattering standalone CSS files.
 - Update this README, `docs/handbook.md`, and `AGENTS.md` when introducing new pages, design tokens, or deployment steps.
 - When adding API calls, surface them through `src/pages/api/*` so the Worker injects the secret headers (see `api/forecast-child.ts` for the latest example).
 - Past sport search pulls directly from `sports_subcategories`; keep that taxonomy seeded so the dropdown stays accurate.
@@ -82,6 +85,10 @@ All endpoints reuse the same request-id logic as the legacy Worker. Static asset
   ```
 
 - The preset mirrors the CSS variables, so updating the design tokens in `tailwind.css` keeps the preset in sync.
+
+### Typography tokens
+
+- Reuse the shared classes defined in `src/styles/tailwind.css` for copy sizing: `type-display`, `type-title`, `type-lead`, `type-body`, `type-small`, `type-nav-brand`, and `type-nav`. Each token maps to the Inter family with responsive sizing so headings, navigation, and body text stay consistent across the site.
 
 ### Preline interactivity
 

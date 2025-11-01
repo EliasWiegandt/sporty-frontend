@@ -44,4 +44,87 @@
   if (stickyCta) {
     stickyCta.remove();
   }
+
+  const accordionGroups = document.querySelectorAll(".hs-accordion-group");
+  accordionGroups.forEach((group) => {
+    let allowMultiple = false;
+    const configAttr = group.getAttribute("data-hs-accordion");
+    if (configAttr) {
+      try {
+        const parsed = JSON.parse(configAttr);
+        if (parsed && typeof parsed === "object") {
+          allowMultiple = Boolean(parsed.alwaysOpen);
+        }
+      } catch (error) {
+        console.warn("[Sporty] Failed to parse accordion config", error);
+      }
+    }
+
+    const toggles = group.querySelectorAll(".hs-accordion-toggle");
+
+    const collapse = (btn, panel) => {
+      if (!panel || panel.classList.contains("hidden")) return;
+      btn.setAttribute("aria-expanded", "false");
+      btn.classList.remove("hs-accordion-active");
+      const parent = btn.closest(".hs-accordion");
+      if (parent) parent.classList.remove("hs-accordion-active");
+
+      panel.style.height = panel.scrollHeight + "px";
+      requestAnimationFrame(() => {
+        panel.style.height = "0px";
+      });
+      const onTransitionEnd = () => {
+        panel.classList.add("hidden");
+        panel.style.height = "";
+        panel.removeEventListener("transitionend", onTransitionEnd);
+      };
+      panel.addEventListener("transitionend", onTransitionEnd);
+    };
+
+    const expand = (btn, panel) => {
+      if (!panel) return;
+      btn.setAttribute("aria-expanded", "true");
+      btn.classList.add("hs-accordion-active");
+      const parent = btn.closest(".hs-accordion");
+      if (parent) parent.classList.add("hs-accordion-active");
+
+      panel.classList.remove("hidden");
+      panel.style.height = "0px";
+      const height = panel.scrollHeight;
+      requestAnimationFrame(() => {
+        panel.style.height = height + "px";
+      });
+      const onTransitionEnd = () => {
+        panel.style.height = "";
+        panel.removeEventListener("transitionend", onTransitionEnd);
+      };
+      panel.addEventListener("transitionend", onTransitionEnd);
+    };
+
+    toggles.forEach((btn) => {
+      const panelId = btn.getAttribute("aria-controls");
+      if (!panelId) return;
+      const panel = document.getElementById(panelId);
+
+      btn.addEventListener("click", () => {
+        const expanded = btn.getAttribute("aria-expanded") === "true";
+        if (expanded) {
+          collapse(btn, panel);
+          return;
+        }
+
+        if (!allowMultiple) {
+          toggles.forEach((otherBtn) => {
+            if (otherBtn === btn) return;
+            const otherPanelId = otherBtn.getAttribute("aria-controls");
+            if (!otherPanelId) return;
+            const otherPanel = document.getElementById(otherPanelId);
+            collapse(otherBtn, otherPanel);
+          });
+        }
+
+        expand(btn, panel);
+      });
+    });
+  });
 })();

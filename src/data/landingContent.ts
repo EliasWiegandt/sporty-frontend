@@ -49,13 +49,18 @@ export const howSteps = [
 export const testimonials = [
   {
     quote:
-      "“Premium adult analysis gave me the component breakdown I needed. Seeing shoulder width vs. optimal ranges explained why certain drills click.”",
-    name: "Morgan, 32 · Premium member",
+      "“I was an over-weight and pot-smoking guy. Sporty told me I had a great body for running. Turned out to be true!”",
+    name: "Christian, 36",
   },
   {
     quote:
-      "“The guardian flow let us forecast our daughter, apply a credit, and compare sport matches aligned to her projected build—game changer.”",
-    name: "Elena, 39 · Guardian",
+      "“I got Runner's Knee from my long distance running. Sporty suggest cycling, which both fit my body and ensured I didn't worsen the knee. And it worked!”",
+    name: "Laura, 32",
+  },
+  {
+    quote:
+      "“Our daughter didn't enjoy PE at all. Sporty recommended trying harder with swimming, since her long body, but short legs fit that. She doing regionals now!”",
+    name: "Jonas, 40",
   },
 ] as const;
 
@@ -67,56 +72,46 @@ export const offerings = [
     summary:
       "Unlimited biomechanics-backed matches any time you want another perspective.",
     features: [
-      "Run the full measurement set with instant sport suggestions.",
-      "Review component summaries and athlete analogues for each sport.",
-      "Stay anonymous until you opt in to save results.",
+      "Run analysis based on body composition and past sports.",
+      "Review component summaries and explanations of matches.",
+      "Sign up for free account to save runs to your dashboard.",
     ],
     cta: {
       href: "/intake",
-      label: "Start free match",
+      label: "Try free analysis",
       theme: "primary",
     },
   },
   {
-    ribbon: "$5 credit",
-    title: "Premium Adult Analysis",
+    ribbon: "Purchase",
+    title: "Premium Analysis of Adult",
     price: "$5",
-    summary: "Apply a credit to unlock qualitative inputs and deeper insights.",
+    summary: "Gain deeper insights and tailored recommendations.",
     features: [
-      "Blend goals, preferences, injuries, past sports, and performance factors.",
-      "See component impact bars, alignment scores, and recommended focus areas.",
-      "Store runs in your dashboard with share-ready summaries.",
+      "Add goals to see sports that fit your ambitions.",
+      "Add preferences to filter irrelevent results.",
+      "Add injuries you want to avoid aggravating or prevent developing.",
     ],
     cta: {
       href: "/intake?premium=true",
-      label: "Use an adult credit",
+      label: "Buy now",
       theme: "secondary",
-    },
-    secondaryCta: {
-      href: "/pricing",
-      label: "View pricing",
-      theme: "outline",
     },
   },
   {
-    ribbon: "$5 credit",
-    title: "Child Analysis Package",
+    ribbon: "Purchase",
+    title: "Premium Analysis for Child",
     price: "$5",
-    summary: "Forecast and refine a child’s sport path with guardian consent.",
+    summary: "Forecast and refine a child's sport path with guardian consent.",
     features: [
-      "Project future body metrics using child + parent measurements.",
-      "Apply preferences, goals, injuries, and past sports to unlock matches.",
-      "Store guardian-backed runs and track credits per child.",
+      "Forecast your child's body metrics using child + parent measurements.",
+      "Take child's preferences, goals, injuries, and past sports into account.",
+      "Get full premium analysis of your child's sport matches.",
     ],
     cta: {
       href: "/child-intake",
-      label: "Start child analysis",
+      label: "Buy now",
       theme: "secondary",
-    },
-    secondaryCta: {
-      href: "/pricing#child",
-      label: "How credits work",
-      theme: "outline",
     },
   },
 ] as const;
@@ -167,5 +162,48 @@ export const faqItems = [
     title: "Can I control what data you store?",
     content:
       "<p>Absolutely. Consent is required before we store measurements, preferences, injuries, or child data. You can revoke consent, delete runs, or export data under Account → Data & Privacy.</p>",
+  },
+] as const;
+
+export const scienceSection = {
+  title: "The science behind Sporty",
+  copy: "Sporty’s recommendations draw on established research in sport science, physiology, and psychology. Explore how body–sport fit, adult enjoyment, and early mastery keep people motivated for life.",
+  cta: {
+    href: "/science",
+    label: "Read the research summary",
+    theme: "secondary",
+  },
+} as const;
+
+export const scienceHighlights = [
+  {
+    icon: "mdi:arm-flex",
+    title: "Body fit and sport demands",
+    copy: "Measurable traits like limb lengths, segment ratios, and body composition influence leverage, energy cost, and how natural a sport feels.",
+    cta: {
+      href: "/science#body-fit-and-anthropometry-in-sport",
+      label: "Review the evidence",
+      theme: "secondary",
+    },
+  },
+  {
+    icon: "mdi:hand-heart",
+    title: "Enjoyment keeps adults active",
+    copy: "Enjoyment and competence are the strongest predictors of sticking with sport, boosting mental health, social wellbeing, and life satisfaction.",
+    cta: {
+      href: "/science#why-enjoying-a-sport-and-feeling-good-at-it-matters-for-adults",
+      label: "Explore adult benefits",
+      theme: "secondary",
+    },
+  },
+  {
+    icon: "mdi:infinity",
+    title: "Early mastery fuels confidence",
+    copy: "Early wins build self-efficacy and motivation, keeping young athletes engaged and confident over the long term.",
+    cta: {
+      href: "/science#early-mastery-confidence-and-motivation",
+      label: "Understand youth momentum",
+      theme: "secondary",
+    },
   },
 ] as const;

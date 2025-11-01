@@ -1,5 +1,5 @@
 ---
-import '../styles/global.css';
+import '../styles/tailwind.css';
 interface NavLink {
   href: string;
   label: string;
@@ -29,6 +29,7 @@ interface Props {
 const defaultNavLinks: NavLink[] = [
   { href: '/about', label: 'About' },
   { href: '/pricing', label: 'Pricing' },
+  { href: '/science', label: 'Science' },
   { href: '/dashboard', label: 'Dashboard' },
 ];
 
@@ -70,38 +71,53 @@ const hasActionContent = actions.length > 0 || showAuth;
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js" defer></script>
     <slot name="head" />
   </head>
   <body class={bodyClass}>
     {showHeader && (
-      <header class="site-header">
-        <nav class="nav-container" aria-label={navLabel}>
+      <header class="sticky top-0 z-50 border-b border-slate-200/60 bg-slate-50/90 backdrop-blur-md">
+        <nav
+          class="mx-auto flex w-full max-w-[min(96rem,92vw)] items-center justify-between gap-3 px-4 py-4 sm:gap-4 md:px-6"
+          aria-label={navLabel}
+        >
           <a
             href="/"
-            class="group inline-flex items-center gap-2 rounded-full px-3 py-1 text-[1.25rem] font-semibold tracking-tight text-[var(--gray-12)] transition-colors hover:bg-[rgba(14,99,91,0.12)] hover:text-[var(--brand-8)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-7)] focus-visible:ring-offset-2"
+            class="group inline-flex items-center gap-2 rounded-full px-3 py-1 type-lead tracking-tight font-semibold text-[clamp(1.5rem,1.2rem+1vw,2rem)] text-slate-900 transition-colors hover:bg-teal-100/60 hover:text-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
             aria-label="Sporty home"
           >
-            <i class="i-mingcute-laurel-wreath-fill pointer-events-none text-[1.45em] text-[#0a5f2a] transition-transform duration-150 ease-in-out group-hover:scale-105 group-hover:text-[var(--brand-8)] group-focus-visible:scale-105 group-focus-visible:text-[var(--brand-8)]" aria-hidden="true"></i>
+            <iconify-icon
+              icon="mingcute:laurel-wreath-fill"
+              class="pointer-events-none text-[1.45em] text-[#0a5f2a] transition-transform duration-150 ease-in-out group-hover:scale-105 group-hover:text-teal-600 group-focus-visible:scale-105 group-focus-visible:text-teal-600"
+              aria-hidden="true"
+            ></iconify-icon>
             <span class="leading-tight no-underline">sporty</span>
           </a>
+
           {hasNavContent && (
-            <div class="nav-links">
+            <div class="flex items-center gap-5">
               {navLinks.map((link) => (
-                <a href={link.href} rel={link.external ? 'noreferrer noopener' : undefined} target={link.external ? '_blank' : undefined}>
+                <a
+                  href={link.href}
+                  class="type-body font-medium text-slate-600 transition-colors hover:text-teal-700"
+                  rel={link.external ? 'noreferrer noopener' : undefined}
+                  target={link.external ? '_blank' : undefined}
+                >
                   {link.label}
                 </a>
               ))}
             </div>
           )}
+
           {hasActionContent && (
-            <div class="nav-actions">
+            <div class="flex items-center gap-3 md:gap-4">
               {actions.map((action) => {
                 const isGhost = action.variant === 'ghost';
-                const classes = ['nav-button'];
-                classes.push(isGhost ? 'btn-ghost' : 'cta-primary');
+                const classes = ['btn-pill'];
+                classes.push(isGhost ? 'btn-pill-secondary' : 'btn-pill-primary');
                 if (action.size === 'sm') {
                   classes.push('btn-sm');
                 }
@@ -112,17 +128,17 @@ const hasActionContent = actions.length > 0 || showAuth;
                 );
               })}
               {showAuth && (
-                <div class="nav-auth" data-auth-controls>
+                <div class="inline-flex items-center gap-2" data-auth-controls>
                   <button
-                    class="nav-button btn-ghost btn-sm"
+                    class="btn-pill btn-pill-secondary btn-sm"
                     type="button"
                     data-auth-open
                     data-auth-mode="signin"
                   >
-                    Log in
+                    Sign up / Log in
                   </button>
                   <button
-                    class="nav-button btn-ghost btn-sm"
+                    class="btn-pill btn-pill-secondary btn-sm"
                     type="button"
                     data-auth-signout
                     hidden
@@ -160,7 +176,7 @@ const hasActionContent = actions.length > 0 || showAuth;
             document.addEventListener("astro:after-swap", autoInitPreline);
           }
         };
-        import("preline")
+        Promise.all([import("preline"), import("preline/preline")])
           .then(bootstrapPreline)
           .catch((error) => {
             console.warn("[Sporty] Preline failed to load", error);

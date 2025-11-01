@@ -7,6 +7,8 @@ import {
   offerings,
   sampleHighlights,
   faqItems,
+  scienceSection,
+  scienceHighlights,
 } from '../data/landingContent';
 ---
 <BaseLayout
@@ -17,13 +19,13 @@ import {
     <section class="section-shell hero-shell" id="hero">
       <div class="hero__content">
         <span class="hero-badge" role="text">AI-driven matching of bodies and sports</span>
-        <h1 class="hero-headline">Discover sports you are wired for</h1>
-        <p class="hero-copy">
+        <h1 class="hero-headline type-display">Discover sports you are wired for</h1>
+        <p class="hero-copy type-lead">
           Uncover activities where your body's unique build thrives — or help your child catch the early wins that grow lifelong confidence.
         </p>
         <div class="hero__actions">
-          <a href="/intake" class="cta-primary nav-button hero-cta">Try free analysis</a>
-          <a href="#tiers" class="cta-secondary nav-button hero-cta">Explore premium options</a>
+          <a href="/intake" class="btn-pill btn-pill-primary hero-cta">Try free analysis</a>
+          <a href="#tiers" class="btn-pill btn-pill-secondary hero-cta">Explore premium options</a>
         </div>
       </div>
       <figure class="hero-visual" aria-label="Watercolor illustration highlighting a multi-sport training scene.">
@@ -35,63 +37,107 @@ import {
       </figure>
     </section>
 
-    <section class="section-shell section--accent" id="pillars" aria-labelledby="pillars-heading">
+    <section class="section-shell" id="pillars" aria-labelledby="pillars-heading">
       <h2 class="section-title" id="pillars-heading">Why Sporty leads the match</h2>
-      <div class="pillars-grid">
+      <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {valuePillars.map((pillar) => (
-          <article class="pillar-card">
-            {pillar.imageKey ? (
-              <figure class="pillar-art">
-                <img data-image-key={pillar.imageKey} alt={pillar.imageAlt} loading="lazy" />
-              </figure>
-            ) : (
-              <span class="pill-icon" aria-hidden="true">{pillar.icon}</span>
-            )}
-            <h3>{pillar.title}</h3>
-            <p>{pillar.copy}</p>
+          <article class="card-shell h-full">
+            <figure class="overflow-hidden rounded-2xl bg-teal-100/20 aspect-square">
+              <img
+                class="h-full w-full object-cover"
+                data-image-key={pillar.imageKey}
+                alt={pillar.imageAlt}
+                loading="lazy"
+              />
+            </figure>
+            <h3 class="type-lead text-slate-900">{pillar.title}</h3>
+            <p class="type-body">{pillar.copy}</p>
           </article>
         ))}
       </div>
     </section>
 
-    <section class="section-shell process-section" id="how-it-works">
-      <h2 class="section-title">How it works</h2>
-      <p class="section-subtitle">Try your free analysis for adults today — no credit card required.</p>
-      <div class="process">
-        {howSteps.map((step, index) => (
-          <article class="process__step">
-            <span class="process__marker" aria-hidden="true">{index + 1}</span>
-            <div class="process__body">
-              <div class="process__text">
-                <h3>{step.title}</h3>
-                <p>{step.subtitle}</p>
+    <section class="section-shell" id="how-it-works">
+      <div class="grid items-center gap-10 lg:grid-cols-2">
+        <div class="space-y-6">
+          <h2 class="section-title">How it works</h2>
+          <p class="section-subtitle">Try your free analysis for adults today — no credit card required.</p>
+          <div data-hs-stepper class="space-y-6">
+            {howSteps.map((step, index, arr) => (
+              <div key={step.title}>
+                <div class="flex items-start gap-4" aria-label={`Step ${index + 1}`}>
+                  <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-teal-600 bg-teal-50 text-teal-700 font-semibold">{index + 1}</span>
+                  <div class="space-y-1">
+                    <h3 class="type-lead text-slate-900">{step.title}</h3>
+                    <p class="type-body text-slate-600">{step.subtitle}</p>
+                  </div>
+                </div>
+                {index < arr.length - 1 && (
+                  <div class="ms-5 mt-3 h-10 border-l-2 border-dashed border-teal-200"></div>
+                )}
               </div>
-              {step.imageKey && (
-                <figure class="process__media">
-                  <img data-image-key={step.imageKey} alt={step.imageAlt} loading="lazy" />
-                </figure>
-              )}
-            </div>
+            ))}
+          </div>
+          <div>
+            <a href="/intake" class="btn-pill btn-pill-primary">Try free analysis</a>
+          </div>
+        </div>
+        <figure class="relative overflow-hidden rounded-3xl bg-teal-100/40 aspect-[4/5] lg:aspect-square">
+          <img
+            data-image-key="landing.how_it_works.banner"
+            alt="Illustration depicting the Sporty how-it-works journey."
+            loading="lazy"
+            class="h-full w-full object-cover"
+          />
+        </figure>
+      </div>
+    </section>
+
+    <section class="section-shell" id="science">
+      <div class="science-intro">
+        <h2 class="section-title">{scienceSection.title}</h2>
+        <p class="section-subtitle max-w-2xl">{scienceSection.copy}</p>
+        <a
+          href={scienceSection.cta.href}
+          class={`btn-pill ${scienceSection.cta.theme === 'primary' ? 'btn-pill-primary' : 'btn-pill-secondary'} science-cta`}
+        >
+          {scienceSection.cta.label}
+        </a>
+      </div>
+      <div class="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        {scienceHighlights.map((item) => (
+          <article class="card-shell science-card">
+            <iconify-icon icon={item.icon} class="icon-display" aria-hidden="true" />
+            <h3 class="card-title">{item.title}</h3>
+            <p class="card-copy">{item.copy}</p>
+            <a
+              href={item.cta.href}
+              class={`btn-pill ${item.cta.theme === 'primary' ? 'btn-pill-primary' : 'btn-pill-secondary'} science-cta`}
+            >
+              {item.cta.label}
+            </a>
           </article>
         ))}
       </div>
     </section>
 
-    <section class="section-shell testimonial-strip" aria-labelledby="testimonial-heading">
+    {/*
+    <section class="section-shell" aria-labelledby="testimonial-heading">
       <h2 class="section-title" id="testimonial-heading">People are already feeling the fit</h2>
-      <div class="testimonial-strip__inner">
+      <div class="grid gap-6 md:grid-cols-2">
         {testimonials.map((item) => (
-          <figure class="testimonial-card">
-            <blockquote>{item.quote}</blockquote>
-            <figcaption>{item.name}</figcaption>
-          </figure>
+          <article class="card-shell h-full space-y-3">
+            <blockquote class="type-lead text-slate-900 italic">{item.quote}</blockquote>
+            <p class="type-body text-slate-600 font-semibold">{item.name}</p>
+          </article>
         ))}
       </div>
     </section>
+    */}
 
     <section class="section-shell" id="tiers">
       <h2 class="section-title">Pick the depth you need</h2>
-      <p class="lead-copy">Start for free, then reach for adult or child credits when you want premium insights.</p>
+      <p class="lead-copy">Start for free, upgrade for more insights on both adults and children.</p>
       <div class="pricing-grid">
         {offerings.map((plan) => (
           <article class="card-shell plan-card">
@@ -109,14 +155,14 @@ import {
             <div class="btn-row">
               <a
                 href={plan.cta.href}
-                class={plan.cta.theme === 'primary' ? 'btn-primary' : 'btn-ghost'}
+                class={`btn-pill ${plan.cta.theme === 'primary' ? 'btn-pill-primary' : 'btn-pill-secondary'}`}
               >
                 {plan.cta.label}
               </a>
               {plan.secondaryCta && (
                 <a
                   href={plan.secondaryCta.href}
-                  class={plan.secondaryCta.theme === 'primary' ? 'btn-primary' : 'btn-ghost'}
+                  class={`btn-pill ${plan.secondaryCta.theme === 'primary' ? 'btn-pill-primary' : 'btn-pill-secondary'}`}
                 >
                   {plan.secondaryCta.label}
                 </a>
@@ -127,44 +173,42 @@ import {
       </div>
     </section>
 
-    <section class="section-shell" id="sample-results">
-      <h2 class="section-title">What premium-ready results look like</h2>
-      <div class="grid-cards">
-        {sampleHighlights.map((highlight) => (
-          <article class="card-shell sample-card">
-            <h3 class="card-title">{highlight.title}</h3>
-            <figure class="image-tile">
-              <img data-image-key={highlight.key} alt={highlight.alt} loading="lazy" />
-            </figure>
-            <p class="card-copy">{highlight.copy}</p>
-          </article>
-        ))}
-      </div>
-    </section>
-
-    <section class="section-shell section-narrow" id="why">
-      <h2 class="section-title">Why body fit matters</h2>
-      <p class="lead-copy">When your build aligns with a sport’s demands, skill work sticks faster and training feels better. Sporty ties anthropometric data to lived experience so you can invest reps where your body thrives.</p>
-      <blockquote class="testimonial" aria-label="Founders quote">
-        “Sporty demystifies how bodies, preferences, and performance factors interact. Whether you’re exploring sport for yourself or guiding a child, we highlight the activities that honour your strengths.”
-        <footer>— Sporty Founders</footer>
-      </blockquote>
-    </section>
-
     <section class="section-shell" id="faq">
       <h2 class="section-title">Questions, answered</h2>
-      <div class="faq-list">
-        {faqItems.map((item) => (
-          <details class="faq-item">
-            <summary class="faq-item__summary">
-              <span>{item.title}</span>
-              <span aria-hidden="true">+</span>
-            </summary>
-            <div class="faq-item__content">
-              <p>{item.content}</p>
+      <div class="hs-accordion-group space-y-4" data-hs-accordion='{"alwaysOpen": false}'>
+        {faqItems.map((item, index) => {
+          const headingId = `faq-accordion-${index}`;
+          const panelId = `faq-panel-${index}`;
+          return (
+            <div class="hs-accordion overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" id={headingId}>
+              <button
+                type="button"
+                class="hs-accordion-toggle inline-flex w-full items-center gap-4 px-5 py-4 text-start transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500"
+                aria-expanded="false"
+                aria-controls={panelId}
+              >
+                <svg
+                  class="h-5 w-5 shrink-0 text-slate-400 transition hs-accordion-active:rotate-90"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+                <span class="font-semibold text-slate-900">{item.title}</span>
+              </button>
+              <div
+                id={panelId}
+                class="hs-accordion-content hidden w-full overflow-hidden transition-[height] duration-300"
+                aria-labelledby={headingId}
+              >
+                <div class="border-t border-slate-200 px-5 py-4 text-slate-600" set:html={item.content} />
+              </div>
             </div>
-          </details>
-        ))}
+          );
+        })}
       </div>
     </section>
   </main>

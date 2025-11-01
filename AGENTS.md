@@ -11,10 +11,12 @@ Read this guide plus `docs/handbook.md` before contributing.
 - Build pipeline: `npm run build` emits `dist/_worker.js/index.js` + assets; `wrangler deploy` publishes the generated Worker (see `wrangler.toml`).
 - Node 20 is required in CI; commit `package-lock.json` with dependency changes.
 - Browser JS lives under `public/assets/js/` (no bundler—keep scripts compatible with plain browsers).
-- Design system → Open Props in `src/styles/global.css`; Tailwind component layer in `src/styles/tailwind.css` (buttons, layout shells, match cards, etc.); Iconify (`preset-icons`, e.g. the laurel wreath logo); optional overrides → `src/styles/brand.css` (brand teal palette lives there as `--brand-*`).
+- Design system → Tailwind tokens/components defined in `src/styles/tailwind.css` (buttons, layout shells, match cards, etc.); Iconify web component (`<iconify-icon>` for the laurel wreath logo).
 - Preline interactivity is initialised by an inline module in `BaseLayout`; add the documented `data-hs-*` attributes and Preline will auto-init after load.
 - Before reusing a layout/helper class from `src/styles/tailwind.css`, read the definition. Grid/min-width values there can hard-cap section widths (the hero bug came from `hero-shell`). If a section needs custom sizing, create/extend a dedicated stylesheet instead of stacking shortcuts.
 - Navbar CTA copy defaults to “Try free analysis” via `defaultPrimaryAction` in `BaseLayout`; update that constant if marketing copy changes.
+- Premium adult and child analyses each cost a single $5 credit—keep `src/data/landingContent.ts`, `/pricing`, and docs aligned when copy changes.
+- Science research copy lives in `src/pages/science.astro`; keep landing teasers in `src/data/landingContent.ts` aligned and use `.science-item-refs` so each source renders on its own line. The old `/` “Why body fit matters” section is retired—don’t resurrect it.
 
 ## Local Dev
 ```bash
@@ -28,7 +30,7 @@ wrangler dev
 - `make run-frontend` runs `npm run build` + `wrangler dev` in sequence.
 
 ## Collaboration
-- Update `README.md` + `docs/handbook.md` whenever you add a page, adjust Open Props/Tailwind/Webcore usage, or change build/deploy steps.
+- Update `README.md` + `docs/handbook.md` whenever you add a page, adjust Tailwind/Preline usage, or change build/deploy steps.
 - Keep `BaseLayout` as the single source of truth for the top nav and auth controls; add props instead of duplicating markup in pages.
 - Never expose Supabase service-role or Stripe secret keys in the frontend; only the Worker/backend should handle them.
 - Prefer the CLI’s built-in helpers (search/explore panels, file viewers, etc.) when inspecting the codebase; fall back to raw shell commands only when the helper can’t capture what you need so output stays easy to follow.

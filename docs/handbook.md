@@ -11,7 +11,7 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 - Present Sporty’s marketing story and free adult intake experience.
 - Maintain the public site at `sporty.plyml.com` (staging: `sporty-test.plyml.com`); references to “sporty” in docs mean that domain unless specified.
 - Prototype the child forecast QA flow so backend forecasting can be exercised end-to-end.
-- Keep navigation, typography, and layout consistent across all pages. The primary navbar now uses the Sporty wordmark with the Iconify laurel wreath (`i-mingcute-laurel-wreath-fill`)—adjust `BaseLayout` if the brand lockup changes. Brand teal tokens live in `src/styles/brand.css` as `--brand-*` and feed the Tailwind component layer defined in `src/styles/tailwind.css`. The default header CTA copy (“Try free analysis”) comes from `defaultPrimaryAction` in `BaseLayout`.
+- Keep navigation, typography, and layout consistent across all pages. The primary navbar now uses the Sporty wordmark with the Iconify laurel wreath (`<iconify-icon icon="mingcute:laurel-wreath-fill">`)—adjust `BaseLayout` if the brand lockup changes. Brand teal tokens live in the Tailwind theme (`src/styles/tailwind.css`) and feed the shared component layer. The default header CTA copy (“Try free analysis”) comes from `defaultPrimaryAction` in `BaseLayout`.
 - Proxy `/api/recommend-adult-free` and `/api/forecast-child` through the Cloudflare runtime so browsers never see backend secrets.
 - Free adult match now requires the full measurement set (birthday, sex, height, weight, arm span, leg inseam, shoulder width, hip width, hand length, foot length) and renders slider + number pairs for each. Premium-only inputs (preferences, goals, injuries) remain locked behind credits until a paid analysis is available.
 - When an authenticated user has credits, the intake toggles “Apply credit” to run `/api/recommend-adult-premium`; the premium journey redirects to `/results/premium` with component breakdowns pulled from the backend.
@@ -32,7 +32,7 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 
 | Layer                             | Responsibilities                                                                                                                                                                                                                             |
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Astro**                         | Pages live in `src/pages`. Shared chrome (nav, footer, fonts, laurel-mark wordmark) lives in `src/layouts/BaseLayout.astro`. `src/styles/global.css` imports Open Props; `src/styles/tailwind.css` defines Sporty’s Tailwind tokens/components; `src/styles/brand.css` handles optional overrides aligned to the Sporty palette. |
+| **Astro**                         | Pages live in `src/pages`. Shared chrome (nav, footer, fonts, laurel-mark wordmark) lives in `src/layouts/BaseLayout.astro`. `src/styles/tailwind.css` defines Sporty’s Tailwind tokens/components and exports the shared design preset. |
 | **Astro API routes**              | `src/pages/config.js.ts` publishes runtime Supabase config; `src/pages/api/recommend-adult-free.ts` proxies the backend `/v1/recommend-adult-free`; `src/pages/api/recommend-adult-premium.ts` proxies `/v1/recommend-adult-premium`; `src/pages/api/forecast-child.ts` proxies `/v1/forecast-child`; `src/pages/api/credits.ts` proxies `/v1/credits`; `src/pages/api/create-checkout-session.ts` starts Stripe Checkout; `src/pages/api/healthz.ts` exposes a health endpoint. |
 | **Public assets**                 | Vanilla JS (`public/assets/js/*.js`) handles Supabase auth, form submission, and DOM updates. `intake.js` manages the adult free + premium forms and the past-sport repeater, `child-intake.js` collects measurements and shepherds guardians into the credit flow, `child-premium.js` finalizes the paid submission after the credit is applied, `child-results.js` renders stored runs, `child-results-premium.js` renders the paid matches, `dashboard.js` hydrates credit balances + saved runs, `checkout.js` triggers Stripe Checkout with child-profile selection, and `checkout-success.js` refreshes balances after payment. Images and other static assets also live under `public/`. |
 | **Cloudflare Worker (generated)** | `astro build` (Cloudflare adapter) emits `dist/_worker.js/index.js`, wiring runtime env, asset serving, and the proxy routes above.                                                                                                          |
@@ -54,26 +54,33 @@ Primary desktop MVP routes (marketing + app shell):
 
 ## 3. Design System & Tokens
 
-- [Open Props](https://open-props.style/) is the canonical design system. `src/styles/global.css` imports the core, normalize, buttons, forms, and animations bundles so colors, spacing, shadows, easing, and keyframes are available via variables like `--gray-7`, `--size-4`, `--shadow-4`, `--ease-2`, and `--animation-fade-in`. Use these props directly; `src/styles/brand.css` remains a placeholder for future overrides if we need bespoke branding.
-- Shared Tailwind components live in `src/styles/tailwind.css`. Lean on those utilities (`btn-primary`, `btn-ghost`, `card-shell`, layout shells, etc.) and Iconify tokens instead of adding new global CSS.
-- Use Open Props animation keyframes/easing (e.g., `--animation-fade-in`, `--ease-2`) via Uno shortcuts or inline styles; avoid pulling in extra animation libraries unless we outgrow these primitives.
+- Typography: use the shared `type-*` utilities in `src/styles/tailwind.css` (display, title, lead, body, small). Buttons, nav, badges, and hero copy all rely on them—don’t hardcode font sizes in components.
+- Layout shells: `section-shell`, `card-shell`, and `btn-pill` are the canonical wrappers for section padding, cards, and CTAs. Reuse/extend them instead of adding page-specific styling.
+- Landing page sections (hero, pillars, how it works) now compose shared utilities only. Keep future sections consistent with that approach.
+- Tailwind’s design tokens and component layer live in `src/styles/tailwind.css`. This file defines palette variables, spacing, shadows, typography tokens (`type-display`, `type-title`, `type-lead`, `type-body`, `type-small`, `type-nav-brand`, `type-nav`), and reusable shells (`btn-pill`, `section-shell`, `card-shell`, etc.). Extend it when you need new primitives so downstream presets stay in sync.
+- Avoid reintroducing standalone CSS files; when page-specific tweaks are required, scope them in-place or add a dedicated Tailwind component entry.
+- Built-in keyframes and easing live alongside the component layer—reuse those tokens before adding new animation libraries.
 - Preline provides optional interactive primitives (modals, accordions). `BaseLayout` ships an inline module that imports Preline once and runs `window.HSStaticMethods.autoInit()` after every load (`DOMContentLoaded`, `astro:page-load`, `astro:after-swap`). Drop the documented `data-hs-*` attributes into markup—no per-page bootstrapping required.
 - `BaseLayout` ensures shared fonts, nav layout, and auth controls render identically on every page. Only pass page-specific variations (e.g., nav links, primary CTA) via props.
-- For page-specific tweaks, scope styles via inline `<style>` blocks in the `.astro` file so global CSS stays lean.
+- For page-specific tweaks, scope styles via inline `<style>` blocks in the `.astro` file so the shared Tailwind layer stays lean.
 - Reuse utility classes (`.section`, `.grid-cards`, `.card`, `.button`) whenever possible to avoid divergence.
-- Global CSS sets all `<img>` elements to span the full width of their container. When you need tighter art (e.g., match-card thumbnails), override width/height with explicit values and `!important` or inline styles; otherwise the default rule will stretch the asset.
-- **Tailwind component policy**: Treat the layout helpers in `src/styles/tailwind.css` as constraints, not conveniences. Before reusing one, inspect the underlying grid and max-width settings. When a section needs bespoke sizing (e.g., the landing hero), prefer a dedicated stylesheet (see `src/styles/hero.css`) so we can reason about width/height limits in one place.
+- Images default to `display: block; max-width: 100%` via the base layer. Override locally when you need fixed dimensions (e.g., match-card thumbnails).
+- **Tailwind component policy**: Treat the layout helpers in `src/styles/tailwind.css` as constraints, not conveniences. Before reusing one, inspect the underlying grid and max-width settings. When a section needs bespoke sizing (e.g., the landing hero), add a purpose-built component entry in `tailwind.css` so we can reason about width/height limits in one place.
 - **Tailwind preset**: `tailwind.sporty-preset.mjs` mirrors the design tokens exported from `src/styles/tailwind.css`. Import it in other projects via Tailwind’s `presets` array to stay aligned with Sporty spacing, colors, and shadows.
 - **Landing hero pattern**
-  - Layout: `hero-shell` combines `section-shell` with a desktop split of roughly 40% copy / 60% visual (see `src/styles/global.css` media queries). Keep the flex breakpoints intact so mobile stacks vertically and large screens maintain the wider illustration.
+  - Layout: use `section-shell` plus responsive Tailwind utilities (grid/flex) for the hero; there’s no bespoke CSS layer anymore, so adjust layout via utilities only.
   - Badge: use the `hero-badge` shortcut (white background, teal border/text) to surface the primary product promise above the headline.
   - Copy: two paragraphs max—first sentence states the biomechanics promise, second can bridge to guardian use cases. Headline always uses the shared `hero-headline` shortcut.
-  - CTA: render a single primary action with the `cta-primary` shortcut (alias for `btn-primary nav-button`) and anchor it with the `hero-cta` helper so it aligns with the text column. Avoid multiple hero CTAs unless marketing requests otherwise.
+  - CTA: render a single primary action with the `btn-pill btn-pill-primary` shortcut set and anchor it with the `hero-cta` helper so it aligns with the text column. Avoid multiple hero CTAs unless marketing requests otherwise.
   - Visual: hero art must preserve the 16:9 aspect ratio (`hero-visual img`), rely on Supabase-hosted assets keyed via `data-image-key`, and stay within the clamped min/max widths.
 - **Process steps module**
-  - Use the landing `process` layout (`src/pages/index.astro`) when describing three-step journeys. Each `.process__step` is numbered automatically via the badge column defined in `src/styles/global.css`.
+  - Use simple grid/flex utilities for process/how-it-works lists; the old `.process__*` helpers were removed.
   - Keep the section left-aligned via `.process-section`; the container width (≈540px) leaves room for complementary content on wider screens.
   - Pair each step with optional 1:1 Supabase imagery by setting `imageKey`/`imageAlt` in the `howSteps` array; assets live under `frontend_images/landing/`.
+- **Science content**
+  - The landing science block reads from `scienceSection` and `scienceHighlights` in `src/data/landingContent.ts`. Each highlight icon/CTA must stay in sync with the headings on `/science`.
+  - The `/science` page is authored directly in `src/pages/science.astro` (no Markdown import). Keep copy updates there and structure citations with the `.science-item-refs` helper so each source renders on its own line.
+  - Do not reintroduce the retired `#why` landing section; the science block now carries that narrative.
 
 ### Visual Asset Policy
 - **Illustrations (generative)**: Use the Sporty illustration pipeline for all human/sport scenes (landing hero, measurement helpers, sport spotlight art, guardian imagery). Maintain the shared backlog outlined in this handbook’s Visitor Journeys section and store assets in Supabase Storage with descriptive alt text.
@@ -290,7 +297,7 @@ Get a deeper, personalized analysis including goals, preferences, injuries, and 
 
 ### Goal
 
-Purchase a $5 child credit to forecast a child’s body trajectory and unlock sport matches with guardian consent.
+Purchase a $1 child credit to forecast a child’s body trajectory and unlock sport matches with guardian consent.
 
 ### Entry Points
 
@@ -347,7 +354,8 @@ Purchase a $5 child credit to forecast a child’s body trajectory and unlock sp
 | ------------------ | ------------------------------------ | ----------------------- |
 | `/`                | Marketing homepage, free entry point | All                     |
 | `/about`           | Mission & AI explanation             | All                     |
-| `/pricing`         | Explains tiers & credits             | All                     |
+| `/pricing`         | Explains tiers & $5 credits          | All                     |
+| `/science`         | Research summary & references        | All                     |
 | `/intake`          | Free or premium data input           | Logged-out or logged-in |
 | `/results`         | Free results                         | All                     |
 | `/results/premium` | Paid detailed analysis               | Logged-in               |
@@ -377,8 +385,7 @@ This hierarchy provides a clear framework for the frontend scaffold, ensuring al
 - Backend repo: `../sporty-backend`
 - Worker deploy workflow: `.github/workflows/deploy.yml`
 - Shared image catalog: `docs/images/catalog.yaml`
-- Design system baseline: Open Props via `src/styles/global.css`
-- Optional brand overrides: `src/styles/brand.css`
+- Design system baseline: Tailwind component layer (`src/styles/tailwind.css`)
 - Supabase auth helpers: `public/assets/js/app.js`
 
 Update this handbook whenever we change page structure, deployment steps, or environment expectations.
