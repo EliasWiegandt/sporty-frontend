@@ -1,0 +1,64 @@
+---
+import NumberStepper from './NumberStepper.astro';
+
+interface Props {
+  id: string;
+  label: string;
+  unit: string;
+  hint?: string;
+  help?: string[];
+  min?: number;
+  max?: number;
+  step?: number;
+  required?: boolean;
+}
+
+const {
+  id,
+  label,
+  unit,
+  hint = '',
+  help = [],
+  min,
+  max,
+  step = 1,
+  required = true,
+} = Astro.props as Props;
+
+const hintId = hint ? `${id}-hint` : undefined;
+---
+<div
+  class="rounded-3xl border border-slate-200/80 bg-white px-4 py-5 shadow-sm space-y-4"
+  data-measurement-field
+  data-measurement-id={id}
+>
+  <div class="flex items-start justify-between gap-3">
+    <div class="space-y-1">
+      <label class="type-body font-semibold text-slate-800" for={id}>
+        {label} ({unit})
+      </label>
+      {hint && (
+        <p id={hintId} class="text-sm text-slate-500">
+          {hint}
+        </p>
+      )}
+    </div>
+
+  </div>
+
+  <NumberStepper
+    id={id}
+    name={id}
+    step={step}
+    min={min}
+    max={max}
+    required={required}
+    inputmode="decimal"
+    ariaDescribedby={hintId}
+    wrapperClass="inline-flex w-full max-w-md items-center overflow-hidden rounded-2xl border border-slate-200 bg-white"
+    inputClass="h-11 w-full px-4 text-right text-lg text-slate-900 focus:outline-none focus:ring-0 bg-white"
+    inputAttrs={{ 'data-measurement-input': 'true', 'data-allow-empty': 'true' }}
+    incrementAttrs={{ 'aria-label': `Increase ${label.toLowerCase()}`, class: 'border-l border-slate-200' }}
+    decrementAttrs={{ 'aria-label': `Decrease ${label.toLowerCase()}`, class: 'border-r border-slate-200' }}
+  />
+</div>

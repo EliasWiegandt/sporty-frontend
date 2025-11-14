@@ -717,6 +717,11 @@
       const skillSelect = item.querySelector('[data-field="achieved_skill"]');
       const removeBtn = item.querySelector('[data-remove]');
 
+      if (resultsEl) {
+        resultsEl.setAttribute('role', 'listbox');
+        resultsEl.setAttribute('tabindex', '-1');
+      }
+
       if (yearsInput && initial && initial.years_played != null) yearsInput.value = Number(initial.years_played);
       if (ageInput && initial && initial.age_started_years != null) ageInput.value = Number(initial.age_started_years);
       if (intensitySelect && initial && INTENSITY_VALUES.includes(initial.intensity)) intensitySelect.value = initial.intensity;
@@ -743,7 +748,9 @@
         matches.forEach((row) => {
           const option = document.createElement('button');
           option.type = 'button';
-          option.className = 'past-sport-picker__option';
+          option.className =
+            'flex w-full items-center gap-2 rounded-xl border border-transparent px-3 py-2 text-left text-sm text-slate-700 transition hover:border-teal-200 hover:bg-teal-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500';
+          option.setAttribute('role', 'option');
           option.textContent = row.label;
           option.addEventListener('click', () => selectRow(row));
           fragment.appendChild(option);

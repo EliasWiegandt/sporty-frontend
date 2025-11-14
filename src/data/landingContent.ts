@@ -67,7 +67,7 @@ export const testimonials = [
 export const offerings = [
   {
     ribbon: "Included",
-    title: "Free Adult Match",
+    title: "Free Analysis of Adult",
     price: "$0",
     summary:
       "Unlimited biomechanics-backed matches any time you want another perspective.",
@@ -100,9 +100,9 @@ export const offerings = [
   },
   {
     ribbon: "Purchase",
-    title: "Premium Analysis for Child",
+    title: "Premium Analysis of Child",
     price: "$5",
-    summary: "Forecast and refine a child's sport path with guardian consent.",
+    summary: "Forecast a child's growth and match it's future body to sports.",
     features: [
       "Forecast your child's body metrics using child + parent measurements.",
       "Take child's preferences, goals, injuries, and past sports into account.",

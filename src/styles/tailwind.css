@@ -101,6 +101,16 @@
     height: auto;
   }
 
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
   iconify-icon {
     display: inline-flex;
     align-items: center;
@@ -195,6 +205,16 @@
     border-color: var(--color-brand-800);
   }
 
+  .btn-pill-sm {
+    padding: 0.5rem 1.1rem;
+    font-size: 0.95rem;
+  }
+
+  .btn-pill-xs {
+    padding: 0.35rem 0.9rem;
+    font-size: 0.875rem;
+  }
+
   .btn-row {
     display: flex;
     flex-wrap: wrap;
@@ -218,6 +238,51 @@
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
+  }
+
+  /* Form controls */
+  .input-field {
+    width: 100%;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border);
+    padding: 0.75rem 1rem;
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--color-text);
+    background-color: var(--color-surface);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .input-field:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+    border-color: var(--color-brand-500);
+    box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.25);
+  }
+
+  .input-field[disabled],
+  .input-field[readonly] {
+    background-color: rgba(148, 163, 184, 0.12);
+    color: rgba(100, 116, 139, 0.9);
+    cursor: not-allowed;
+  }
+
+  .tooltip-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    color: rgba(100, 116, 139, 1);
+    transition: color 0.15s ease, transform 0.15s ease;
+  }
+
+  .tooltip-trigger:hover,
+  .tooltip-trigger:focus-visible {
+    color: var(--color-brand-700);
+    transform: translateY(-0.5px);
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
   }
 
   /* Layout shells */
@@ -567,3 +632,10 @@
     text-align: center;
   }
 }
+  .combo-option {
+    @apply flex w-full items-center justify-between gap-2 rounded-xl border border-transparent px-3 py-2 text-left text-sm text-slate-700 transition hover:border-teal-200 hover:bg-teal-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500;
+  }
+
+  .combo-option.selected {
+    @apply border-teal-300 bg-teal-50 text-teal-800;
+  }

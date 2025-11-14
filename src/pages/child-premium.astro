@@ -147,62 +147,75 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <p class="lead-copy" data-child-past-empty>Sign in as a guardian to add child past sports.</p>
         <div class="premium-list" data-child-past-items></div>
         <template data-child-past-template>
-          <div class="past-sport-item" data-item>
-            <label class="field">
-              <span class="field__label">Sport or discipline</span>
-              <div class="past-sport-picker" data-picker>
-                <input type="text" class="past-sport-picker__input" data-field="sport_label" placeholder="Search sports…" autocomplete="off" />
+          <div class="rounded-3xl border border-slate-200/80 bg-white px-4 py-5 shadow-sm space-y-4" data-item>
+            <label class="space-y-2">
+              <span class="type-body font-semibold text-slate-800">Sport or discipline</span>
+              <div class="relative" data-picker>
+                <input
+                  type="text"
+                  class="input-field"
+                  data-field="sport_label"
+                  placeholder="Search sports…"
+                  autocomplete="off"
+                />
                 <input type="hidden" data-field="sport_subcategory_id" />
-                <div class="past-sport-picker__results" data-search-results hidden></div>
+                <div
+                  class="absolute inset-x-0 top-full z-20 mt-2 max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-lg hidden"
+                  data-search-results
+                  role="listbox"
+                  aria-label="Sport suggestions"
+                ></div>
               </div>
             </label>
-            <div class="past-sport-flags">
-              <label class="field">
-                <span class="field__label">Years played</span>
-                <input class="input-base" type="number" step="0.5" min="0" max="80" data-field="years_played" />
+            <div class="grid gap-4 md:grid-cols-2">
+              <label class="space-y-2">
+                <span class="type-body font-semibold text-slate-800">Years played</span>
+                <input class="input-field" type="number" step="0.5" min="0" max="80" data-field="years_played" />
               </label>
-              <label class="field">
-                <span class="field__label">Starting age</span>
-                <input class="input-base" type="number" min="0" max="80" data-field="age_started_years" />
+              <label class="space-y-2">
+                <span class="type-body font-semibold text-slate-800">Starting age</span>
+                <input class="input-field" type="number" min="0" max="80" data-field="age_started_years" />
               </label>
-              <label class="field">
-                <span class="field__label">Intensity</span>
-                <select class="input-base" data-field="intensity">
+            </div>
+            <label class="space-y-2">
+              <span class="type-body font-semibold text-slate-800">Intensity</span>
+              <select class="input-field" data-field="intensity">
+                <option value="">Select</option>
+                <option value="light">Casual / recreational</option>
+                <option value="moderate">Regular weekly sessions</option>
+                <option value="intense">Competitive season</option>
+                <option value="elite">High performance / elite</option>
+              </select>
+            </label>
+            <div class="grid gap-4 md:grid-cols-3">
+              <label class="space-y-2">
+                <span class="type-body font-semibold text-slate-800">Enjoyed it?</span>
+                <select class="input-field" data-field="liked">
                   <option value="">Select</option>
-                  <option value="light">Casual / recreational</option>
-                  <option value="moderate">Regular weekly sessions</option>
-                  <option value="intense">Competitive season</option>
-                  <option value="elite">High performance / elite</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              </label>
+              <label class="space-y-2">
+                <span class="type-body font-semibold text-slate-800">Felt natural?</span>
+                <select class="input-field" data-field="had_flair">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              </label>
+              <label class="space-y-2">
+                <span class="type-body font-semibold text-slate-800">Became good?</span>
+                <select class="input-field" data-field="achieved_skill">
+                  <option value="">Select</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
                 </select>
               </label>
             </div>
-            <div class="past-sport-flags">
-              <label class="field">
-                <span class="field__label">Enjoyed it?</span>
-                <select class="input-base" data-field="liked">
-                  <option value="">Select</option>
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
-                </select>
-              </label>
-              <label class="field">
-                <span class="field__label">Felt natural?</span>
-                <select class="input-base" data-field="had_flair">
-                  <option value="">Select</option>
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
-                </select>
-              </label>
-              <label class="field">
-                <span class="field__label">Became good?</span>
-                <select class="input-base" data-field="achieved_skill">
-                  <option value="">Select</option>
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
-                </select>
-              </label>
+            <div class="flex justify-end">
+              <button type="button" class="btn-pill btn-pill-secondary btn-pill-xs" data-remove>Remove</button>
             </div>
-            <button type="button" class="btn-ghost btn-sm" data-remove>Remove</button>
           </div>
         </template>
       </section>

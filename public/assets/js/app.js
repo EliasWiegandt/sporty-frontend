@@ -55,6 +55,14 @@
 
   document.addEventListener('DOMContentLoaded', init);
 
+  function hideConsentBanner() {
+    const banner = document.querySelector('[data-consent-banner]');
+    if (banner) {
+      banner.hidden = true;
+      banner.setAttribute('aria-hidden', 'true');
+    }
+  }
+
   function snapshot() {
     return {
       session: state.session,

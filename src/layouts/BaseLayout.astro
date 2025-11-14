@@ -153,36 +153,36 @@ const hasActionContent = actions.length > 0 || showAuth;
       </header>
     )}
     <slot />
-    <script type="module">
-      if (typeof window !== "undefined") {
-        const BOOT_FLAG = "__sportyPrelineBootstrapped";
-        const bootstrapPreline = () => {
-          const autoInitPreline = () => {
-            const methods = window.HSStaticMethods;
-            if (methods && typeof methods.autoInit === "function") {
-              methods.autoInit();
-            }
-          };
-          if (document.readyState === "loading") {
-            document.addEventListener("DOMContentLoaded", autoInitPreline, {
-              once: true,
-            });
-          } else {
-            autoInitPreline();
-          }
-          if (!window[BOOT_FLAG]) {
-            window[BOOT_FLAG] = true;
-            document.addEventListener("astro:page-load", autoInitPreline);
-            document.addEventListener("astro:after-swap", autoInitPreline);
+    <script>
+      (function () {
+        const FLAG = '__sportyPrelineReady';
+        const HOOKED = '__sportyPrelineListeners';
+        const autoInit = () => {
+          const methods = window.HSStaticMethods;
+          if (methods && typeof methods.autoInit === 'function') {
+            methods.autoInit();
           }
         };
-        Promise.all([import("preline"), import("preline/preline")])
-          .then(bootstrapPreline)
-          .catch((error) => {
-            console.warn("[Sporty] Preline failed to load", error);
-          });
-      }
+        window.__sportyPrelineStart = function () {
+          if (window[FLAG]) {
+            autoInit();
+            return;
+          }
+          window[FLAG] = true;
+          autoInit();
+          if (!window[HOOKED]) {
+            window[HOOKED] = true;
+            document.addEventListener('astro:page-load', autoInit);
+            document.addEventListener('astro:after-swap', autoInit);
+          }
+        };
+      })();
     </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/preline@3.2.3/dist/preline.js"
+      defer
+      onload="window.__sportyPrelineStart && window.__sportyPrelineStart();"
+    ></script>
     <slot name="scripts" />
   </body>
 </html>

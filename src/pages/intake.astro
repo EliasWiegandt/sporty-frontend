@@ -1,404 +1,347 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import MeasurementField from '../components/forms/MeasurementField.astro';
+import NumberStepper from '../components/forms/NumberStepper.astro';
+import { measurementFields } from '../data/measurementFields';
 
+const measurementMeta = measurementFields.map((field) => ({
+  id: field.id,
+  label: `${field.label} (${field.unit})`,
+  unit: field.unit,
+  min: field.min,
+  max: field.max,
+  step: field.step ?? 1,
+}));
 ---
 <BaseLayout
   title="Sporty — Free Adult Intake"
   description="Provide your measurements to get free sport matches tailored to your body."
 >
-    <main class="intake-shell">
-    <form class="intake-flow" data-intake-form>
-      <header class="intake-banner">
-        <span class="intake-banner__label">Free adult quick match</span>
-        <h1 class="intake-banner__headline">Tell us about your body, we’ll do the rest.</h1>
-        <p data-intake-banner>
-          Share a handful of measurements and we’ll return your top three sports instantly. Log in and consent to save your results for later.
-        </p>
-      </header>
+  <main class="mx-auto max-w-5xl space-y-10 pb-32">
+    <section class="section-shell space-y-8">
+      <form
+        id="intake-form"
+        class="space-y-10"
+        data-intake-form
+        data-measurements={JSON.stringify(measurementMeta)}
+      >
+        <div class="hs-stepper flex flex-col gap-6" data-hs-stepper='{"mode":"linear"}'>
+          <div class="grid gap-3 md:grid-cols-3" data-hs-stepper-nav>
+            <button
+              type="button"
+              class="btn-pill btn-pill-secondary btn-pill-sm flex flex-col items-start gap-1 text-left border border-slate-200 bg-white transition hs-stepper-active:border-2 hs-stepper-active:border-slate-900 hs-stepper-active:shadow-none hs-stepper-completed:bg-teal-100 hs-stepper-completed:text-teal-700"
+              data-hs-stepper-nav-item='{"index":1}'
+            >
+              <span class="font-semibold text-slate-800">Basics</span>
+              <span class="type-small text-slate-500">Birthday &amp; sex</span>
+            </button>
+            <button
+              type="button"
+              class="btn-pill btn-pill-secondary btn-pill-sm flex flex-col items-start gap-1 text-left border border-slate-200 bg-white transition hs-stepper-active:border-2 hs-stepper-active:border-slate-900 hs-stepper-active:shadow-none hs-stepper-completed:bg-teal-100 hs-stepper-completed:text-teal-700"
+              data-hs-stepper-nav-item='{"index":2}'
+            >
+              <span class="font-semibold text-slate-800">Measurements</span>
+              <span class="type-small text-slate-500">Eight required inputs</span>
+            </button>
+            <button
+              type="button"
+              class="btn-pill btn-pill-secondary btn-pill-sm flex flex-col items-start gap-1 text-left border border-slate-200 bg-white transition hs-stepper-active:border-2 hs-stepper-active:border-slate-900 hs-stepper-active:shadow-none hs-stepper-completed:bg-teal-100 hs-stepper-completed:text-teal-700"
+              data-hs-stepper-nav-item='{"index":3,"isFinal":true}'
+            >
+              <span class="font-semibold text-slate-800">Past sports</span>
+              <span class="type-small text-slate-500">Optional experience</span>
+            </button>
+          </div>
 
-      <section class="intake-card">
-        <span class="coach-ribbon">Step 1 · Basics</span>
-        <div class="intake-card__header">
-          <h2 class="card-title">Who are we measuring?</h2>
-          <p class="card-copy">We use your birthday and sex to place you in the right cohort.</p>
-        </div>
-        <div class="input-grid input-grid--two">
-          <label class="field">
-            <span class="field__label">Birthday</span>
-            <input class="input-base" type="date" name="birthday" required />
-            <span class="field__hint">Used only to infer age brackets.</span>
-          </label>
-          <label class="field">
-            <span class="field__label">Sex assigned at birth</span>
-            <select class="input-base" name="sex" required>
-              <option value="">Select one</option>
-              <option value="female">Female</option>
-              <option value="male">Male</option>
-            </select>
-            <span class="field__hint">Helps line you up with cohort averages.</span>
-          </label>
-        </div>
-      </section>
-
-      <section class="intake-card">
-        <span class="coach-ribbon">Step 2 · Body metrics</span>
-        <div class="intake-card__header">
-          <h2 class="card-title">Measurements</h2>
-          <p class="card-copy">Every measurement below is required so we can benchmark you accurately. Keep a flexible tape handy.</p>
-        </div>
-        <div class="input-grid input-grid--pairs">
-          <div class="input-pair" data-input-pair>
-            <div class="input-pair__head">
-              <span class="field__label">Height (cm)</span>
-              <span class="input-pair__chip" data-percentile data-unit="cm">Percentile —</span>
-            </div>
-            <div class="input-pair__controls">
-              <input class="input-base" type="number" name="height_cm" min="120" max="230" required inputmode="decimal" data-pair-input data-sync="height_cm" />
-              <input class="w-full" type="range" min="120" max="230" value="170" data-pair-range data-sync="height_cm" aria-label="Height slider (centimeters)" />
-            </div>
-          </div>
-          <div class="input-pair" data-input-pair>
-            <div class="input-pair__head">
-              <span class="field__label">Weight (kg)</span>
-              <span class="input-pair__chip" data-percentile data-unit="kg">Percentile —</span>
-            </div>
-            <div class="input-pair__controls">
-              <input class="input-base" type="number" name="weight_kg" min="35" max="200" required inputmode="decimal" data-pair-input data-sync="weight_kg" />
-              <input class="w-full" type="range" min="35" max="200" value="70" data-pair-range data-sync="weight_kg" aria-label="Weight slider (kilograms)" />
-            </div>
-          </div>
-          <div class="input-pair" data-input-pair>
-            <div class="input-pair__head">
-              <span class="field__label">Arm span (cm)</span>
-              <span class="input-pair__chip" data-percentile data-unit="cm">Percentile —</span>
-            </div>
-            <div class="input-pair__controls">
-              <input class="input-base" type="number" name="arm_span_cm" min="100" max="250" required inputmode="decimal" data-pair-input data-sync="arm_span_cm" />
-              <input class="w-full" type="range" min="100" max="250" value="180" data-pair-range data-sync="arm_span_cm" aria-label="Arm span slider (centimeters)" />
-            </div>
-          </div>
-          <div class="input-pair" data-input-pair>
-            <div class="input-pair__head">
-              <span class="field__label">Leg inseam (cm)</span>
-              <span class="input-pair__chip" data-percentile data-unit="cm">Percentile —</span>
-            </div>
-            <div class="input-pair__controls">
-              <input class="input-base" type="number" name="leg_inseam_cm" min="50" max="130" required inputmode="decimal" data-pair-input data-sync="leg_inseam_cm" />
-              <input class="w-full" type="range" min="50" max="130" value="75" data-pair-range data-sync="leg_inseam_cm" aria-label="Leg inseam slider (centimeters)" />
-            </div>
-          </div>
-          <div class="input-pair" data-input-pair>
-            <div class="input-pair__head">
-              <span class="field__label">Shoulder width (cm)</span>
-              <span class="input-pair__chip" data-percentile data-unit="cm">Percentile —</span>
-            </div>
-            <div class="input-pair__controls">
-              <input class="input-base" type="number" name="shoulder_width_cm" min="30" max="80" required inputmode="decimal" data-pair-input data-sync="shoulder_width_cm" />
-              <input class="w-full" type="range" min="30" max="80" value="45" data-pair-range data-sync="shoulder_width_cm" aria-label="Shoulder width slider (centimeters)" />
-            </div>
-          </div>
-          <div class="input-pair" data-input-pair>
-            <div class="input-pair__head">
-              <span class="field__label">Hip width (cm)</span>
-              <span class="input-pair__chip" data-percentile data-unit="cm">Percentile —</span>
-            </div>
-            <div class="input-pair__controls">
-              <input class="input-base" type="number" name="hip_width_cm" min="30" max="80" required inputmode="decimal" data-pair-input data-sync="hip_width_cm" />
-              <input class="w-full" type="range" min="30" max="80" value="45" data-pair-range data-sync="hip_width_cm" aria-label="Hip width slider (centimeters)" />
-            </div>
-          </div>
-          <div class="input-pair" data-input-pair>
-            <div class="input-pair__head">
-              <span class="field__label">Hand length (cm)</span>
-              <span class="input-pair__chip" data-percentile data-unit="cm">Percentile —</span>
-            </div>
-            <div class="input-pair__controls">
-              <input class="input-base" type="number" name="hand_length_cm" min="10" max="30" required inputmode="decimal" data-pair-input data-sync="hand_length_cm" />
-              <input class="w-full" type="range" min="10" max="30" value="20" data-pair-range data-sync="hand_length_cm" aria-label="Hand length slider (centimeters)" />
-            </div>
-          </div>
-          <div class="input-pair" data-input-pair>
-            <div class="input-pair__head">
-              <span class="field__label">Foot length (cm)</span>
-              <span class="input-pair__chip" data-percentile data-unit="cm">Percentile —</span>
-            </div>
-            <div class="input-pair__controls">
-              <input class="input-base" type="number" name="foot_length_cm" min="15" max="35" required inputmode="decimal" data-pair-input data-sync="foot_length_cm" />
-              <input class="w-full" type="range" min="15" max="35" value="25" data-pair-range data-sync="foot_length_cm" aria-label="Foot length slider (centimeters)" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="intake-card" data-past-sports>
-        <span class="coach-ribbon coach-ribbon--muted">Step 3 · Past experience</span>
-        <div class="intake-card__header">
-          <h2 class="card-title">Past sports</h2>
-          <p class="card-copy">Share up to five sports you’ve played. Signed-in users blend this into future matches.</p>
-        </div>
-        <div class="intake-card__actions">
-          <span class="past-sports__count" data-past-count>0 / 5</span>
-          <button type="button" class="button--ghost button--sm" data-past-add>Add sport</button>
-        </div>
-        <p class="intake-card__empty" data-past-empty>Log in to add past sports and experiences.</p>
-        <div class="past-sports__items" data-past-items></div>
-        <template data-past-template>
-          <div class="past-sport-item" data-item>
-            <label class="field">
-              <span class="field__label">Sport or discipline</span>
-              <div class="past-sport-picker" data-picker>
-                <input type="text" class="input-base past-sport-picker__input" data-field="sport_label" placeholder="Search sports…" autocomplete="off" />
-                <input type="hidden" data-field="sport_subcategory_id" />
-                <div class="past-sport-picker__results" data-search-results hidden></div>
-              </div>
-            </label>
-            <div class="input-row">
-              <label class="field">
-                <span class="field__label">Years played</span>
-                <input class="input-base" type="number" step="0.5" min="0" max="80" data-field="years_played" />
-              </label>
-              <label class="field">
-                <span class="field__label">Starting age</span>
-                <input class="input-base" type="number" min="0" max="80" data-field="age_started_years" />
-              </label>
-            </div>
-            <label class="field">
-              <span class="field__label">Intensity</span>
-              <select class="input-base" data-field="intensity">
-                <option value="">Select</option>
-                <option value="light">Casual / recreational</option>
-                <option value="moderate">Regular weekly sessions</option>
-                <option value="intense">Competitive season</option>
-                <option value="elite">High performance / elite</option>
-              </select>
-            </label>
-            <div class="past-sport-flags">
-              <label class="field">
-                <span class="field__label">Enjoyed it?</span>
-                <select class="input-base" data-field="liked">
-                  <option value="">Select</option>
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
-                </select>
-              </label>
-              <label class="field">
-                <span class="field__label">Felt natural?</span>
-                <select class="input-base" data-field="had_flair">
-                  <option value="">Select</option>
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
-                </select>
-              </label>
-              <label class="field">
-                <span class="field__label">Became good at it?</span>
-                <select class="input-base" data-field="achieved_skill">
-                  <option value="">Select</option>
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
-                </select>
-              </label>
-            </div>
-            <button type="button" class="button--ghost button--sm" data-remove>Remove</button>
-          </div>
-        </template>
-      </section>
-
-      <section class="intake-card intake-card--premium-locked" data-premium-locked>
-        <div class="premium-lock">
-          <div class="premium-lock__header">
-            <span class="premium-lock__icon" aria-hidden="true">🔒</span>
-            <div>
-              <h2 class="premium-lock__title">Premium analysis (paid)</h2>
-              <p class="premium-lock__copy" data-premium-locked-message>
-                Premium credits let you capture preferences, goals, and injuries alongside your measurements. Sign in and apply a credit to unlock deeper tailoring.
-              </p>
-            </div>
-          </div>
-          <div class="premium-lock__actions">
-            <button type="button" class="button button--sm" data-auth-open data-auth-mode="signin">Log in</button>
-            <button type="button" class="button--ghost button--sm" data-auth-open data-auth-mode="signup">Create account</button>
-            <a class="button--ghost button--sm" href="/pricing">View pricing</a>
-          </div>
-        </div>
-      </section>
-
-      <section class="intake-card" data-premium-block hidden>
-        <div class="premium-block">
-          <div class="premium-header">
-            <span class="premium-header__badge">Premium analysis</span>
-            <h2 class="section__subtitle" style="margin:0;">Tell us what matters most</h2>
-            <p class="premium-note">Add up to 20 entries per category. We’ll blend these with your measurements for the detailed analysis.</p>
-            <p class="premium-note" data-premium-summary></p>
-            <div class="premium-toggle" data-premium-toggle hidden>
-              <label class="toggle">
-                <input type="checkbox" data-premium-apply />
-                <span class="toggle__track"></span>
-              </label>
-              <div class="premium-toggle__copy">
-                <p class="premium-toggle__title">Apply one adult analysis credit</p>
-                <p class="premium-toggle__hint">Switch on when you’re ready to run the detailed analysis. Turn it off to stick with the free quick match.</p>
-              </div>
-            </div>
-          </div>
-          <div class="premium-groups">
-            <div class="premium-group" data-list="preferences">
-              <div class="premium-group__header">
-                <div>
-                  <h3>Preferences</h3>
-                  <p class="premium-note">Training environments, team dynamics, or settings you gravitate toward.</p>
-                </div>
-                <div class="premium-actions">
-                  <span class="premium-count" data-count>0 / 20</span>
-                  <button type="button" class="button--ghost button--sm" data-add="preference">Add preference</button>
-                </div>
-              </div>
-              <div class="premium-group__items" data-items></div>
-              <p class="premium-empty" data-empty>None added yet. Add up to 20 preferences.</p>
-              <template data-template>
-                <div class="premium-item" data-item>
-                  <label class="field">
-                    <span class="field__label">Preference</span>
-                    <select class="input-base" data-field="preference_id" required></select>
+          <div class="space-y-6" data-hs-stepper-content>
+            <div class="card-shell space-y-6" data-hs-stepper-content-item='{"index":1}' id="step-basics">
+              <header class="space-y-2">
+                <h2 class="type-title text-slate-900">Who are we measuring?</h2>
+                <p class="text-slate-600">
+                  We use your birthday and sex to place you in the right cohort.
+                </p>
+              </header>
+              <fieldset class="space-y-6">
+                <div class="grid gap-6 md:grid-cols-2">
+                  <label class="space-y-2" for="birthday">
+                    <span class="type-body font-semibold text-slate-800">Birthday</span>
+                    <input class="input-field" type="date" name="birthday" id="birthday" required />
+                    <span class="text-sm text-slate-500">Used only to infer age brackets.</span>
                   </label>
-                  <label class="field">
-                    <span class="field__label">Priority</span>
-                    <select class="input-base" data-field="priority">
-                      <option value="must_have">Must-have</option>
-                      <option value="nice_to_have">Nice-to-have</option>
-                    </select>
+                  <label class="space-y-2" for="sex">
+                    <span class="type-body font-semibold text-slate-800">Sex</span>
+                    <div class="hs-combo-box inline-block w-full" data-hs-combo-box='{"isOpenOnFocus":true}'>
+                      <input
+                        id="sex"
+                        name="sex"
+                        type="text"
+                        autocomplete="off"
+                        class="sr-only"
+                        required
+                        data-hs-combo-box-input
+                      />
+                      <button
+                        type="button"
+                        class="input-field flex w-full items-center justify-between"
+                        data-hs-combo-box-toggle
+                        data-combo-toggle="sex"
+                      >
+                        <span data-hs-combo-box-deselect-value data-default-label="Select one">Select one</span>
+                        <span class="ml-2 text-slate-500">
+                          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
+                          </svg>
+                        </span>
+                      </button>
+                      <div class="hs-combo-box-panel mt-2 hidden rounded-2xl border border-slate-200 bg-white shadow-lg" data-hs-combo-box-output>
+                        <div class="space-y-1" data-hs-combo-box-output-items-wrapper>
+                          <button type="button" class="combo-option" data-hs-combo-box-output-item='{"group":{"name":"default","title":"Options"}}'>
+                            <span data-hs-combo-box-search-text>Female</span>
+                            <span class="hidden" data-hs-combo-box-value>female</span>
+                          </button>
+                          <button type="button" class="combo-option" data-hs-combo-box-output-item='{"group":{"name":"default","title":"Options"}}'>
+                            <span data-hs-combo-box-search-text>Male</span>
+                            <span class="hidden" data-hs-combo-box-value>male</span>
+                          </button>
+                          <button type="button" class="combo-option" data-hs-combo-box-output-item='{"group":{"name":"default","title":"Options"}}'>
+                            <span data-hs-combo-box-search-text>Other</span>
+                            <span class="hidden" data-hs-combo-box-value>other</span>
+                          </button>
+                          <button type="button" class="combo-option" data-hs-combo-box-output-item='{"group":{"name":"default","title":"Options"}}'>
+                            <span data-hs-combo-box-search-text>Prefer not to say</span>
+                            <span class="hidden" data-hs-combo-box-value>prefer_not_to_say</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <span class="text-sm text-slate-500">Helps line you up with cohort averages.</span>
                   </label>
-                  <button type="button" class="button--ghost button--sm" data-remove>Remove</button>
                 </div>
-              </template>
+              </fieldset>
             </div>
 
-            <div class="premium-group" data-list="goals">
-              <div class="premium-group__header">
-                <div>
-                  <h3>Goals</h3>
-                  <p class="premium-note">What you want sport to deliver—skills, fitness, or lifestyle outcomes.</p>
-                </div>
-                <div class="premium-actions">
-                  <span class="premium-count" data-count>0 / 20</span>
-                  <button type="button" class="button--ghost button--sm" data-add="goal">Add goal</button>
-                </div>
-              </div>
-              <div class="premium-group__items" data-items></div>
-              <p class="premium-empty" data-empty>None added yet. Add up to 20 goals.</p>
-              <template data-template>
-                <div class="premium-item" data-item>
-                  <label class="field">
-                    <span class="field__label">Goal</span>
-                    <select class="input-base" data-field="goal_id" required></select>
-                  </label>
-                  <label class="field">
-                    <span class="field__label">Priority</span>
-                    <select class="input-base" data-field="priority">
-                      <option value="must_have">Must-have</option>
-                      <option value="nice_to_have">Nice-to-have</option>
-                    </select>
-                  </label>
-                  <button type="button" class="button--ghost button--sm" data-remove>Remove</button>
-                </div>
-              </template>
+            <div
+              class="card-shell space-y-6"
+              data-hs-stepper-content-item='{"index":2}'
+              id="step-measurements"
+              style="display: none;"
+            >
+              <header class="space-y-2">
+                <h2 class="type-title text-slate-900">Measurements</h2>
+                <p class="text-slate-600">
+                  Every measurement below is required so we can benchmark you accurately. Keep a flexible tape handy.
+                </p>
+              </header>
+              <fieldset class="grid gap-6 md:grid-cols-2">
+                {measurementFields.map((field) => (
+                  <MeasurementField {...field} />
+                ))}
+              </fieldset>
             </div>
 
-            <div class="premium-group" data-list="injuries">
-              <div class="premium-group__header">
-                <div>
-                  <h3>Injuries</h3>
-                  <p class="premium-note">Flag current or past injuries so we can adjust intensity and recommendations.</p>
+            <div
+              class="card-shell space-y-6"
+              data-hs-stepper-content-item='{"index":3,"isFinal":true}'
+              id="step-past-sports"
+              style="display: none;"
+            >
+              <header class="space-y-2">
+                <h2 class="type-title text-slate-900">Past sports (optional)</h2>
+                <p class="text-slate-600">
+                  Share up to five sports you’ve played. Signed-in users blend this into future matches.
+                </p>
+              </header>
+              <section
+                class="space-y-4"
+                data-past-sports
+              >
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <span class="text-sm text-slate-500" data-past-count>0 / 5</span>
+                  <button
+                    type="button"
+                    class="btn-pill btn-pill-secondary btn-pill-sm"
+                    data-past-add
+                  >
+                    Add sport
+                  </button>
                 </div>
-                <div class="premium-actions">
-                  <span class="premium-count" data-count>0 / 20</span>
-                  <button type="button" class="button--ghost button--sm" data-add="injury">Add injury</button>
+                <p class="text-sm text-slate-500 border border-dashed border-slate-300 rounded-2xl px-4 py-6 text-center" data-past-empty>
+                  Add the sports and disciplines you’ve spent time in. These influence both free and premium matches.
+                </p>
+                <div class="space-y-4" data-past-items></div>
+                <template data-past-template>
+                  <div class="rounded-3xl border border-slate-200/80 bg-white px-4 py-5 shadow-sm space-y-4" data-item>
+                    <label class="space-y-2">
+                      <span class="type-body font-semibold text-slate-800">Sport or discipline</span>
+                      <div class="relative" data-picker>
+                        <input
+                          type="text"
+                          class="input-field"
+                          data-field="sport_label"
+                          placeholder="Search sports…"
+                          autocomplete="off"
+                        />
+                        <input type="hidden" data-field="sport_subcategory_id" />
+                        <div
+                          class="absolute inset-x-0 top-full z-20 mt-2 max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-lg hidden"
+                          data-search-results
+                          role="listbox"
+                          aria-label="Sport suggestions"
+                        ></div>
+                      </div>
+                    </label>
+                <div class="grid gap-4 md:grid-cols-2">
+                  <label class="space-y-2 group">
+                    <span class="type-body font-semibold text-slate-800">Years played</span>
+                    <span class="text-sm text-slate-500">Total active years (subtract longer breaks).</span>
+                    <NumberStepper
+                      step={0.5}
+                      min={0}
+                      max={80}
+                      inputmode="decimal"
+                      wrapperClass="inline-flex w-full max-w-[10rem] items-center overflow-hidden rounded-2xl border border-slate-200 bg-white"
+                      inputClass="h-11 w-full px-4 text-right text-lg text-slate-900 focus:outline-none focus:ring-0 bg-white"
+                      inputAttrs={{ 'data-field': 'years_played', 'data-allow-empty': 'true' }}
+                      incrementAttrs={{ 'aria-label': 'Increase years played', class: 'border-l border-slate-200' }}
+                      decrementAttrs={{ 'aria-label': 'Decrease years played', class: 'border-r border-slate-200' }}
+                    />
+                  </label>
+                  <label class="space-y-2">
+                    <span class="type-body font-semibold text-slate-800">Starting age</span>
+                    <span class="text-sm text-slate-500">How old you were when you first played.</span>
+                    <NumberStepper
+                      step={1}
+                      min={0}
+                      max={80}
+                      inputmode="numeric"
+                      wrapperClass="inline-flex w-full max-w-[10rem] items-center overflow-hidden rounded-2xl border border-slate-200 bg-white"
+                      inputClass="h-11 w-full px-4 text-right text-lg text-slate-900 focus:outline-none focus:ring-0 bg-white"
+                      inputAttrs={{ 'data-field': 'age_started_years', 'data-allow-empty': 'true' }}
+                      incrementAttrs={{ 'aria-label': 'Increase starting age', class: 'border-l border-slate-200' }}
+                      decrementAttrs={{ 'aria-label': 'Decrease starting age', class: 'border-r border-slate-200' }}
+                    />
+                  </label>
                 </div>
-              </div>
-              <div class="premium-group__items" data-items></div>
-              <p class="premium-empty" data-empty>None added yet. Add up to 20 injuries.</p>
-              <template data-template>
-                <div class="premium-item" data-item>
-                  <label class="field">
-                    <span class="field__label">Injury</span>
-                    <select class="input-base" data-field="injury_id" required></select>
-                  </label>
-                  <label class="field">
-                    <span class="field__label">Specific area</span>
-                    <select class="input-base" data-field="injury_subcategory_id">
-                      <option value="">General</option>
-                    </select>
-                  </label>
-                  <label class="field">
-                    <span class="field__label">Severity</span>
-                    <select class="input-base" data-field="severity">
-                      <option value="severe">Severe</option>
-                      <option value="somewhat_bad">Somewhat bad</option>
-                      <option value="mostly_healed">Mostly healed</option>
-                    </select>
-                  </label>
-                  <label class="field premium-item__note">
-                    <span class="field__label">Notes (optional)</span>
-                    <input class="input-base" type="text" data-field="notes" maxlength="160" placeholder="Rehab status, triggers, limits" />
-                  </label>
-                  <button type="button" class="button--ghost button--sm" data-remove>Remove</button>
-                </div>
-              </template>
+                    <label class="space-y-2">
+                      <span class="type-body font-semibold text-slate-800">Intensity</span>
+                      <div class="hs-combo-box inline-block w-full" data-hs-combo-box>
+                        <input
+                          type="text"
+                          class="sr-only"
+                          autocomplete="off"
+                          data-field="intensity"
+                          data-hs-combo-box-input
+                        />
+                        <button type="button" class="input-field flex w-full items-center justify-between" data-hs-combo-box-toggle data-combo-toggle="intensity">
+                          <span data-hs-combo-box-deselect-value data-default-label="Select">Select</span>
+                          <span class="ml-2 text-slate-500">
+                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                              <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
+                            </svg>
+                          </span>
+                        </button>
+                        <div class="hs-combo-box-panel mt-2 hidden rounded-2xl border border-slate-200 bg-white shadow-lg" data-hs-combo-box-output>
+                          <div class="space-y-1" data-hs-combo-box-output-items-wrapper>
+                            <button type="button" class="combo-option" data-hs-combo-box-output-item='{"group":{"name":"default","title":"Options"}}'>
+                              <span data-hs-combo-box-search-text>Casual / recreational</span>
+                              <span class="hidden" data-hs-combo-box-value>light</span>
+                            </button>
+                            <button type="button" class="combo-option" data-hs-combo-box-output-item='{"group":{"name":"default","title":"Options"}}'>
+                              <span data-hs-combo-box-search-text>Regular weekly sessions</span>
+                              <span class="hidden" data-hs-combo-box-value>moderate</span>
+                            </button>
+                            <button type="button" class="combo-option" data-hs-combo-box-output-item='{"group":{"name":"default","title":"Options"}}'>
+                              <span data-hs-combo-box-search-text>Competitive season</span>
+                              <span class="hidden" data-hs-combo-box-value>intense</span>
+                            </button>
+                            <button type="button" class="combo-option" data-hs-combo-box-output-item='{"group":{"name":"default","title":"Options"}}'>
+                              <span data-hs-combo-box-search-text>High performance / elite</span>
+                              <span class="hidden" data-hs-combo-box-value>elite</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </label>
+                    <div class="grid gap-4 md:grid-cols-3">
+                      <label class="space-y-2">
+                        <span class="type-body font-semibold text-slate-800">Enjoyed it?</span>
+                        <select class="input-field" data-field="liked">
+                          <option value="">Select</option>
+                          <option value="yes">Yes</option>
+                          <option value="no">No</option>
+                        </select>
+                      </label>
+                      <label class="space-y-2">
+                        <span class="type-body font-semibold text-slate-800">Felt natural?</span>
+                        <select class="input-field" data-field="had_flair">
+                          <option value="">Select</option>
+                          <option value="yes">Yes</option>
+                          <option value="no">No</option>
+                        </select>
+                      </label>
+                      <label class="space-y-2">
+                        <span class="type-body font-semibold text-slate-800">Became good at it?</span>
+                        <select class="input-field" data-field="achieved_skill">
+                          <option value="">Select</option>
+                          <option value="yes">Yes</option>
+                          <option value="no">No</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div class="flex justify-end">
+                      <button type="button" class="btn-pill btn-pill-secondary btn-pill-xs" data-remove>Remove</button>
+                    </div>
+                  </div>
+                </template>
+              </section>
+            </div>
+          </div>
+
+          <div
+            class="flex w-full flex-wrap items-center justify-end gap-3"
+            data-stepper-actions
+          >
+            <button
+              type="button"
+              class="btn-pill btn-pill-secondary btn-pill-sm"
+              data-hs-stepper-back-btn
+              hidden
+              aria-hidden="true"
+            >
+              Back
+            </button>
+            <div class="flex items-center gap-3" data-actions>
+              <button
+                type="button"
+                class="btn-pill btn-pill-primary btn-pill-sm"
+                data-hs-stepper-next-btn
+              >
+                Continue
+              </button>
+              <button
+                type="submit"
+                class="btn-pill btn-pill-primary"
+                data-submit
+                hidden
+                aria-hidden="true"
+              >
+                See my matches
+              </button>
             </div>
           </div>
         </div>
-      </section>
 
-      <section class="intake-card intake-card--submit" data-submit-anchor>
-        <div class="intake-card__header">
-          <h2 class="card-title">Ready to see your matches?</h2>
-          <p class="privacy-note">We don’t store your data unless you log in and consent. Measurements sent to the backend are processed securely.</p>
+        <div class="space-y-4">
+          <div data-status aria-live="polite"></div>
         </div>
-        <div data-status aria-live="polite"></div>
-        <div class="button-row">
-          <button class="button" type="submit" data-submit>See my matches</button>
-          <a class="button--ghost" href="/privacy">Privacy policy (draft)</a>
-        </div>
-      </section>
-    </form>
-
-    <aside class="intake-aside">
-      <h2 class="section-subtitle">Tips for accurate measuring</h2>
-      <ul class="grid gap-2 pl-5 text-sm text-[var(--gray-6)] list-disc">
-        <li>Use a flexible measuring tape and stand tall without shoes.</li>
-        <li>Arm span: fingertip to fingertip, arms extended level with shoulders.</li>
-        <li>Leg inseam: heel to inner thigh crease—use a book to mark the spot.</li>
-        <li>Shoulder width: outer edge to outer edge of shoulders.</li>
-      </ul>
-    </aside>
+      </form>
+    </section>
   </main>
-
-  <div class="intake-sticky" data-sticky-submit hidden>
-    <div class="intake-sticky__inner">
-      <span class="intake-sticky__label">Ready? Run the quick match.</span>
-      <button type="button" class="button button--sm" data-sticky-button>See my matches</button>
-    </div>
-  </div>
-
-  <footer class="footer">
-    <div class="footer-inner">
-      <div>
-        <strong>Need help measuring?</strong>
-        <p class="lead-copy">We’ll add video guides soon. For now, keep a flexible measuring tape handy and stand tall without shoes.</p>
-      </div>
-      <small>© <span id="year">2025</span> Sporty</small>
-    </div>
-  </footer>
 
   <Fragment slot="scripts">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="/config.js" defer></script>
     <script src="/assets/js/app.js" defer></script>
     <script src="/assets/js/intake.js" defer></script>
-    <script>
-      const yearEl = document.getElementById('year');
-      if (yearEl) {
-        yearEl.textContent = String(new Date().getFullYear());
-      }
-    </script>
   </Fragment>
 </BaseLayout>

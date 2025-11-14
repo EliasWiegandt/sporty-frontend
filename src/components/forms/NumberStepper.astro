@@ -1,0 +1,92 @@
+---
+interface ButtonAttrs {
+  [key: string]: string | undefined;
+}
+
+interface Props {
+  id?: string;
+  name?: string;
+  step?: number;
+  min?: number;
+  max?: number;
+  value?: number | string;
+  required?: boolean;
+  inputClass?: string;
+  wrapperClass?: string;
+  inputAttrs?: ButtonAttrs;
+  incrementAttrs?: ButtonAttrs;
+  decrementAttrs?: ButtonAttrs;
+  inputmode?: string;
+  ariaDescribedby?: string;
+}
+
+const {
+  id,
+  name,
+  step,
+  min,
+  max,
+  value,
+  required = false,
+  inputClass = '',
+  wrapperClass = 'inline-flex items-center overflow-hidden rounded-2xl border border-slate-200 bg-white',
+  inputAttrs = {},
+  incrementAttrs = {},
+  decrementAttrs = {},
+  inputmode,
+  ariaDescribedby,
+} = Astro.props as Props;
+
+const wrapperConfig: Record<string, number> = {};
+if (typeof step === 'number') wrapperConfig.step = step;
+if (typeof min === 'number') wrapperConfig.min = min;
+if (typeof max === 'number') wrapperConfig.max = max;
+const wrapperConfigAttr = Object.keys(wrapperConfig).length ? JSON.stringify(wrapperConfig) : undefined;
+
+const { class: inputExtraClass, ...inputRestAttrs } = inputAttrs;
+const inputCombinedClass = [inputClass, inputExtraClass].filter(Boolean).join(' ');
+
+const { class: incrementExtraClass, ...incrementRestAttrs } = incrementAttrs;
+const { class: decrementExtraClass, ...decrementRestAttrs } = decrementAttrs;
+
+const baseButtonClass =
+  'inline-flex h-11 items-center justify-center px-4 text-lg font-semibold text-slate-700 bg-white shrink-0 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500';
+const incrementButtonClass = [baseButtonClass, incrementExtraClass].filter(Boolean).join(' ');
+const decrementButtonClass = [baseButtonClass, decrementExtraClass].filter(Boolean).join(' ');
+---
+<div
+  class={`hs-input-number ${wrapperClass}`.trim()}
+  {...(wrapperConfigAttr ? { 'data-hs-input-number': wrapperConfigAttr } : { 'data-hs-input-number': '{}' })}
+>
+  <button
+    type="button"
+    class={decrementButtonClass}
+    data-hs-input-number-decrement
+    {...decrementRestAttrs}
+  >
+    &minus;
+  </button>
+  <input
+    data-hs-input-number-input
+    type="number"
+    class={inputCombinedClass || 'h-11 w-24 px-4 text-center text-lg text-slate-900 focus:outline-none focus:ring-0 bg-white'}
+    {...(id ? { id } : {})}
+    {...(name ? { name } : {})}
+    {...(typeof step === 'number' ? { step } : {})}
+    {...(typeof min === 'number' ? { min } : {})}
+    {...(typeof max === 'number' ? { max } : {})}
+    {...(typeof value !== 'undefined' ? { value } : {})}
+    {...(inputmode ? { inputmode } : {})}
+    {...(ariaDescribedby ? { 'aria-describedby': ariaDescribedby } : {})}
+    {...(required ? { required: true } : {})}
+    {...inputRestAttrs}
+  />
+  <button
+    type="button"
+    class={incrementButtonClass}
+    data-hs-input-number-increment
+    {...incrementRestAttrs}
+  >
+    +
+  </button>
+</div>

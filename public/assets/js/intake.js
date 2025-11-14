@@ -1,7 +1,11 @@
 (function () {
   const form = document.querySelector('[data-intake-form]');
   const statusEl = document.querySelector('[data-status]');
-  const submitBtn = document.querySelector('[data-submit]');
+  const stepperEl = document.querySelector('[data-hs-stepper]');
+  const backBtn = document.querySelector('[data-hs-stepper-back-btn]');
+  const nextBtn = document.querySelector('[data-hs-stepper-next-btn]');
+  const submitBtn = document.querySelector('[data-stepper-actions] [data-submit]');
+  const actionsContainer = document.querySelector('[data-stepper-actions]');
   const bannerTextEl = document.querySelector('[data-intake-banner]');
   const premiumBlock = document.querySelector('[data-premium-block]');
   const premiumLocked = document.querySelector('[data-premium-locked]');
@@ -10,21 +14,53 @@
     : null;
   const premiumSummaryEl = document.querySelector('[data-premium-summary]');
   const pastSportsSection = document.querySelector('[data-past-sports]');
-  const stickyBar = document.querySelector('[data-sticky-submit]');
-  const stickyButton = stickyBar ? stickyBar.querySelector('[data-sticky-button]') : null;
-  const submitAnchor = document.querySelector('[data-submit-anchor]');
+  const stickyBar = null;
+  const stickyButton = null;
   const sportyApp = window.SportyApp;
   let sportySnapshot = { user: null, hasConsent: false };
-  const MEASUREMENT_FIELDS = [
-    { name: 'height_cm', label: 'Height (cm)' },
-    { name: 'weight_kg', label: 'Weight (kg)' },
-    { name: 'arm_span_cm', label: 'Arm span (cm)' },
-    { name: 'leg_inseam_cm', label: 'Leg inseam (cm)' },
-    { name: 'shoulder_width_cm', label: 'Shoulder width (cm)' },
-    { name: 'hip_width_cm', label: 'Hip width (cm)' },
-    { name: 'hand_length_cm', label: 'Hand length (cm)' },
-    { name: 'foot_length_cm', label: 'Foot length (cm)' },
-  ];
+  let currentStepIndex = 1;
+  const STORAGE_KEY = 'sporty:intake:draft:v1';
+  let pendingStep = null;
+  let isRestoringDraft = false;
+  let navTargetStep = null;
+  let hasInputNumberListener = false;
+  let hasComboListener = false;
+  const TOTAL_STEPS = (() => {
+    if (!stepperEl) return 3;
+    const navItems = stepperEl.querySelectorAll('[data-hs-stepper-nav-item]');
+    return navItems.length || 3;
+  })();
+  const measurementConfig = (() => {
+    if (!form || !form.dataset.measurements) return [];
+    try {
+      return JSON.parse(form.dataset.measurements);
+    } catch (error) {
+      console.warn('Failed to parse measurement config', error);
+      return [];
+    }
+  })();
+
+  const SEX_OPTIONS = new Set(['female', 'male', 'other', 'prefer_not_to_say']);
+
+  const MEASUREMENT_FIELDS = measurementConfig.length
+    ? measurementConfig.map((field) => ({
+        name: field.id || field.name,
+        label: field.label || field.id,
+        unit: field.unit,
+        min: typeof field.min === 'number' ? field.min : undefined,
+        max: typeof field.max === 'number' ? field.max : undefined,
+        step: typeof field.step === 'number' ? field.step : 1,
+      }))
+    : [
+        { name: 'height_cm', label: 'Height (cm)', step: 1 },
+        { name: 'weight_kg', label: 'Weight (kg)', step: 0.5 },
+        { name: 'arm_span_cm', label: 'Arm span (cm)', step: 1 },
+        { name: 'leg_inseam_cm', label: 'Leg inseam (cm)', step: 1 },
+        { name: 'shoulder_width_cm', label: 'Shoulder width (cm)', step: 0.5 },
+        { name: 'hip_width_cm', label: 'Hip width (cm)', step: 0.5 },
+        { name: 'hand_length_cm', label: 'Hand length (cm)', step: 0.5 },
+        { name: 'foot_length_cm', label: 'Foot length (cm)', step: 0.5 },
+      ];
   const initialSubmitLabel = submitBtn ? submitBtn.textContent.trim() : 'See my matches';
   const premiumController = createPremiumController({
     block: premiumBlock,
@@ -36,19 +72,17 @@
   const pastSportsController = createPastSportsController({
     root: pastSportsSection,
     getClient: () => (sportyApp && typeof sportyApp.getClient === 'function' ? sportyApp.getClient() : null),
+    onChange: () => {
+      if (!isRestoringDraft) {
+        saveDraft();
+      }
+    },
   });
 
-  if (stickyButton && submitBtn) {
-    stickyButton.textContent = initialSubmitLabel;
-    stickyButton.addEventListener('click', (event) => {
-      event.preventDefault();
-      submitBtn.click();
-    });
-  } else if (stickyBar) {
+  if (stickyBar) {
     stickyBar.hidden = true;
   }
 
-  initializeInputPairs();
   initializeSticky();
 
   if (!form) {
@@ -56,6 +90,22 @@
     premiumController.update(sportySnapshot);
     pastSportsController.update(sportySnapshot);
     return;
+  }
+  const draftState = restoreDraft();
+  setupStepperGuards();
+  setupStepperNavShortcuts();
+  initializeMeasurementControls();
+  if (draftState && typeof draftState.step === 'number' && draftState.step > 1) {
+    applyPendingStep(draftState.step);
+  }
+
+  if (form) {
+    const handleDraftSave = () => {
+      if (isRestoringDraft) return;
+      saveDraft();
+    };
+    form.addEventListener('input', handleDraftSave);
+    form.addEventListener('change', handleDraftSave);
   }
 
   if (sportyApp && sportyApp.ready) {
@@ -81,11 +131,10 @@
     if (!bannerTextEl) return;
     if (snapshot && snapshot.user) {
       bannerTextEl.textContent = snapshot.hasConsent
-        ? 'You are signed in. Measurements and results will be stored automatically.'
-        : 'You are signed in. Grant data-retention consent from your profile to store future results.';
+        ? 'Measurements and results save to your account automatically.'
+        : 'Sign in detected: enable data-retention consent in your profile to store future results.';
     } else {
-      bannerTextEl.textContent =
-        'Share a handful of measurements and we’ll return your top three sports instantly. Log in and consent to save your results for later.';
+      bannerTextEl.textContent = 'Share measurements for instant sport matches. Log in to save runs for later.';
     }
   }
 
@@ -100,6 +149,483 @@
     });
   }
 
+  function setupStepperGuards() {
+    if (!stepperEl) return;
+
+    const activeNav = stepperEl.querySelector('[data-hs-stepper-nav-item].active');
+    if (activeNav) {
+      const attr = activeNav.getAttribute('data-hs-stepper-nav-item');
+      try {
+        const parsed = attr ? JSON.parse(attr) : null;
+        if (parsed && typeof parsed.index === 'number') {
+          currentStepIndex = parsed.index;
+          updateStepperNavState();
+        }
+      } catch (_) {
+        currentStepIndex = 1;
+        updateStepperNavState();
+      }
+    }
+
+    stepperEl.addEventListener('active.hs.stepper', (event) => {
+      if (event && event.detail && typeof event.detail.payload === 'number') {
+        currentStepIndex = event.detail.payload;
+      }
+      setStatus('');
+      updateStepperNavState();
+      if (!isRestoringDraft) {
+        saveDraft();
+      }
+      progressNavTarget();
+    });
+
+    stepperEl.addEventListener('beforeStepChange.hs.stepper', (event) => {
+      const { index: nextIndex, isNext } = event.detail || {};
+      if (!isNext) return;
+      if (!shouldAdvance(currentStepIndex)) {
+        event.preventDefault();
+        navTargetStep = null;
+      }
+    });
+
+    stepperEl.addEventListener('back.hs.stepper', () => {
+      setStatus('');
+      updateStepperNavState();
+      if (navTargetStep && navTargetStep > currentStepIndex) {
+        navTargetStep = null;
+      }
+    });
+
+    updateStepperNavState();
+  }
+
+  function shouldAdvance(stepIndex) {
+    if (!form) return true;
+    const fd = new FormData(form);
+    if (stepIndex === 1) {
+      const basicsResult = validateBasics(fd);
+      if (basicsResult.errors.length) {
+        const { message, element } = basicsResult.errors[0];
+        setStatus(message, 'error');
+        focusField(element);
+        return false;
+      }
+      setStatus('');
+      return true;
+    }
+
+    if (stepIndex === 2) {
+      const measurementResult = validateMeasurements(fd);
+      if (measurementResult.errors.length) {
+        const { message, element } = measurementResult.errors[0];
+        setStatus(message, 'error');
+        focusField(element);
+        return false;
+      }
+      setStatus('');
+      return true;
+    }
+
+    return true;
+  }
+
+  function updateStepperNavState() {
+    const isFirstStep = currentStepIndex <= 1;
+    const isFinalStep = currentStepIndex >= TOTAL_STEPS;
+
+    if (backBtn) {
+      backBtn.hidden = isFirstStep;
+      backBtn.setAttribute('aria-hidden', isFirstStep ? 'true' : 'false');
+      backBtn.disabled = isFirstStep;
+    }
+
+    if (nextBtn) {
+      nextBtn.hidden = isFinalStep;
+      nextBtn.setAttribute('aria-hidden', isFinalStep ? 'true' : 'false');
+      nextBtn.disabled = isFinalStep;
+    }
+
+    if (submitBtn) {
+      submitBtn.hidden = !isFinalStep;
+      submitBtn.setAttribute('aria-hidden', !isFinalStep ? 'true' : 'false');
+      submitBtn.disabled = !isFinalStep;
+    }
+
+    if (actionsContainer) {
+      actionsContainer.classList.toggle('justify-between', !isFirstStep);
+      actionsContainer.classList.toggle('justify-end', isFirstStep);
+    }
+
+  }
+
+  function setupStepperNavShortcuts() {
+    if (!stepperEl) return;
+    const navButtons = stepperEl.querySelectorAll('[data-hs-stepper-nav-item]');
+    navButtons.forEach((button) => {
+      button.addEventListener('click', (event) => {
+        const attr = button.getAttribute('data-hs-stepper-nav-item');
+        let targetIndex = null;
+        try {
+          const parsed = attr ? JSON.parse(attr) : null;
+          if (parsed && typeof parsed.index !== 'undefined') {
+            const parsedIndex = Number(parsed.index);
+            if (Number.isFinite(parsedIndex)) {
+              targetIndex = parsedIndex;
+            }
+          }
+        } catch (error) {
+          targetIndex = null;
+        }
+        if (!targetIndex || targetIndex < 1 || targetIndex === currentStepIndex) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        navTargetStep = targetIndex;
+        progressNavTarget();
+      });
+    });
+  }
+
+  function getStepperInstance() {
+    if (!stepperEl) return null;
+    if (!window.HSStepper || typeof window.HSStepper.getInstance !== 'function') {
+      return null;
+    }
+    return window.HSStepper.getInstance(stepperEl, true);
+  }
+
+  function progressNavTarget() {
+    if (!navTargetStep || navTargetStep === currentStepIndex) {
+      navTargetStep = null;
+      return;
+    }
+
+    const instance = getStepperInstance();
+    const movingForward = navTargetStep > currentStepIndex;
+
+    if (movingForward) {
+      if (instance && typeof instance.goToNext === 'function') {
+        instance.goToNext();
+        return;
+      }
+      const nextButton = stepperEl.querySelector('[data-hs-stepper-next-btn]');
+      if (nextButton) {
+        nextButton.click();
+        return;
+      }
+      navTargetStep = null;
+      return;
+    }
+
+    if (navTargetStep < currentStepIndex) {
+      if (instance && typeof instance.goToPrev === 'function') {
+        instance.goToPrev();
+        return;
+      }
+      if (instance && typeof instance.goTo === 'function') {
+        instance.goTo(navTargetStep);
+        return;
+      }
+      const backButton = stepperEl.querySelector('[data-hs-stepper-back-btn]');
+      if (backButton) {
+        backButton.click();
+        return;
+      }
+      navTargetStep = null;
+    }
+  }
+
+  function focusField(element) {
+    if (!element) return;
+    if (typeof element.focus === 'function') {
+      try {
+        element.focus({ preventScroll: true });
+      } catch (_) {
+        element.focus();
+      }
+    }
+    if (typeof element.scrollIntoView === 'function') {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  if (typeof element.reportValidity === 'function') {
+    element.reportValidity();
+  }
+}
+
+  function restoreDraft() {
+    if (!form || !supportsStorage()) return null;
+    let raw = null;
+    try {
+      raw = window.localStorage.getItem(STORAGE_KEY);
+    } catch (error) {
+      console.warn('Unable to access intake draft storage', error);
+      return null;
+    }
+    if (!raw) return null;
+
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (error) {
+      console.warn('Failed to parse intake draft', error);
+      return null;
+    }
+
+    let basics = parsed && parsed.basics ? { ...parsed.basics } : null;
+    let measurements = parsed && parsed.measurements ? { ...parsed.measurements } : null;
+    let pastSportsDraft = Array.isArray(parsed && parsed.pastSports) ? parsed.pastSports : [];
+
+    const legacyFields = parsed && parsed.fields;
+    if (legacyFields && typeof legacyFields === 'object') {
+      basics = basics || {};
+      if (legacyFields.birthday) basics.birthday = legacyFields.birthday;
+      if (legacyFields.sex) basics.sex = legacyFields.sex;
+
+      measurements = measurements || {};
+      MEASUREMENT_FIELDS.forEach((field) => {
+        if (Object.prototype.hasOwnProperty.call(legacyFields, field.name)) {
+          measurements[field.name] = legacyFields[field.name];
+        }
+      });
+
+      if (!pastSportsDraft.length && Array.isArray(legacyFields.past_sports)) {
+        pastSportsDraft = legacyFields.past_sports;
+      }
+    }
+
+    basics = basics || {};
+    measurements = measurements || {};
+
+    isRestoringDraft = true;
+
+    try {
+      if (basics && basics.birthday) {
+        const birthdayInput = form.querySelector('input[name="birthday"]');
+        if (birthdayInput) {
+          birthdayInput.value = basics.birthday;
+        }
+      }
+
+      const sexInputRestore = form.querySelector('input[name="sex"][data-hs-combo-box-input]');
+      if (basics && basics.sex) {
+        if (sexInputRestore instanceof HTMLInputElement) {
+          sexInputRestore.value = basics.sex;
+          const combo = sexInputRestore.closest('.hs-combo-box');
+          setComboValue(combo, basics.sex);
+        }
+      } else if (sexInputRestore instanceof HTMLInputElement) {
+        const combo = sexInputRestore.closest('.hs-combo-box');
+        setComboValue(combo, '');
+      }
+
+      MEASUREMENT_FIELDS.forEach((field) => {
+        if (!Object.prototype.hasOwnProperty.call(measurements, field.name)) return;
+        const value = measurements[field.name];
+        const input = form.querySelector(`input[name="${field.name}"]`);
+        if (!input) return;
+        input.value = value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+
+      if (pastSportsDraft.length && pastSportsController && typeof pastSportsController.restoreDraft === 'function') {
+        pastSportsController.restoreDraft(pastSportsDraft);
+      }
+
+      if (typeof parsed.step === 'number' && parsed.step > 1) {
+        pendingStep = parsed.step;
+      }
+    } finally {
+      setTimeout(() => {
+        isRestoringDraft = false;
+        saveDraft();
+      }, 0);
+    }
+
+    return { step: parsed.step, pastSports: pastSportsDraft };
+  }
+
+  function saveDraft() {
+    if (!form || !supportsStorage()) return;
+
+    const draft = {
+      step: currentStepIndex,
+      basics: {},
+      measurements: {},
+      pastSports: [],
+    };
+
+    const birthdayInput = form.querySelector('input[name="birthday"]');
+    if (birthdayInput && birthdayInput.value) {
+      draft.basics.birthday = birthdayInput.value;
+    }
+
+    const sexInputDraft = form.querySelector('input[name="sex"][data-hs-combo-box-input]');
+    if (sexInputDraft && sexInputDraft.value) {
+      draft.basics.sex = sexInputDraft.value;
+    }
+
+    MEASUREMENT_FIELDS.forEach((field) => {
+      const input = form.querySelector(`input[name="${field.name}"]`);
+      if (!input || !input.value) return;
+      draft.measurements[field.name] = input.value;
+    });
+
+    if (pastSportsController && typeof pastSportsController.toDraft === 'function') {
+      const draftPastSports = pastSportsController.toDraft();
+      if (Array.isArray(draftPastSports) && draftPastSports.length) {
+        draft.pastSports = draftPastSports;
+      }
+    }
+
+    const hasBasics = draft.basics && (draft.basics.birthday || draft.basics.sex);
+    const hasMeasurements = draft.measurements && Object.keys(draft.measurements).length > 0;
+    const hasPast = Array.isArray(draft.pastSports) && draft.pastSports.length > 0;
+
+    try {
+      if (hasBasics || hasMeasurements || hasPast) {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+      } else {
+        window.localStorage.removeItem(STORAGE_KEY);
+      }
+    } catch (error) {
+      console.warn('Failed to persist intake draft', error);
+    }
+  }
+
+  function applyPendingStep(step) {
+    if (!stepperEl || typeof step !== 'number' || step <= 1) return;
+
+    const advance = () => {
+      if (!window.HSStepper || typeof window.HSStepper.getInstance !== 'function') {
+        setTimeout(advance, 50);
+        return;
+      }
+
+      const instance = window.HSStepper.getInstance(stepperEl, true);
+      if (!instance || typeof instance.goToNext !== 'function') {
+        setTimeout(advance, 50);
+        return;
+      }
+
+      for (let index = 1; index < step; index += 1) {
+        instance.goToNext();
+      }
+      pendingStep = null;
+    };
+
+    advance();
+  }
+
+  function supportsStorage() {
+    try {
+      const key = '__sporty_intake_test__';
+      window.localStorage.setItem(key, '1');
+      window.localStorage.removeItem(key);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function initializeMeasurementControls() {
+    if (typeof window !== 'undefined') {
+      window.HSStaticMethods?.autoInit?.();
+      if (!hasInputNumberListener) {
+        document.addEventListener('change.hs.inputNumber', handleInputNumberChange);
+        hasInputNumberListener = true;
+      }
+      if (!hasComboListener) {
+        document.addEventListener('select.hs.combobox', handleComboSelect);
+        hasComboListener = true;
+      }
+      initializeComboDefaults(form);
+      normalizeInputNumberInitial(form);
+    }
+  }
+
+  function handleInputNumberChange(event) {
+    const target = event.target instanceof Element ? event.target : null;
+    const container = target ? target.closest('[data-hs-input-number]') : null;
+    if (!container) return;
+    const input = container.querySelector('[data-hs-input-number-input]');
+    if (!(input instanceof HTMLInputElement)) return;
+    if (
+      input.dataset.allowEmpty === 'true' &&
+      input.value === '0' &&
+      input.dataset.allowEmptyInitialized !== 'true'
+    ) {
+      input.value = '';
+      input.dataset.allowEmptyInitialized = 'true';
+    } else if (input.dataset.allowEmpty === 'true' && input.value !== '') {
+      input.dataset.allowEmptyInitialized = 'true';
+    }
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    setStatus('');
+  }
+
+  function handleComboSelect(event) {
+    const target = event.target instanceof Element ? event.target : null;
+    const combo = target ? target.closest('.hs-combo-box') : null;
+    if (!combo) return;
+    const input = combo.querySelector('[data-hs-combo-box-input]');
+    const value = input instanceof HTMLInputElement ? input.value : '';
+    setComboValue(combo, value);
+    if (!isRestoringDraft) {
+      saveDraft();
+    }
+  }
+
+  function normalizeInputNumberInitial(scope) {
+    const context = scope || document;
+    const inputs = context.querySelectorAll('[data-hs-input-number-input][data-allow-empty="true"]');
+    inputs.forEach((input) => {
+      if (!(input instanceof HTMLInputElement)) return;
+      if (input.dataset.allowEmptyInitialized === 'true') return;
+      if (input.value === '0') {
+        input.value = '';
+      }
+      input.dataset.allowEmptyInitialized = 'true';
+    });
+  }
+
+  function initializeComboDefaults(scope) {
+    const context = scope || document;
+    const combos = context.querySelectorAll('.hs-combo-box');
+    combos.forEach((combo) => {
+      const input = combo.querySelector('[data-hs-combo-box-input]');
+      const value = input instanceof HTMLInputElement ? input.value : '';
+      setComboValue(combo, value);
+    });
+  }
+
+  function setComboValue(comboEl, value) {
+    if (!comboEl) return;
+    const input = comboEl.querySelector('[data-hs-combo-box-input]');
+    if (input instanceof HTMLInputElement) {
+      input.value = value || '';
+    }
+    const items = comboEl.querySelectorAll('[data-hs-combo-box-output-item]');
+    let labelText = '';
+    items.forEach((item) => {
+      const valueEl = item.querySelector('[data-hs-combo-box-value]');
+      const matches = Boolean(value && valueEl && valueEl.textContent === value);
+      item.classList.toggle('selected', matches);
+      if (matches) {
+        const textEl = item.querySelector('[data-hs-combo-box-search-text]');
+        labelText = textEl ? textEl.textContent || '' : '';
+      }
+    });
+    const labelEl = comboEl.querySelector('[data-hs-combo-box-deselect-value]');
+    if (labelEl) {
+      const defaultLabel = labelEl.getAttribute('data-default-label') || labelEl.textContent || 'Select';
+      labelEl.textContent = labelText || defaultLabel;
+    }
+    comboEl.classList.toggle('has-value', Boolean(value));
+  }
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
@@ -110,50 +636,19 @@
     }
 
     const fd = new FormData(form);
-    const missingMeasurements = [];
-    const invalidMeasurements = [];
-    const measurementPayload = {};
-
-    MEASUREMENT_FIELDS.forEach((field) => {
-      const raw = fd.get(field.name);
-      if (raw === null || raw === '') {
-        missingMeasurements.push(field.label);
-        return;
-      }
-      const value = Number(raw);
-      if (!Number.isFinite(value)) {
-        invalidMeasurements.push(field.label);
-        return;
-      }
-      measurementPayload[field.name] = value;
-    });
-
-    if (missingMeasurements.length) {
-      setStatus('Fill out all body measurements before continuing.', 'error');
+    const basicsResult = validateBasics(fd);
+    if (basicsResult.errors.length) {
+      const { message, element } = basicsResult.errors[0];
+      setStatus(message, 'error');
+      focusField(element);
       return;
     }
 
-    if (invalidMeasurements.length) {
-      setStatus('Measurements must be numbers. Please double-check your entries.', 'error');
-      return;
-    }
-
-    const rawSex = fd.get('sex');
-    const resolvedSex = rawSex ? String(rawSex) : '';
-
-    const payload = {
-      birthday: fd.get('birthday'),
-      sex: resolvedSex || 'prefer_not_to_say',
-      ...measurementPayload,
-    };
-
-    if (!payload.birthday) {
-      setStatus('Birthday is required to generate a suggestion.', 'error');
-      return;
-    }
-
-    if (!resolvedSex) {
-      setStatus('Select the sex assigned at birth so we can benchmark accurately.', 'error');
+    const measurementResult = validateMeasurements(fd);
+    if (measurementResult.errors.length) {
+      const { message, element } = measurementResult.errors[0];
+      setStatus(message, 'error');
+      focusField(element);
       return;
     }
 
@@ -181,24 +676,14 @@
       return;
     }
 
-    if (pastSportsSelection && Array.isArray(pastSportsSelection.data) && pastSportsSelection.data.length) {
-      payload.past_sports = pastSportsSelection.data;
-    } else {
-      delete payload.past_sports;
-    }
-
-    if (usePremium) {
-      payload.user_id = sportySnapshot.user.id;
-      payload.premium = {
-        apply_credit: true,
-        preferences: premiumData && premiumData.preferences ? premiumData.preferences : [],
-        goals: premiumData && premiumData.goals ? premiumData.goals : [],
-        injuries: premiumData && premiumData.injuries ? premiumData.injuries : [],
-      };
-    } else {
-      delete payload.user_id;
-      delete payload.premium;
-    }
+    const payload = buildSubmissionPayload({
+      basics: basicsResult.data,
+      measurements: measurementResult.data,
+      pastSports: pastSportsSelection ? pastSportsSelection.data : [],
+      usePremium,
+      premiumData,
+      userId: sportySnapshot.user && sportySnapshot.user.id ? sportySnapshot.user.id : null,
+    });
 
     setSubmitBusy(true);
     setStatus(
@@ -270,7 +755,7 @@
             extraPayload.analysisInput = premiumData;
           }
           if (pastSportsSelection && Array.isArray(pastSportsSelection.data) && pastSportsSelection.data.length) {
-            extraPayload.pastSports = pastSportsSelection.data;
+            extraPayload.pastSports = pastSportsSelection.data.map(({ sport_label, ...rest }) => rest);
           }
           extraPayload.analysisType = usePremium ? 'premium' : 'free';
           const extras = Object.keys(extraPayload).length ? extraPayload : undefined;
@@ -301,70 +786,150 @@
       submitBtn.disabled = isBusy;
       submitBtn.textContent = isBusy ? 'Generating…' : initialSubmitLabel;
     }
-    if (stickyButton) {
-      stickyButton.disabled = isBusy;
-      stickyButton.textContent = isBusy ? 'Generating…' : initialSubmitLabel;
-    }
   }
 
-  function initializeInputPairs() {
-    const pairs = document.querySelectorAll('[data-input-pair]');
-    pairs.forEach((pair) => {
-      if (pair.dataset.enhanced === 'true') return;
-      const numberInput = pair.querySelector('[data-pair-input]');
-      const rangeInput = pair.querySelector('[data-pair-range]');
-      if (!numberInput || !rangeInput) {
-        pair.dataset.enhanced = 'true';
+  function initializeSticky() {}
+
+  function validateBasics(fd) {
+    const errors = [];
+    const birthday = (fd.get('birthday') || '').toString().trim();
+    const sex = (fd.get('sex') || '').toString().trim();
+    const birthdayInput = form ? form.querySelector('input[name="birthday"]') : null;
+    const sexInputEl = form ? form.querySelector('input[name="sex"][data-hs-combo-box-input]') : null;
+    const sexToggleEl = form ? form.querySelector('[data-combo-toggle="sex"]') : null;
+
+    if (!birthday) {
+      errors.push({
+        field: 'birthday',
+        message: 'Add your birthday before continuing.',
+        element: birthdayInput,
+      });
+    }
+
+    if (!sex || !SEX_OPTIONS.has(sex)) {
+      errors.push({
+        field: 'sex',
+        message: 'Select the sex assigned at birth before continuing.',
+        element: sexToggleEl,
+      });
+    }
+
+    return {
+      data: {
+        birthday,
+        sex,
+      },
+      errors,
+    };
+  }
+
+  function validateMeasurements(fd) {
+    const errors = [];
+    const measurements = {};
+
+    MEASUREMENT_FIELDS.forEach((field) => {
+      const input = form ? form.querySelector(`input[name="${field.name}"]`) : null;
+      const raw = fd.get(field.name);
+      const valueStr = raw != null ? raw.toString().trim() : '';
+      const label = field.label || field.name;
+
+      if (!valueStr) {
+        errors.push({
+          field: field.name,
+          message: `Enter ${label.toLowerCase()} before continuing.`,
+          element: input,
+        });
         return;
       }
-      const chip = pair.querySelector('[data-percentile]');
-      const unit = chip ? chip.dataset.unit || '' : '';
-      const updateChip = () => {
-        if (!chip) return;
-        if (!numberInput.value) {
-          chip.textContent = 'Value —';
-        } else {
-          chip.textContent = `Value: ${numberInput.value}${unit ? ` ${unit}` : ''}`;
-        }
-      };
-      const syncRange = () => {
-        if (numberInput.value === '' || numberInput.value === null) {
-          updateChip();
-          return;
-        }
-        rangeInput.value = numberInput.value;
-        updateChip();
-      };
-      const syncNumber = (triggerEvent = false) => {
-        numberInput.value = rangeInput.value;
-        updateChip();
-        if (triggerEvent) {
-          numberInput.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-      };
-      numberInput.addEventListener('input', syncRange);
-      numberInput.addEventListener('change', syncRange);
-      rangeInput.addEventListener('input', () => syncNumber(true));
-      updateChip();
-      pair.dataset.enhanced = 'true';
+
+      const valueNum = Number(valueStr);
+      if (!Number.isFinite(valueNum)) {
+        errors.push({
+          field: field.name,
+          message: `${label} must be a number.`,
+          element: input,
+        });
+        return;
+      }
+
+      if (typeof field.min === 'number' && valueNum < field.min) {
+        errors.push({
+          field: field.name,
+          message: `${label} must be at least ${field.min}.`,
+          element: input,
+        });
+        return;
+      }
+
+      if (typeof field.max === 'number' && valueNum > field.max) {
+        errors.push({
+          field: field.name,
+          message: `${label} must be at most ${field.max}.`,
+          element: input,
+        });
+        return;
+      }
+
+      measurements[field.name] = valueNum;
     });
+
+    return { data: measurements, errors };
   }
 
-  function initializeSticky() {
-    if (!stickyBar || !submitAnchor) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry) return;
-        stickyBar.hidden = entry.isIntersecting;
-      },
-      { threshold: 0.4 }
-    );
-    observer.observe(submitAnchor);
+  function sanitizePremiumData(raw) {
+    const toArray = (value) => (Array.isArray(value) ? value : []);
+    if (!raw) {
+      return {
+        preferences: [],
+        goals: [],
+        injuries: [],
+      };
+    }
+
+    return {
+      preferences: toArray(raw.preferences),
+      goals: toArray(raw.goals),
+      injuries: toArray(raw.injuries),
+    };
+  }
+
+  function buildSubmissionPayload({ basics, measurements, pastSports, usePremium, premiumData, userId }) {
+    const payload = {
+      birthday: basics.birthday,
+      sex: basics.sex || 'prefer_not_to_say',
+      ...measurements,
+    };
+
+    if (!usePremium) {
+      payload.consent_preview = true;
+    }
+
+    if (pastSports && pastSports.length) {
+      payload.past_sports = pastSports.map((entry) => {
+        const { sport_label, ...rest } = entry || {};
+        return rest;
+      });
+    }
+
+    if (usePremium) {
+      const sanitizedPremium = sanitizePremiumData(premiumData);
+      if (userId) {
+        payload.user_id = userId;
+      }
+      payload.premium = {
+        apply_credit: true,
+        preferences: sanitizedPremium.preferences,
+        goals: sanitizedPremium.goals,
+        injuries: sanitizedPremium.injuries,
+      };
+      delete payload.consent_preview;
+    }
+
+    return payload;
   }
 
   function createPastSportsController(config) {
-    const { root, getClient } = config || {};
+    const { root, getClient, onChange } = config || {};
     const MAX_ITEMS = 5;
     const INTENSITY_VALUES = ['light', 'moderate', 'intense', 'elite'];
     if (!root) {
@@ -372,6 +937,9 @@
         update: async () => {},
         collect: () => ({ data: [], errors: [] }),
         prefillForTest: () => {},
+        restoreDraft: () => {},
+        toDraft: () => [],
+        isActive: () => false,
       };
     }
 
@@ -388,6 +956,11 @@
     let prefillRequested = false;
 
     const pickers = new Set();
+    const changeCallback = typeof onChange === 'function' ? onChange : () => {};
+    let suppressChange = false;
+    let changeScheduled = false;
+    let draftBuffer = null;
+    let localDraftApplied = false;
 
     document.addEventListener('click', (event) => {
       pickers.forEach((picker) => {
@@ -397,6 +970,17 @@
       });
     });
 
+    const scheduleDraftChange = () => {
+      if (suppressChange || changeScheduled || isRestoringDraft) return;
+      changeScheduled = true;
+      Promise.resolve().then(() => {
+        changeScheduled = false;
+        if (!suppressChange && !isRestoringDraft) {
+          changeCallback();
+        }
+      });
+    };
+
     if (addButton) {
       addButton.addEventListener('click', () => {
         if (!active) return;
@@ -404,6 +988,7 @@
           return;
         }
         addItem();
+        scheduleDraftChange();
       });
     }
 
@@ -418,7 +1003,9 @@
       if (emptyState) {
         if (!active) {
           emptyState.hidden = false;
-          emptyState.textContent = message || 'Log in to add past sports and experiences.';
+          emptyState.textContent =
+            message ||
+            'Add the sports and disciplines you’ve spent time in. These influence both free and premium matches.';
         } else {
           emptyState.hidden = count > 0;
           if (!count) {
@@ -431,27 +1018,37 @@
       }
     }
 
-    function clearItems() {
+    function clearItems(notify = true) {
       if (itemsContainer) {
         itemsContainer.innerHTML = '';
       }
       pickers.clear();
       updateCount();
-    }
-
-    function setLoggedOutState() {
-      active = false;
-      clearItems();
-      toggleEmptyState();
+      if (notify) scheduleDraftChange();
     }
 
     function setActiveState() {
       if (active) return;
       active = true;
       toggleEmptyState();
-      if (itemsContainer && !itemsContainer.querySelector('[data-item]')) {
+      if (draftBuffer && draftBuffer.length) {
+        applyDraftEntries(draftBuffer);
+        draftBuffer = null;
+      } else if (itemsContainer && !itemsContainer.querySelector('[data-item]')) {
         addItem();
       }
+    }
+
+    function applyDraftEntries(entries) {
+      if (!entries || !Array.isArray(entries)) return;
+      suppressChange = true;
+      clearItems(false);
+      entries.forEach((entry) => addItem(entry));
+      updateCount();
+      toggleEmptyState();
+      localDraftApplied = true;
+      suppressChange = false;
+      scheduleDraftChange();
     }
 
     function buildLabel(row) {
@@ -498,9 +1095,15 @@
           };
         });
         return catalog;
-      })().finally(() => {
-        catalogPromise = null;
-      });
+      })()
+        .catch((error) => {
+          console.error('Failed to load sport catalog from Supabase', error);
+          catalog = [];
+          return catalog;
+        })
+        .finally(() => {
+          catalogPromise = null;
+        });
       return catalogPromise;
     }
 
@@ -552,7 +1155,7 @@
 
       const yearsInput = item.querySelector('[data-field="years_played"]');
       const ageInput = item.querySelector('[data-field="age_started_years"]');
-      const intensitySelect = item.querySelector('[data-field="intensity"]');
+      const intensityInput = item.querySelector('[data-field="intensity"]');
       const likedSelect = item.querySelector('[data-field="liked"]');
       const flairSelect = item.querySelector('[data-field="had_flair"]');
       const skillSelect = item.querySelector('[data-field="achieved_skill"]');
@@ -563,8 +1166,10 @@
       if (ageInput && initial && typeof initial.age_started_years !== 'undefined' && initial.age_started_years !== null) {
         ageInput.value = Number(initial.age_started_years);
       }
-      if (intensitySelect && initial && initial.intensity && INTENSITY_VALUES.includes(initial.intensity)) {
-        intensitySelect.value = initial.intensity;
+      if (intensityInput && initial && initial.intensity && INTENSITY_VALUES.includes(initial.intensity)) {
+        intensityInput.value = initial.intensity;
+        const combo = intensityInput.closest('.hs-combo-box');
+        setComboValue(combo, initial.intensity);
       }
       if (likedSelect && initial && typeof initial.liked === 'boolean') {
         likedSelect.value = initial.liked ? 'yes' : 'no';
@@ -576,20 +1181,54 @@
         skillSelect.value = initial.achieved_skill ? 'yes' : 'no';
       }
 
+      const registerChange = (element) => {
+        if (!element) return;
+        element.addEventListener('input', scheduleDraftChange);
+        element.addEventListener('change', scheduleDraftChange);
+      };
+
+      registerChange(yearsInput);
+      registerChange(ageInput);
+      registerChange(intensityInput);
+      registerChange(likedSelect);
+      registerChange(flairSelect);
+      registerChange(skillSelect);
+
       const removeBtn = item.querySelector('[data-remove]');
       if (removeBtn) {
         removeBtn.addEventListener('click', () => {
           item.remove();
           updateCount();
           toggleEmptyState();
+          scheduleDraftChange();
         });
       }
 
       setupPicker(item, initial);
 
-      itemsContainer.appendChild(fragment);
+      if (!initial && itemsContainer.firstChild) {
+        itemsContainer.insertBefore(fragment, itemsContainer.firstChild);
+      } else {
+        itemsContainer.appendChild(fragment);
+      }
+      if (!initial) {
+        const searchInput = item.querySelector('[data-field="sport_label"]');
+        if (searchInput instanceof HTMLInputElement) {
+          searchInput.focus();
+        }
+        const intensityCombo = item.querySelector('.hs-combo-box[data-hs-combo-box]');
+        if (intensityCombo) {
+          setComboValue(intensityCombo, '');
+        }
+      }
       updateCount();
       toggleEmptyState();
+      scheduleDraftChange();
+      if (typeof window !== 'undefined') {
+        window.HSStaticMethods?.autoInit?.();
+      }
+      initializeComboDefaults(item);
+      normalizeInputNumberInitial(item);
     }
 
     function setupPicker(item, initial) {
@@ -598,11 +1237,20 @@
       const resultsEl = item.querySelector('[data-search-results]');
       if (!searchInput || !hiddenInput || !resultsEl) return;
 
+      resultsEl.setAttribute('role', 'listbox');
+      resultsEl.setAttribute('tabindex', '-1');
+
+      if (initial && initial.sport_subcategory_id && !hiddenInput.value) {
+        hiddenInput.value = initial.sport_subcategory_id;
+      }
+
       function selectRow(row) {
         hiddenInput.value = row.id;
         searchInput.value = row.label;
         resultsEl.hidden = true;
+        resultsEl.classList.add('hidden');
         resultsEl.innerHTML = '';
+        scheduleDraftChange();
       }
 
       function renderMatches(query) {
@@ -610,6 +1258,7 @@
         const matches = searchCatalog(query);
         if (!matches.length) {
           resultsEl.hidden = true;
+          resultsEl.classList.add('hidden');
           resultsEl.innerHTML = '';
           return;
         }
@@ -617,7 +1266,9 @@
         matches.forEach((row) => {
           const option = document.createElement('button');
           option.type = 'button';
-          option.className = 'past-sport-picker__option';
+          option.className =
+            'flex w-full items-center gap-2 rounded-xl border border-transparent px-3 py-2 text-left text-sm text-slate-700 transition hover:border-teal-200 hover:bg-teal-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500';
+          option.setAttribute('role', 'option');
           option.textContent = row.label;
           option.addEventListener('click', () => {
             selectRow(row);
@@ -627,11 +1278,13 @@
         resultsEl.innerHTML = '';
         resultsEl.appendChild(fragment);
         resultsEl.hidden = false;
+        resultsEl.classList.remove('hidden');
       }
 
       searchInput.addEventListener('input', () => {
         hiddenInput.value = '';
         renderMatches(searchInput.value);
+        scheduleDraftChange();
       });
       searchInput.addEventListener('focus', () => {
         renderMatches(searchInput.value);
@@ -639,6 +1292,7 @@
       searchInput.addEventListener('blur', () => {
         setTimeout(() => {
           resultsEl.hidden = true;
+          resultsEl.classList.add('hidden');
         }, 120);
       });
 
@@ -650,6 +1304,7 @@
         root: item,
         hide() {
           resultsEl.hidden = true;
+          resultsEl.classList.add('hidden');
         },
       });
 
@@ -658,6 +1313,10 @@
         if (row) {
           selectRow(row);
         }
+      }
+
+      if (initial && initial.sport_label && !searchInput.value) {
+        searchInput.value = initial.sport_label;
       }
     }
 
@@ -674,7 +1333,7 @@
         const labelInput = item.querySelector('[data-field="sport_label"]');
         const yearsInput = item.querySelector('[data-field="years_played"]');
         const ageInput = item.querySelector('[data-field="age_started_years"]');
-        const intensitySelect = item.querySelector('[data-field="intensity"]');
+        const intensityInput = item.querySelector('[data-field="intensity"]');
         const likedSelect = item.querySelector('[data-field="liked"]');
         const flairSelect = item.querySelector('[data-field="had_flair"]');
         const skillSelect = item.querySelector('[data-field="achieved_skill"]');
@@ -685,7 +1344,7 @@
           sportLabel ||
             (yearsInput && yearsInput.value) ||
             (ageInput && ageInput.value) ||
-            (intensitySelect && intensitySelect.value)
+            (intensityInput && intensityInput.value)
         );
 
         if (!sportId) {
@@ -697,6 +1356,7 @@
 
         const entry = {
           sport_subcategory_id: sportId,
+          sport_label: sportLabel || null,
         };
 
         if (yearsInput && yearsInput.value) {
@@ -717,8 +1377,8 @@
           }
         }
 
-        if (intensitySelect && intensitySelect.value) {
-          const value = intensitySelect.value;
+        if (intensityInput && intensityInput.value) {
+          const value = intensityInput.value;
           if (INTENSITY_VALUES.includes(value)) {
             entry.intensity = value;
           } else {
@@ -766,17 +1426,17 @@
       const userId = snapshot && snapshot.user ? snapshot.user.id : null;
       const currentToken = ++updateToken;
 
-      if (!client || !userId) {
-        setLoggedOutState();
-        return;
-      }
-
+      const shouldActivate = Boolean(client);
       try {
         await ensureCatalog(client);
       } catch (error) {
         console.error('Failed to load sport catalog', error);
-        setLoggedOutState();
-        return;
+        if (!shouldActivate) {
+          active = false;
+          toggleEmptyState('Add the sports and disciplines you’ve spent time in. These influence both free and premium matches.');
+          return;
+        }
+        throw error;
       }
 
       if (currentToken !== updateToken) return;
@@ -784,31 +1444,57 @@
       setActiveState();
 
       let existing = [];
-      try {
-        existing = await fetchExisting(client, userId);
-      } catch (error) {
-        console.error('Failed to load past sports', error);
+      if (client && userId) {
+        try {
+          existing = await fetchExisting(client, userId);
+        } catch (error) {
+          console.error('Failed to load past sports', error);
+        }
       }
 
       if (currentToken !== updateToken) return;
 
-      clearItems();
+      let keepLocal = false;
+      if (localDraftApplied) {
+        const currentDraft = collect().data;
+        keepLocal = Array.isArray(currentDraft) && currentDraft.length > 0;
+      }
+
+      suppressChange = true;
+
+      if (keepLocal) {
+        suppressChange = false;
+        scheduleDraftChange();
+        return;
+      }
+
+      clearItems(false);
       if (existing && existing.length) {
         existing.forEach((row) => addItem(row));
+        localDraftApplied = false;
       } else if (prefillRequested) {
         applyPrefill();
+        localDraftApplied = false;
+      } else {
+        localDraftApplied = false;
       }
       updateCount();
       toggleEmptyState();
+      suppressChange = false;
+      scheduleDraftChange();
     }
 
     function prefillForTest() {
       prefillRequested = true;
       if (active && catalog && catalog.length) {
-        clearItems();
+        suppressChange = true;
+        clearItems(false);
         applyPrefill();
         updateCount();
         toggleEmptyState();
+        localDraftApplied = false;
+        suppressChange = false;
+        scheduleDraftChange();
       }
     }
 
@@ -816,6 +1502,28 @@
       update,
       collect,
       prefillForTest,
+      restoreDraft(entries) {
+        if (!entries || !Array.isArray(entries) || !entries.length) {
+          draftBuffer = null;
+          localDraftApplied = false;
+          scheduleDraftChange();
+          return;
+        }
+        draftBuffer = entries.map((entry) => ({ ...entry }));
+        if (active) {
+          applyDraftEntries(draftBuffer);
+          draftBuffer = null;
+        }
+      },
+      toDraft() {
+        if (!active) {
+          return draftBuffer ? draftBuffer.map((entry) => ({ ...entry })) : [];
+        }
+        return collect().data.map((entry) => ({ ...entry }));
+      },
+      isActive() {
+        return active;
+      },
     };
   }
 
@@ -1560,8 +2268,12 @@
       pastSportsController.prefillForTest();
     }
 
-    document.querySelectorAll('[data-pair-input]').forEach((input) => {
-      input.dispatchEvent(new Event('input', { bubbles: true }));
+    MEASUREMENT_FIELDS.forEach((field) => {
+      const input = form.elements.namedItem(field.name);
+      if (input instanceof HTMLInputElement) {
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
     });
   }
 })();
