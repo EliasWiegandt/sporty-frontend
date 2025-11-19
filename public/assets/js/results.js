@@ -174,7 +174,7 @@
 
     hideFallback();
 
-    const matches = data.matches.slice(0, 3);
+    const matches = data.matches.slice(0, 5);
     const topMatch = matches[0];
     const metricsData = extractMetrics(topMatch ? topMatch.score_breakdown : null);
 
@@ -182,6 +182,7 @@
     renderMatches(matches);
     renderHighlights(topMatch, metricsData);
     renderTables(metricsData);
+    renderMeasurementComparisons(metricsData);
   }
 
   function renderImpact(components) {
@@ -222,6 +223,10 @@
     impactSection.hidden = false;
   }
 
+  if (matchGrid) {
+    matchGrid.addEventListener('click', handleMatchToggle);
+  }
+
   function renderMatches(matches) {
     if (!matchesSection || !matchGrid) return;
     if (!matches || !matches.length) {
@@ -252,6 +257,37 @@
       ? `<div class="match-card__media"><img class="match-card__image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" loading="lazy" /></div>`
       : `<div class="match-card__media match-card__media--empty"><span class="match-card__placeholder">Image coming soon · ${escapeHtml(sport.name || 'Sport')}</span></div>`;
 
+    const reasonChips = [];
+    if (topMeasurements.length) {
+      topMeasurements.slice(0, 3).forEach((entry) => {
+        if (entry.label && entry.displayScore) {
+          reasonChips.push(`${entry.label} match (${entry.displayScore})`);
+        } else if (entry.label) {
+          reasonChips.push(`${entry.label} match`);
+        }
+      });
+    }
+    const pastSports = Array.isArray(match.past_sports) ? match.past_sports : [];
+    pastSports.slice(0, 2).forEach((past) => {
+      const label = past?.sport_label || past?.label || past?.sport || null;
+      if (label) {
+        reasonChips.push(`Past: ${label}`);
+      }
+    });
+    const tagsMarkup = reasonChips.length
+      ? `<ul class="match-card__tags">${reasonChips
+          .map((chip) => `<li><span>${escapeHtml(chip)}</span></li>`)
+          .join('')}</ul>`
+      : '';
+
+    const detailsMarkup = `
+      <div class="match-card__details" data-match-details hidden>
+        <p class="type-small text-slate-500">
+          Detailed contributions and measurement breakdowns are coming soon.
+        </p>
+      </div>
+    `;
+
     return `
       <article class="match-card">
         <header class="match-card__header">
@@ -269,8 +305,39 @@
             ? topMeasurements.map((entry) => `<li>${escapeHtml(entry.label)} · ${escapeHtml(entry.displayScore)}</li>`).join('')
             : '<li>Weighing body metrics only for now. Premium inputs add more nuance.</li>'}
         </ul>
+        ${tagsMarkup}
+        <div class="match-card__actions">
+          <button
+            type="button"
+            class="btn-pill btn-pill-secondary btn-pill-xs match-card__toggle"
+            data-match-toggle
+            aria-expanded="false"
+          >
+            See why
+          </button>
+        </div>
+        ${detailsMarkup}
       </article>
     `;
+  }
+
+  function handleMatchToggle(event) {
+    const toggle = event.target.closest('[data-match-toggle]');
+    if (!toggle) return;
+    const card = toggle.closest('.match-card');
+    if (!card) return;
+    const details = card.querySelector('[data-match-details]');
+    if (!details) return;
+    const isVisible = !details.hasAttribute('hidden');
+    if (isVisible) {
+      details.setAttribute('hidden', '');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.textContent = 'See why';
+    } else {
+      details.removeAttribute('hidden');
+      toggle.setAttribute('aria-expanded', 'true');
+      toggle.textContent = 'Hide details';
+    }
   }
 
   function renderHighlights(match, metricsData) {
@@ -304,10 +371,13 @@
       result.push(spec.tagline);
     }
 
-    const measurementEntries = (metricsData && metricsData.measurements) || [];
-    measurementEntries.slice(0, 3).forEach((entry) => {
-      if (entry.displayScore) {
-        result.push(`${entry.label} aligned at ${entry.displayScore}`);
+    const measurementEntries = Array.isArray(metricsData.measurementDetail)
+      ? metricsData.measurementDetail.slice(0, 3)
+      : (metricsData && Array.isArray(metricsData.measurements) ? metricsData.measurements.slice(0, 3) : []);
+    measurementEntries.forEach((entry) => {
+      const highlight = formatMeasurementHighlight(entry);
+      if (highlight) {
+        result.push(highlight);
       }
     });
 
@@ -329,11 +399,23 @@
       componentsTableEl.innerHTML = metricsData.componentsTable || '';
     }
     if (measurementsTableEl) {
-      measurementsTableEl.hidden = !hasMeasurements;
+      const detailExists = Array.isArray(metricsData.measurementDetail) && metricsData.measurementDetail.length > 0;
+      measurementsTableEl.hidden = !hasMeasurements && !detailExists;
       measurementsTableEl.innerHTML = metricsData.measurementsTable || '';
     }
 
-    metricsSection.hidden = !(hasComponents || hasMeasurements);
+    const hasDetail = Boolean(metricsData.measurementDetail && metricsData.measurementDetail.length);
+    metricsSection.hidden = !(hasComponents || hasMeasurements || hasDetail);
+  }
+
+  function renderMeasurementComparisons(metricsData) {
+    if (!measurementsTableEl) return;
+    const entries = Array.isArray(metricsData.measurementDetail) ? metricsData.measurementDetail : [];
+    if (!entries.length) return;
+    const table = buildMeasurementComparisonTable(entries);
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = table;
+    measurementsTableEl.appendChild(wrapper);
   }
 
   function showFallback() {
@@ -398,7 +480,9 @@
       ? buildMeasurementsTable(measurements)
       : '';
 
-    return { componentsData, measurements, componentsTable, measurementsTable };
+    const measurementDetail = breakdown?.measurements_detail;
+
+    return { componentsData, measurements, componentsTable, measurementsTable, measurementDetail };
   }
 
   function buildComponentsTable(components) {
@@ -436,18 +520,100 @@
       `)
       .join('');
     return `
-      <table>
-        <caption>Measurement alignment</caption>
-        <tbody>${rows}</tbody>
-      </table>
-    `;
-  }
+    <table>
+      <caption>Measurement alignment</caption>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function buildMeasurementComparisonTable(entries) {
+  const sorted = entries.slice().sort((a, b) => {
+    const fitA = typeof a.fit_score === 'number' ? a.fit_score : typeof a.fit === 'number' ? a.fit : 0;
+    const fitB = typeof b.fit_score === 'number' ? b.fit_score : typeof b.fit === 'number' ? b.fit : 0;
+    return fitB - fitA;
+  });
+  const selected = sorted.slice(0, 5);
+  const rows = selected
+    .map((entry) => {
+      const fitValue = typeof entry.fit_score === 'number' ? entry.fit_score : typeof entry.fit === 'number' ? entry.fit : null;
+      const fitPercent = fitValue !== null && Number.isFinite(fitValue) ? Math.max(0, Math.min(100, Math.round(fitValue))) : 0;
+      const userValue = entry.user_value ?? entry.user_value_display ?? '—';
+      const cohortMean = entry.cohort_mean ?? '—';
+      const cohortStd = entry.cohort_std_dev ?? null;
+      const cohortText = cohortStd ? `${cohortMean} ± ${cohortStd}` : cohortMean;
+      const reasoning = entry.reasoning_short ? `<p class="results-metrics__note">${escapeHtml(entry.reasoning_short)}</p>` : '';
+      return `
+        <tr>
+          <th scope="row">
+            ${escapeHtml(entry.label || entry.key || 'Measurement')}
+            ${reasoning}
+          </th>
+          <td>${escapeHtml(String(userValue))}</td>
+          <td>${escapeHtml(String(cohortText))}</td>
+          <td>
+            <div class="results-fit">
+              <div class="results-fit__bar">
+                <div class="results-fit__bar-fill" style="width:${fitPercent}%;"></div>
+              </div>
+              <span class="results-fit__label">${fitPercent}%</span>
+            </div>
+          </td>
+        </tr>
+      `;
+    })
+    .join('');
+  return `
+    <table class="results-metrics__table-body">
+      <caption>Measurement comparisons</caption>
+      <thead>
+        <tr>
+          <th scope="col">Measurement</th>
+          <th scope="col">You</th>
+          <th scope="col">Optimal body</th>
+          <th scope="col">Fit</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
 
   function formatScore(match) {
     if (!match) return null;
     const raw = match.score ?? match.fit_score ?? match.total_score ?? (match.score_breakdown && match.score_breakdown.total);
     const normalized = normalizePercentValue(raw);
     return normalized !== null ? `${normalized}%` : null;
+  }
+
+  function ensureSentence(text) {
+    if (!text) return null;
+    const normalized = truncateText(String(text).trim(), 160);
+    if (!normalized) return null;
+    return normalized.endsWith('.') ? normalized : `${normalized}.`;
+  }
+
+  function formatMeasurementHighlight(entry) {
+    if (!entry) return null;
+    if (entry.reasoning_short) {
+      return ensureSentence(entry.reasoning_short);
+    }
+
+    const label = (entry.label || entry.key || 'Measurement').toLowerCase();
+    const userValue = entry.user_value ?? entry.user_value_display ?? null;
+    const cohortMean = entry.cohort_mean ?? null;
+    const fitValue = typeof entry.fit_score === 'number' ? entry.fit_score : typeof entry.fit === 'number' ? entry.fit : null;
+    const fitPercent = fitValue !== null && Number.isFinite(fitValue) ? Math.round(Math.max(0, Math.min(100, fitValue))) : null;
+    const parts = [`Your ${label}`];
+    if (userValue) {
+      parts.push(`measured at ${userValue}`);
+    }
+    if (cohortMean) {
+      parts.push(`vs the cohort’s ${cohortMean}`);
+    }
+    const fitText = fitPercent !== null ? ` (${fitPercent}% fit)` : '';
+    const sentence = `${parts.join(' ')}${fitText} looks aligned with the researched profile.`;
+    return ensureSentence(sentence);
   }
 
   function normalizePercentValue(value) {

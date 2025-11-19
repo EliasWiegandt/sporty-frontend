@@ -5,6 +5,7 @@
 # Take screenshots of the running local dev site into ./screenshots
 snap:
 	bash scripts/snap_frontend.sh http://127.0.0.1:8787 screenshots
+	node scripts/snap_intake_flow.js http://127.0.0.1:8787 screenshots
 
 clean-snap:
 	rm -rf screenshots

@@ -74,7 +74,7 @@ const hasActionContent = actions.length > 0 || showAuth;
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js" defer></script>
+    <script is:inline src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js" defer></script>
     <slot name="head" />
   </head>
   <body class={bodyClass}>
@@ -155,23 +155,24 @@ const hasActionContent = actions.length > 0 || showAuth;
     <slot />
     <script>
       (function () {
+        const globalWindow = window as unknown as Window & Record<string, unknown>;
         const FLAG = '__sportyPrelineReady';
         const HOOKED = '__sportyPrelineListeners';
         const autoInit = () => {
-          const methods = window.HSStaticMethods;
+          const methods = globalWindow.HSStaticMethods as { autoInit?: () => void } | undefined;
           if (methods && typeof methods.autoInit === 'function') {
             methods.autoInit();
           }
         };
-        window.__sportyPrelineStart = function () {
-          if (window[FLAG]) {
+        (globalWindow as any).__sportyPrelineStart = function () {
+          if ((globalWindow[FLAG] as boolean)) {
             autoInit();
             return;
           }
-          window[FLAG] = true;
+          globalWindow[FLAG] = true;
           autoInit();
-          if (!window[HOOKED]) {
-            window[HOOKED] = true;
+          if (!(globalWindow[HOOKED] as boolean)) {
+            globalWindow[HOOKED] = true;
             document.addEventListener('astro:page-load', autoInit);
             document.addEventListener('astro:after-swap', autoInit);
           }
@@ -179,6 +180,7 @@ const hasActionContent = actions.length > 0 || showAuth;
       })();
     </script>
     <script
+      is:inline
       src="https://cdn.jsdelivr.net/npm/preline@3.2.3/dist/preline.js"
       defer
       onload="window.__sportyPrelineStart && window.__sportyPrelineStart();"

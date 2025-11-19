@@ -36,6 +36,14 @@ wrangler dev
 - Prefer the CLI’s built-in helpers (search/explore panels, file viewers, etc.) when inspecting the codebase; fall back to raw shell commands only when the helper can’t capture what you need so output stays easy to follow.
 - When you need to look up files or content, use the dedicated search/read helpers (`rg`, file viewers, tree explorers) instead of running general-purpose shell listings; reserve fallback shells for cases the helpers can’t cover.
 
+## Intake Architecture
+- The intake form (`/intake` and Premium) uses a **Preact island architecture** centered on `IntakeApp.tsx`.
+- **State:** `IntakeApp.tsx` holds the single source of truth for `basics`, `measurements`, and `pastSports`.
+- **Validation:** Validation is performed via pure functions against the state objects, NOT by querying the DOM (`FormData`).
+- **Components:** All form steps (`BasicsStep`, etc.) and inputs (`NumberStepper`, `MeasurementField`) are **Controlled Components** (receiving `value` and `onChange`). Do not use uncontrolled inputs or `useRef` to read values manually.
+- **Verification:** Use `make snap` to verify the UI. This runs `scripts/snap_intake_flow.js`, which uses Puppeteer to automatically fill out the intake form and take screenshots of each step (Basics, Measurements, Past Sports), ensuring the flow logic is sound.
+- See `docs/intake-design.md` for the detailed design spec.
+
 ## Consent & Visual Asset Guidelines
 - Follow the consent flows documented in `docs/handbook.md` (see “Consent Strategy”): always offer preview modes, gate storage behind explicit opt-ins (measurements, goals/preferences, injuries, child data), and surface revoke controls. UI copy must explain purpose, retention, and provide links to Privacy/Data Rights pages.
 - Distinguish visual asset pipelines: use coded charts/tables for data (fit contributions, growth curves, etc.), and rely on the illustration generator for human/sport scenes or measurement helpers. Maintain the illustration backlog referenced in the journeys file and ensure every chart has an accessible text/table fallback.

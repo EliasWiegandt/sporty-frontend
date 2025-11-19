@@ -3,9 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import {
   valuePillars,
   howSteps,
-  testimonials,
   offerings,
-  sampleHighlights,
   faqItems,
   scienceSection,
   scienceHighlights,
@@ -18,7 +16,7 @@ import {
   <main>
     <section class="section-shell hero-shell" id="hero">
       <div class="hero__content">
-        <span class="hero-badge" role="text">AI-driven matching of bodies and sports</span>
+        <span class="hero-badge">AI-driven matching of bodies and sports</span>
         <h1 class="hero-headline type-display">Discover sports you are wired for</h1>
         <p class="hero-copy type-lead">
           Uncover activities where your body's unique build thrives — or help your child catch the early wins that grow lifelong confidence.
@@ -64,7 +62,7 @@ import {
           <p class="section-subtitle">Try your free analysis for adults today — no credit card required.</p>
           <div data-hs-stepper class="space-y-6">
             {howSteps.map((step, index, arr) => (
-              <div key={step.title}>
+              <div>
                 <div class="flex items-start gap-4" aria-label={`Step ${index + 1}`}>
                   <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-teal-600 bg-teal-50 text-teal-700 font-semibold">{index + 1}</span>
                   <div class="space-y-1">
@@ -97,13 +95,13 @@ import {
       <div class="science-intro">
         <h2 class="section-title">{scienceSection.title}</h2>
         <p class="section-subtitle max-w-2xl">{scienceSection.copy}</p>
-        <a
-          href={scienceSection.cta.href}
-          class={`btn-pill ${scienceSection.cta.theme === 'primary' ? 'btn-pill-primary' : 'btn-pill-secondary'} science-cta`}
-        >
-          {scienceSection.cta.label}
-        </a>
-      </div>
+            <a
+              href={scienceSection.cta.href}
+              class="btn-pill btn-pill-secondary science-cta"
+            >
+              {scienceSection.cta.label}
+            </a>
+          </div>
       <div class="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {scienceHighlights.map((item) => (
           <article class="card-shell science-card">
@@ -112,7 +110,7 @@ import {
             <p class="card-copy">{item.copy}</p>
             <a
               href={item.cta.href}
-              class={`btn-pill ${item.cta.theme === 'primary' ? 'btn-pill-primary' : 'btn-pill-secondary'} science-cta`}
+              class="btn-pill btn-pill-secondary science-cta"
             >
               {item.cta.label}
             </a>
@@ -152,22 +150,22 @@ import {
                 <li>{feature}</li>
               ))}
             </ul>
-            <div class="btn-row">
-              <a
-                href={plan.cta.href}
-                class={`btn-pill ${plan.cta.theme === 'primary' ? 'btn-pill-primary' : 'btn-pill-secondary'}`}
-              >
-                {plan.cta.label}
-              </a>
-              {plan.secondaryCta && (
+              <div class="btn-row">
                 <a
-                  href={plan.secondaryCta.href}
-                  class={`btn-pill ${plan.secondaryCta.theme === 'primary' ? 'btn-pill-primary' : 'btn-pill-secondary'}`}
+                  href={plan.cta.href}
+                  class={`btn-pill ${plan.cta.theme === 'primary' ? 'btn-pill-primary' : 'btn-pill-secondary'}`}
                 >
-                  {plan.secondaryCta.label}
+                  {plan.cta.label}
                 </a>
-              )}
-            </div>
+                {plan.secondaryCta && (
+                  <a
+                    href={plan.secondaryCta.href}
+                    class={`btn-pill ${plan.secondaryCta.theme === 'primary' ? 'btn-pill-primary' : 'btn-pill-secondary'}`}
+                  >
+                    {plan.secondaryCta.label}
+                  </a>
+                )}
+              </div>
           </article>
         ))}
       </div>
@@ -232,10 +230,10 @@ import {
   </footer>
 
   <Fragment slot="scripts">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-    <script src="/config.js" defer></script>
-    <script src="/assets/js/app.js" defer></script>
-    <script src="/assets/js/landing.js" defer></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script is:inline src="/config.js" defer></script>
+    <script is:inline src="/assets/js/app.js" defer></script>
+    <script is:inline src="/assets/js/landing.js" defer></script>
     <script>
       const yearEl = document.getElementById('year');
       if (yearEl) {

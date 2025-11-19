@@ -47,7 +47,7 @@ if command -v curl >/dev/null 2>&1; then
   fi
 fi
 
-declare -a PAGES=( "/" )
+declare -a PAGES=( "/" "/intake" )
 
 # Desktop shots
 for PAGE in "${PAGES[@]}"; do
@@ -65,18 +65,6 @@ for PAGE in "${PAGES[@]}"; do
   echo "Saved: $OUT_DIR/desktop_${SAFE_NAME}.png"
 done
 
-# Mobile shots (iPhone-ish size)
-for PAGE in "${PAGES[@]}"; do
-  SAFE_NAME=$(echo "$PAGE" | sed 's#^/##; s#[^a-zA-Z0-9]#_#g')
-  [[ -z "$SAFE_NAME" ]] && SAFE_NAME="home"
-  "$CHROME" \
-    --headless=new \
-    --disable-gpu \
-    --hide-scrollbars \
-    --window-size=390,844 \
-    --screenshot="$OUT_DIR/mobile_${SAFE_NAME}.png" \
-    "${BASE_URL}${PAGE}"
-  echo "Saved: $OUT_DIR/mobile_${SAFE_NAME}.png"
-done
+
 
 echo "Snapshots complete. Files in: $OUT_DIR"

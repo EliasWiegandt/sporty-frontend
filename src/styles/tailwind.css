@@ -478,6 +478,332 @@
     box-shadow: 0 22px 40px -32px rgba(15, 23, 42, 0.32);
   }
 
+  .results-shell {
+    max-width: min(96rem, 94vw);
+    margin-inline: auto;
+    display: grid;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .results-matches__grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+
+  .results-matches__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .results-metrics__table {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: 1.25rem;
+    background-color: var(--color-surface);
+    overflow-x: auto;
+  }
+
+  .results-metrics__table-body {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--type-small-size);
+  }
+
+  .results-metrics__table-body th,
+  .results-metrics__table-body td {
+    padding: 0.45rem 0.35rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+    font-family: var(--font-sans);
+    color: var(--color-text);
+  }
+
+  .results-metrics__table-body th {
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .results-metrics__note {
+    margin: 0.15rem 0 0;
+    font-size: 0.85rem;
+    color: var(--color-text-soft);
+  }
+
+  .results-fit {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .results-fit__bar {
+    flex: 1 1 auto;
+    min-width: 80px;
+    max-width: 160px;
+    height: 0.35rem;
+    border-radius: 9999px;
+    background-color: rgba(148, 163, 184, 0.25);
+    overflow: hidden;
+  }
+
+  .results-fit__bar-fill {
+    height: 100%;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, var(--color-brand-500), var(--color-brand-700));
+    transition: width 0.25s ease-out;
+  }
+
+  .results-fit__label {
+    font-size: var(--type-small-size);
+    color: var(--color-text-soft);
+  }
+
+  .match-card {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.85rem, 2vw, 1.2rem);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    padding: clamp(1.2rem, 2.7vw, 1.6rem);
+    box-shadow: var(--shadow-card);
+  }
+
+  .match-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .match-card__rank {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: var(--color-brand-700);
+  }
+
+  .match-card__score {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: var(--color-brand-800);
+  }
+
+  .match-card__summary {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--type-body-size);
+    line-height: 1.6;
+  }
+
+  .match-card__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .match-card__list li {
+    font-size: var(--type-small-size);
+    color: var(--color-text-soft);
+  }
+
+  .match-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .match-card__tags li {
+    padding: 0.3rem 0.75rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid rgba(148, 163, 184, 0.5);
+    background-color: rgba(148, 163, 184, 0.1);
+    font-size: var(--type-small-size);
+    color: var(--color-text-soft);
+  }
+
+  .match-card__actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+  }
+
+  .match-card__details {
+    border-top: 1px dashed rgba(148, 163, 184, 0.5);
+    padding-top: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  .premium-measurements {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .premium-measurement-card {
+    border-radius: var(--radius-xl);
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background-color: var(--color-surface);
+    padding: clamp(1.5rem, 3vw, 1.9rem);
+    box-shadow: var(--shadow-card);
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .premium-measurement-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .premium-measurement-card__table {
+    width: 100%;
+  }
+
+  .premium-measurement-card__factors {
+    display: grid;
+    gap: 0.65rem;
+  }
+
+  .premium-measurement-factor-list {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .premium-measurement-factor {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: var(--type-small-size);
+    color: var(--color-text-soft);
+  }
+
+  .premium-measurement-factor__meta {
+    margin: 0.25rem 0 0;
+    font-size: 0.8rem;
+    color: var(--color-text-soft);
+  }
+
+  .premium-measurement-card__empty,
+  .premium-measurement-empty {
+    margin: 0;
+    color: var(--color-text-soft);
+  }
+
+  .premium-shell {
+    max-width: min(96rem, 92vw);
+    margin-inline: auto;
+    padding-block: clamp(2rem, 4vw, 3rem);
+    display: grid;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .premium-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr);
+  }
+
+  @media (max-width: 960px) {
+    .premium-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .card-stack {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .component-card,
+  .alignment-card,
+  .insight-card {
+    border-radius: var(--radius-xl);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background-color: var(--color-surface);
+    padding: clamp(1.3rem, 3vw, 1.8rem);
+    box-shadow: var(--shadow-card);
+  }
+
+  .component-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .component-list__item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .component-color {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 9999px;
+  }
+
+  .component-list__label {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .component-list__summary {
+    margin: 0;
+    font-size: var(--type-small-size);
+    color: var(--color-text-soft);
+  }
+
+  .alignment-list,
+  .injury-list,
+  .alignment-list,
+  .next-steps-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .alignment-item {
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    padding: 0.85rem 1rem;
+    background-color: rgba(255, 255, 255, 0.9);
+  }
+
+  .alignment-item__meta {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--color-text-soft);
+  }
+
+  .premium-measurement-card__header h3 {
+    margin: 0;
+  }
+
+  .premium-measurement-card__header p {
+    margin: 0;
+    color: var(--color-text-soft);
+  }
+
+  .premium-measurement-card__table {
+    width: 100%;
+  }
+
   .icon-display {
     font-size: clamp(4.5rem, 3.5rem + 2vw, 5.75rem);
     color: var(--color-brand-700);

@@ -53,7 +53,7 @@ const hintId = hint ? `${id}-hint` : undefined;
     min={min}
     max={max}
     required={required}
-    inputmode="decimal"
+    inputMode="decimal"
     ariaDescribedby={hintId}
     wrapperClass="inline-flex w-full max-w-md items-center overflow-hidden rounded-2xl border border-slate-200 bg-white"
     inputClass="h-11 w-full px-4 text-right text-lg text-slate-900 focus:outline-none focus:ring-0 bg-white"
@@ -61,4 +61,14 @@ const hintId = hint ? `${id}-hint` : undefined;
     incrementAttrs={{ 'aria-label': `Increase ${label.toLowerCase()}`, class: 'border-l border-slate-200' }}
     decrementAttrs={{ 'aria-label': `Decrease ${label.toLowerCase()}`, class: 'border-r border-slate-200' }}
   />
+
+  {help.length > 0 && (
+    <ul class="space-y-1 text-xs text-slate-500">
+      {help.map((line) => (
+        <li class="leading-snug">
+          {line}
+        </li>
+      ))}
+    </ul>
+  )}
 </div>

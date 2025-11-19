@@ -15,7 +15,21 @@
   const nextStepsList = root.querySelector('[data-next-steps]');
   const pastSportsList = root.querySelector('[data-past-sports]');
   const matchGrid = root.querySelector('[data-match-grid]');
+  const measurementsContainer = root.querySelector('[data-premium-measurements]');
   const emptyState = root.querySelector('[data-empty-state]');
+  const componentPalette = {
+    body: '#0f766e',
+    preferences: '#f97316',
+    goals: '#6366f1',
+    injuries: '#ef4444',
+    past_sports: '#14b8a6',
+    default: ['#0f766e', '#2563eb', '#f97316', '#14b8a6', '#9333ea'],
+  };
+  function pickComponentColor(key, index) {
+    if (key && componentPalette[key]) return componentPalette[key];
+    const palette = componentPalette.default;
+    return palette[index % palette.length];
+  }
 
   let parsed = null;
   const stored = sessionStorage.getItem('sporty:lastPremiumResult');
@@ -67,6 +81,7 @@
   renderNextSteps(parsed.next_steps || []);
   renderPastSports(parsed.past_sports || []);
   renderMatches(parsed.matches || []);
+  renderPremiumMeasurements(parsed.matches || []);
 
   function renderComponentImpacts(components) {
     if (!componentList) return;
@@ -77,18 +92,24 @@
       componentList.appendChild(li);
       return;
     }
-    components.forEach((component) => {
+    components.forEach((component, index) => {
       const li = document.createElement('li');
+      li.className = 'component-list__item';
+      const color = pickComponentColor(component.component || component.key, index);
+      const indicator = document.createElement('span');
+      indicator.className = 'component-color';
+      indicator.style.background = color;
       const label = document.createElement('span');
+      label.className = 'component-list__label';
       const weightText = formatPercent(component.weight_percent);
       const scoreText = component.score_percent !== undefined && component.score_percent !== null
         ? `${component.score_percent.toFixed(1)}%`
         : '—';
-      label.textContent = `${component.component || 'Component'} · Weight ${weightText} · Score ${scoreText}`;
+      label.textContent = `${component.component || component.key || 'Component'} · Weight ${weightText} · Score ${scoreText}`;
       const summary = document.createElement('p');
-      summary.style.margin = '0';
-      summary.style.flex = '1';
+      summary.className = 'component-list__summary';
       summary.textContent = component.summary || '';
+      li.appendChild(indicator);
       li.appendChild(label);
       li.appendChild(summary);
       componentList.appendChild(li);
@@ -319,5 +340,154 @@
 
       matchGrid.appendChild(card);
     });
+  }
+
+  function renderPremiumMeasurements(matches) {
+    if (!measurementsContainer) return;
+    measurementsContainer.innerHTML = '';
+    if (!matches.length) {
+      const placeholder = document.createElement('p');
+      placeholder.className = 'premium-measurement-empty';
+      placeholder.textContent = 'Measurement and factor breakdowns appear alongside each premium match.';
+      measurementsContainer.appendChild(placeholder);
+      return;
+    }
+    matches.forEach((match, index) => {
+      const detailEntries = match.score_breakdown?.measurements_detail || match.measurements_detail || [];
+      const tableHtml = detailEntries.length
+        ? buildMeasurementComparisonTableHtml(detailEntries)
+        : '<p class="premium-measurement-card__empty">Measurement detail will arrive once available.</p>';
+      const factorHtml = buildFactorListHtml(match);
+
+      const card = document.createElement('article');
+      card.className = 'premium-measurement-card';
+
+      const header = document.createElement('header');
+      header.className = 'premium-measurement-card__header';
+      const rank = document.createElement('span');
+      rank.className = 'match-card__rank';
+      rank.textContent = `#${index + 1}`;
+      const titleGroup = document.createElement('div');
+      const sportName = (match.optimal_body?.sport?.name || match.optimal_body?.sport_slug || 'Sport').replace(/[-_]/g, ' ');
+      const h3 = document.createElement('h3');
+      h3.textContent = sportName;
+      titleGroup.appendChild(h3);
+      const cohortLabel = document.createElement('p');
+      cohortLabel.className = 'match-card__subtitle';
+      cohortLabel.textContent = match.optimal_body?.spec?.cohort || '';
+      titleGroup.appendChild(cohortLabel);
+      header.appendChild(rank);
+      header.appendChild(titleGroup);
+      const score = document.createElement('span');
+      score.className = 'match-card__score';
+      const rawScore = match.score ?? match.fit_score ?? 0;
+      const normalizedScore = normalizeExactScore(rawScore) ?? 0;
+      score.textContent = `${Math.round(normalizedScore * 100)}%`;
+      header.appendChild(score);
+
+      card.appendChild(header);
+
+      const tableWrapper = document.createElement('div');
+      tableWrapper.className = 'premium-measurement-card__table';
+      tableWrapper.innerHTML = tableHtml;
+      card.appendChild(tableWrapper);
+
+      if (factorHtml) {
+        const factorWrapper = document.createElement('div');
+        factorWrapper.className = 'premium-measurement-card__factors';
+        factorWrapper.innerHTML = factorHtml;
+        card.appendChild(factorWrapper);
+      }
+
+      measurementsContainer.appendChild(card);
+    });
+  }
+
+  function buildFactorListHtml(match) {
+    const factorList = match.factors || match.score_breakdown?.factors || [];
+    if (!Array.isArray(factorList) || !factorList.length) return '';
+    const rows = factorList
+      .map((factor) => {
+        const label = factor.name || factor.label || factor.key || 'Factor';
+        const value = factor.value ?? factor.score_percent ?? factor.score ?? '';
+        const detail = factor.detail || factor.summary || '';
+        const displayValue = typeof value === 'number' ? `${Math.round(value)}%` : value;
+        const meta = detail ? `<p class="premium-measurement-factor__meta">${escapeHtml(detail)}</p>` : '';
+        return `
+          <div class="premium-measurement-factor">
+            <strong>${escapeHtml(label)}</strong>
+            <span>${escapeHtml(displayValue)}</span>
+            ${meta}
+          </div>
+        `;
+      })
+      .join('');
+    return `<div class="premium-measurement-factor-list">${rows}</div>`;
+  }
+
+  function buildMeasurementComparisonTableHtml(entries) {
+    if (!entries.length) return '';
+    const rows = entries
+      .slice(0, 5)
+      .map((entry) => {
+        const label = escapeHtml(entry.label || entry.key || 'Measurement');
+        const userValue = escapeHtml(String(entry.user_value ?? entry.user_value_display ?? '—'));
+        const cohortMean = escapeHtml(String(typeof entry.cohort_mean !== 'undefined' ? entry.cohort_mean : '—'));
+        const cohortStd = entry.cohort_std_dev ? escapeHtml(String(entry.cohort_std_dev)) : null;
+        const cohortText = cohortStd ? `${cohortMean} ± ${cohortStd}` : cohortMean;
+        const fitValue = typeof entry.fit_score === 'number' ? entry.fit_score : typeof entry.fit === 'number' ? entry.fit : null;
+        const fitPercent = fitValue !== null && Number.isFinite(fitValue) ? Math.max(0, Math.min(100, Math.round(fitValue))) : 0;
+        const reasoning = entry.reasoning_short ? `<p class="results-metrics__note">${escapeHtml(entry.reasoning_short)}</p>` : '';
+        return `
+          <tr>
+            <th scope="row">
+              ${label}
+              ${reasoning}
+            </th>
+            <td>${userValue}</td>
+            <td>${cohortText}</td>
+            <td>
+              <div class="results-fit">
+                <div class="results-fit__bar">
+                  <div class="results-fit__bar-fill" style="width:${fitPercent}%;"></div>
+                </div>
+                <span class="results-fit__label">${fitPercent}%</span>
+              </div>
+            </td>
+          </tr>
+        `;
+      })
+      .join('');
+    return `
+      <table class="results-metrics__table-body">
+        <caption>Measurement comparisons</caption>
+        <thead>
+          <tr>
+            <th scope="col">Measurement</th>
+            <th scope="col">You</th>
+            <th scope="col">Optimal body</th>
+            <th scope="col">Fit</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  function normalizeExactScore(value) {
+    if (value === null || value === undefined) return null;
+    const numeric = Number(value);
+    if (Number.isNaN(numeric)) return null;
+    return Math.min(1, Math.max(0, numeric));
+  }
+
+  function escapeHtml(value) {
+    return (value || '')
+      .toString()
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 })();

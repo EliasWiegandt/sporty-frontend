@@ -81,6 +81,11 @@ export const offerings = [
       label: "Try free analysis",
       theme: "primary",
     },
+    secondaryCta: {
+      href: "/intake-premium",
+      label: "Start premium intake",
+      theme: "secondary",
+    },
   },
   {
     ribbon: "Purchase",
@@ -97,6 +102,11 @@ export const offerings = [
       label: "Buy now",
       theme: "secondary",
     },
+    secondaryCta: {
+      href: "/pricing",
+      label: "See pricing",
+      theme: "primary",
+    },
   },
   {
     ribbon: "Purchase",
@@ -111,6 +121,11 @@ export const offerings = [
     cta: {
       href: "/child-intake",
       label: "Buy now",
+      theme: "secondary",
+    },
+    secondaryCta: {
+      href: "/dashboard",
+      label: "Visit dashboard",
       theme: "secondary",
     },
   },

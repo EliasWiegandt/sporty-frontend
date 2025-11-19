@@ -54,6 +54,7 @@ const historyPlaceholders = [
             </button>
             <a class="btn-ghost" href="/pricing">Pricing overview</a>
             <a class="btn-ghost" href="/intake">Start new analysis</a>
+            <a class="btn-ghost" href="/intake-premium">Premium intake</a>
             <a class="btn-ghost" href="/child-intake">Forecast a child</a>
           </div>
         </section>
@@ -105,10 +106,10 @@ const historyPlaceholders = [
   </main>
 
   <Fragment slot="scripts">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-    <script src="/config.js" defer></script>
-    <script src="/assets/js/app.js" defer></script>
-    <script src="/assets/js/dashboard.js" defer></script>
-    <script src="/assets/js/checkout.js" defer></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script is:inline src="/config.js" defer></script>
+    <script is:inline src="/assets/js/app.js" defer></script>
+    <script is:inline src="/assets/js/dashboard.js" defer></script>
+    <script is:inline src="/assets/js/checkout.js" defer></script>
   </Fragment>
 </BaseLayout>

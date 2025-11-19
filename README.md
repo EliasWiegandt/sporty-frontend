@@ -69,6 +69,7 @@ All endpoints reuse the same request-id logic as the legacy Worker. Static asset
 - Update this README, `docs/handbook.md`, and `AGENTS.md` when introducing new pages, design tokens, or deployment steps.
 - When adding API calls, surface them through `src/pages/api/*` so the Worker injects the secret headers (see `api/forecast-child.ts` for the latest example).
 - Past sport search pulls directly from `sports_subcategories`; keep that taxonomy seeded so the dropdown stays accurate.
+- The adult intake experience now runs entirely through the Preact island at `src/components/intake/IntakeApp.tsx`, which mounts on both `/intake` and the new `/intake-premium` route (via `client:load`). The premium page shares the same island but flips the `mode` prop to display the trait/premium steps and post to `/api/recommend-adult-premium` once a credit is applied.
 
 ### Shared Tailwind preset
 

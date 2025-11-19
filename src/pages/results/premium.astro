@@ -58,6 +58,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       <div class="match-grid" data-match-grid></div>
     </section>
 
+    <section class="card-stack">
+      <h2>Measurement & factor breakdowns</h2>
+      <div class="premium-measurements" data-premium-measurements></div>
+    </section>
+
     <div class="empty-state" data-empty-state hidden>
       <h2>No premium analysis loaded</h2>
       <p>Run a premium analysis with an adult credit to see detailed insights here.</p>
@@ -68,9 +73,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   </main>
 
   <Fragment slot="scripts">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-    <script src="/config.js" defer></script>
-    <script src="/assets/js/app.js" defer></script>
-    <script src="/assets/js/results-premium.js" defer></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script is:inline src="/config.js" defer></script>
+    <script is:inline src="/assets/js/app.js" defer></script>
+    <script is:inline src="/assets/js/results-premium.js" defer></script>
   </Fragment>
 </BaseLayout>

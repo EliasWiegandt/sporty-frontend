@@ -24,6 +24,7 @@
     "@astrojs/check": "^0.8.2",
     "@iconify-json/mingcute": "^1.2.5",
     "astro": "^5.0.0",
+    "puppeteer": "^24.30.0",
     "sass": "^1.80.5",
     "typescript": "^5.4.0"
   }

@@ -16,7 +16,7 @@ interface Props {
   inputAttrs?: ButtonAttrs;
   incrementAttrs?: ButtonAttrs;
   decrementAttrs?: ButtonAttrs;
-  inputmode?: string;
+  inputMode?: string;
   ariaDescribedby?: string;
 }
 
@@ -33,7 +33,7 @@ const {
   inputAttrs = {},
   incrementAttrs = {},
   decrementAttrs = {},
-  inputmode,
+  inputMode,
   ariaDescribedby,
 } = Astro.props as Props;
 
@@ -76,7 +76,7 @@ const decrementButtonClass = [baseButtonClass, decrementExtraClass].filter(Boole
     {...(typeof min === 'number' ? { min } : {})}
     {...(typeof max === 'number' ? { max } : {})}
     {...(typeof value !== 'undefined' ? { value } : {})}
-    {...(inputmode ? { inputmode } : {})}
+    {...(inputMode ? { inputMode } : {})}
     {...(ariaDescribedby ? { 'aria-describedby': ariaDescribedby } : {})}
     {...(required ? { required: true } : {})}
     {...inputRestAttrs}

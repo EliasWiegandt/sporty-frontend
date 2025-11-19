@@ -86,9 +86,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </section>
 
   <Fragment slot="scripts">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-    <script src="/config.js" defer></script>
-    <script src="/assets/js/app.js" defer></script>
-    <script src="/assets/js/child-results.js" defer></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script is:inline src="/config.js" defer></script>
+    <script is:inline src="/assets/js/app.js" defer></script>
+    <script is:inline src="/assets/js/child-results.js" defer></script>
   </Fragment>
 </BaseLayout>

@@ -56,9 +56,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     </div>
   </main>
 
-  <section class="section-shell section-narrow" id="whats-next">
-    <h2 class="section-title">Next steps</h2>
-    <div class="grid-cards">
+    <section class="section-shell section-narrow" id="whats-next">
+      <h2 class="section-title">Next steps</h2>
+      <div class="grid-cards">
       <article class="card-shell">
         <h3 class="card-title">Share with a coach or friend</h3>
         <p class="card-copy">Show them how your body stacks up and discuss drills or clubs to explore.</p>
@@ -67,9 +67,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         <h3 class="card-title">Track progress</h3>
         <p class="card-copy">Jot down how the suggested sports feel. Once credits launch, revisit your <a href="/dashboard">dashboard</a> to compare saved runs.</p>
       </article>
-      <article class="card-shell">
+      <article class="card-shell space-y-4">
         <h3 class="card-title">Expand the analysis</h3>
-        <p class="card-copy">Upgrade for deeper insights and child forecasts as soon as credits launch. Check <a href="/pricing">pricing</a> for details.</p>
+        <p class="card-copy">Upgrade for deeper insights and child forecasts as soon as credits launch. Start the premium intake to add traits, goals, and injuries.</p>
+        <a class="btn-pill btn-pill-primary" href="/intake-premium">Start premium intake</a>
       </article>
     </div>
   </section>
@@ -91,10 +92,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   </footer>
 
   <Fragment slot="scripts">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-    <script src="/config.js" defer></script>
-    <script src="/assets/js/app.js" defer></script>
-    <script src="/assets/js/results.js" defer></script>
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script is:inline src="/config.js" defer></script>
+    <script is:inline src="/assets/js/app.js" defer></script>
+    <script is:inline src="/assets/js/results.js" defer></script>
     <script>
       const yearEl = document.getElementById('year');
       if (yearEl) {

@@ -13,10 +13,18 @@ const measurementMeta = measurementFields.map((field) => ({
 }));
 ---
 <BaseLayout
-  title="Sporty — Free Adult Intake"
-  description="Provide your measurements to get free sport matches tailored to your body."
+  title="Sporty — Premium adult intake"
+  description="Log in, apply a credit, and share traits, goals, and injuries alongside your measurements."
 >
   <main class="mx-auto max-w-5xl space-y-10 pb-32">
+    <div class="space-y-6">
+      <p class="type-lead text-teal-600">Premium analysis</p>
+      <h1 class="type-display text-slate-900">Add the deep inputs that unlock a full Sporty story.</h1>
+      <p class="text-slate-600">
+        Capture your traits, preferences, goals, injuries, and past sports after applying a credit. Everything you enter here goes
+        through the premium matching engine and saves to your account once you consent.
+      </p>
+    </div>
     <div data-intake-root>
       <section class="section-shell space-y-8">
         <form
@@ -25,7 +33,7 @@ const measurementMeta = measurementFields.map((field) => ({
           data-intake-form
           data-measurements={JSON.stringify(measurementMeta)}
         >
-          <IntakeApp client:load mode="free" />
+          <IntakeApp client:load mode="premium" />
 
           <div class="space-y-4">
             <div data-status aria-live="polite"></div>
