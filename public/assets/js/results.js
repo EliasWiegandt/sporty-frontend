@@ -96,7 +96,7 @@
     const header = document.createElement('header');
     header.className = 'match-card__header';
     header.innerHTML = `
-      <div class="match-card__rank-badge">#${rank}</div>
+      <div class="match-card__rank-badge">${rank}</div>
       <div class="match-card__title-group">
         <h3 class="match-card__title">${escapeHtml(title)}</h3>
         <span class="match-card__score">${scorePercent}% Match</span>
@@ -109,9 +109,67 @@
     const imageUrl = resolveMediaUrl(cardMedia, storageBase);
     if (imageUrl) {
       const imgContainer = document.createElement('div');
-      imgContainer.className = 'match-card__image-container';
-      imgContainer.innerHTML = `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}" loading="lazy" />`;
+      imgContainer.className = 'match-card__image-container aspect-square overflow-hidden rounded-lg';
+      imgContainer.innerHTML = `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}" class="w-full h-full object-cover" loading="lazy" />`;
       card.appendChild(imgContainer);
+    }
+
+    // 2.5 Sport Details (Category Hierarchy)
+    const category = subcategory.category || {};
+    if (Object.keys(category).length > 0) {
+      const detailsContainer = document.createElement('div');
+      detailsContainer.className = 'match-card__desc-block mt-4 mx-4';
+      // Note: match-card__desc-block already has padding, bg, border, radius defined in CSS
+      // We add specific spacing for the list items
+      const listContainer = document.createElement('div');
+      listContainer.className = 'space-y-1 text-sm';
+
+      const header = document.createElement('h4');
+      header.textContent = 'Sport';
+      detailsContainer.appendChild(header);
+      detailsContainer.appendChild(listContainer);
+
+      Object.entries(category).forEach(([key, val]) => {
+        if (!val || !val.name) return;
+
+        const row = document.createElement('div');
+        row.className = 'match-card__detail-row group relative flex items-center';
+
+        const label = key.charAt(0).toUpperCase() + key.slice(1);
+        const value = val.name;
+        const description = val.description;
+
+        row.innerHTML = `
+          <span class="font-medium text-slate-700 w-24 shrink-0">${label}:</span>
+          <span class="text-slate-900 truncate mr-1">${escapeHtml(value)}</span>
+        `;
+
+        if (description) {
+          const iconContainer = document.createElement('div');
+          iconContainer.className = 'relative flex items-center';
+
+          const icon = document.createElement('span');
+          icon.className = 'cursor-help text-slate-400 hover:text-slate-600 transition-colors';
+          icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+           </svg>`;
+
+          const tooltip = document.createElement('div');
+          tooltip.className = 'absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-2 bg-slate-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 leading-snug';
+          tooltip.textContent = description;
+
+          // Arrow
+          const arrow = document.createElement('div');
+          arrow.className = 'absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-slate-800';
+          tooltip.appendChild(arrow);
+
+          iconContainer.appendChild(icon);
+          iconContainer.appendChild(tooltip);
+          row.appendChild(iconContainer);
+        }
+        listContainer.appendChild(row);
+      });
+      card.appendChild(detailsContainer);
     }
 
     // 3. Descriptions
