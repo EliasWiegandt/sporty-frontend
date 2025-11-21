@@ -1,6 +1,6 @@
 # Sporty Frontend Handbook
 
-_Last updated: 2025-10-25_
+_Last updated: 2025-11-19_
 
 This handbook tracks how the Sporty frontend is assembled and deployed. Pair it with the backend handbook (`../sporty-backend/docs/handbook.md`) for API and entitlement details. (`../sporty-backend/docs/handbook.md`) for API details and shared operational notes.
 
@@ -20,7 +20,7 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 - Child analysis now requires a child credit up front; guardians collect measurements, apply the credit, and receive both the forecast and premium sport matches in the same flow (`/child-intake` → `/child-results/premium`).
 - The free results page now mirrors the journey vision with a component impact bar, five match cards, measurement comparison tables (with fit bars), and highlight reasoning drawn from each measurement so the narrative stays grounded in the research. Interactive adjustment controls remain deferred until preview endpoints exist.
 - Child intake primes the deterministic test family (prefilled on preview branches) and collects measurements; once a child credit is applied we post to `/api/forecast-child`, capture the forecast, and let `/child-premium` gather premium inputs before `/child-results/premium` renders the paid package.
-- Logged-in intakes also capture past sports (searchable `sports_subcategories`, intensity, enjoyment/flair/skill flags) and sync them to Supabase before saving recommendations.
+- Logged-in intakes also capture past sports (searchable `sports_subcategories`, using the long-form subcategory `name` such as "Soccer - Forward - Winger", plus intensity and enjoyment/flair/skill flags) and sync them to Supabase before saving recommendations.
 - Logged-in free users can run and store unlimited analyses once they grant consent; anonymous runs still capture past-sport signals anonymously to fuel the data moat.
 - The dashboard views stored recommendations (free + premium) alongside updated credit balances so users and guardians can revisit previous analyses.
 - Premium flows will add performance factor inputs (muscle gain ease, endurance bias, recovery speed) and surface derived indexes (Monkey Index, discipline ratios) in the results dashboard. The premium results screen reuses the same color palette as the free impact bar and now shows the same component terminology (body alignment, past sports, preferences, goals, injury considerations) alongside the new measurement + factor breakdown cards for each match so the two experiences feel aligned.
@@ -51,6 +51,35 @@ Primary desktop MVP routes (marketing + app shell):
 - `/account` — consent and data privacy controls
 - `/child-intake`, `/child-results` — guardian flow
 - `/checkout/success`, `/checkout/cancel` — Stripe return pages (credit refresh + cancel fallback)
+
+---
+
+## Intake Experience
+
+Both `/intake` and `/intake-premium` hydrate the same Preact island (`src/components/intake/IntakeApp.tsx`), so the form logic, validation, and submission helpers live in one place. The island renders the shared stepper, keeps all intake state in React (basics, measurements, past sports, premium selections), and wires the `Continue`/`See my matches` buttons so the UI always scrolls and focuses the field that needs attention before moving forward.
+
+### Stepper layout & measurement fields
+
+- The free flow walks through three steps: **Basics** (birthday and sex), **Measurements** (the twelve body/limb metrics defined in `src/data/measurementFields.ts` and grouped into core, torso, and extremities clusters), and **Past sports** (optional experience history). Each measurement field renders via `MeasurementField`, which uses the shared `NumberStepper` (+/– controls), enforces the documented min/max ranges, shows the helper hints, and keeps values synced with the island state so the stepper can validate before unlocking the next page.
+- Validation happens before allowing a step change; missing or out-of-bounds inputs trigger `setStatus` errors, focus the offending field, and prevent navigation until the value meets the requirements.
+
+### Past sports
+
+- Users can capture up to five past sports entries. The Past Sports step asynchronously queries Supabase’s `sports_subcategories` (via `SportyApp.getClient()`) to power the search-as-you-type dropdown, labels each entry with the associated sport, and lets people record intensity (`light`, `moderate`, `intense`, `elite`), years played, starting age, and the yes/no flag trio (enjoyed it, felt natural/flair, achieved skill). NumberStepper controls allow fractional years so the backend keeps the decimals that power matching.
+- Entries stay in component state for quick edits and are cleaned (strip out the UI-only `id` and empty fields) before the payload sends them as `past_sports`, matching the shape declared in `src/data/intakeSchema.ts`.
+
+### Premium inputs & gating
+
+- Navigating to `/intake-premium` adds **Traits**, **Preferences**, **Goals**, and **Injuries** steps before the past-sports section, while `/intake` keeps those controls hidden. The Traits step asks the categorical questions (`muscle_fiber`, `metabolic_tendency`, `joint_laxity`, `foot_arch`, `temperature_tolerance`, `handedness`, `sport_side`) that `buildPremiumPayload` maps into the backend’s `traits` object.
+- The shared `PremiumBlock` and `premiumController` gate the detailed inputs behind credentials. They fetch `/api/credits` to confirm the user has adult analysis credits, query Supabase catalogs (`preferences_catalog`, `goals_catalog`, `injuries_catalog`, and `injury_subcategories_catalog`), and only show the toggle/fields after the data and a positive credit count are available.
+- Preferences/goals entries are capped at 20 each, enforce unique catalog selections, and ask for a priority (`must_have`/`nice_to_have`); injuries also cap at 20 entries, collect severity, subcategory, and notes, and block duplicate injury-or-subcategory combos. The “Apply one adult analysis credit” toggle must be on before a premium submission will run, and the controller resets/locks the block whenever the credit count drops to zero or the user signs out.
+- The premium summary copy keeps the user informed (credit totals, consent state, whether a credit will apply) and surfaces controller errors through `setStatus` so the form never posts a partial premium selection.
+
+### Persistence & submission
+
+- `IntakeApp` auto-saves drafts to `localStorage` under `sporty:intake:draft:v1` whenever basics, measurements, or past sports change. On load it rehydrates that data (including the last step index and any legacy trait answers) so returning visitors resume where they left off. In dev mode the island prefills a dummy run if the cache is empty to speed up design reviews.
+- Submission combines the validated basics, cleaned measurements, past sports, trait answers (collected directly from the DOM), and premium selections into payloads built by `buildFreePayload` or `buildPremiumPayload`. Free runs post to `/api/recommend-adult-free`, premium runs to `/api/recommend-adult-premium`, and the buttons switch to “Generating…” while the request is in flight.
+- Before sending premium data the island asks `window.SportyApp.ensureConsent()` to confirm the user has granted storage consent; the result is cached on the premium controller so the summary copy knows whether detailed inputs are allowed. Success responses are cached in `sessionStorage` (`sporty:lastResult`, `sporty:lastPremiumResult`, and `sporty:lastCreditSnapshot`) so the results screens can show previews while the backend work is finishing.
 
 ---
 
@@ -225,9 +254,9 @@ Discover which sports match your body without paying or storing data.
 
 1. **Home ➝ Intake (Free Mode)**
 
-   - User enters body measurements.
-   - Optionally adds past sports (anonymous if not logged in).
-   - If logged in, results can be saved automatically.
+  - The `/intake` page mounts `IntakeApp`, a three-step Preact island that collects Basics, Measurements (the twelve metrics defined in `src/data/measurementFields.ts`), and Past Sports, validates each input, and auto-saves drafts to `localStorage` so visitors can pick up where they left off.
+  - Past sports entries are optional (up to five) and source their labels from Supabase’s `sports_subcategories`; they capture years played, starting age, intensity, and the liked/flair/skill flags that feed the matching backend even for anonymous runs.
+  - Logged-in users keep their drafts in sync with session storage so saved runs appear automatically when they revisit.
 
 2. **Submit ➝ Results Page (Quick Match)**
 
@@ -268,9 +297,9 @@ Get a deeper, personalized analysis including goals, preferences, injuries, and 
 
 1. **Dashboard ➝ Start New Analysis ➝ Intake (Premium)**
 
-   - Prefilled measurements from last run.
-   - User adds preferences, goals, injuries, and performance factors.
-   - Sidebar or top banner shows available credits.
+  - The premium intake reuses `IntakeApp`, adds the Traits step plus the Preference/Goal/Injury sections, and keeps the credit-aware `PremiumBlock` visible only when the user has adult credits and consents to storing detailed inputs.
+  - Premium lists cap at 20 selections, forbid duplicate catalog IDs, collect priority/severity/notes, and require the “Apply one adult analysis credit” toggle before `/api/recommend-adult-premium` is allowed to post.
+  - The premium block summary echoes the current credit total and consent state while the sidebar/top banner still surfaces the same totals for launch day marketing; failing to apply a credit shows an inline error and keeps the premium submission locked.
 
 2. **Submit ➝ Results (Premium Analysis)**
 

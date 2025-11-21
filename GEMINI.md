@@ -10,7 +10,7 @@ It is built with **Astro** and adapted for **Cloudflare Workers**, ensuring high
 - **UI Library:** Preact (for interactive islands like the Intake form)
 - **Styling:** Tailwind CSS
 - **Infrastructure:** Cloudflare Pages / Workers (Adapter)
-- **Auth & Data:** Supabase (Client-side integration)
+- **Auth & Data:** Supabase (Client-side integration)/
 - **Payments:** Stripe (Checkout redirection)
 
 ## Key Files & Directories
@@ -21,7 +21,7 @@ It is built with **Astro** and adapted for **Cloudflare Workers**, ensuring high
 - **`src/components/intake/IntakeApp.tsx`**: The primary Preact application managing the multi-step intake wizard.
 - **`src/styles/tailwind.css`**: The source of truth for the design system (typography tokens `type-*`, layout shells `section-shell`, etc.).
 - **`AGENTS.md`**: Guide for AI agents contributing to the frontend. **Read this second.**
-- **`docs/intake-design.md`**: Detailed design specification for the intake flow.
+- Intake design guidance now lives in the “Intake Experience” section of **`docs/handbook.md`**, which walks through the shared Preact island, stepper, and premium gating.
 - **`docs/handbook.md`**: The definitive guide to the frontend architecture, visitor journeys, and consent policies. **Read this first.**
 - **`public/assets/js/app.js`**: Global Supabase auth wrapper (`window.SportyApp`).
 
@@ -71,3 +71,19 @@ It is built with **Astro** and adapted for **Cloudflare Workers**, ensuring high
 ### 3. Documentation
 - **Handbooks:** Keep `docs/handbook.md` updated. It is the source of truth.
 - **Agents:** Refer to `AGENTS.md` for instructions on how AI agents should interact with this repo.
+
+## Troubleshooting & Learnings
+
+### 1. Rendering & HMR Issues
+- **Symptom:** DOM elements (like match cards) appearing and then disappearing, or only partially rendering (e.g., 1 out of 3 cards).
+- **Cause:** In Astro/Vite environments, scripts loaded with `is:inline` and `defer` can sometimes execute multiple times or conflict with Hot Module Replacement (HMR) state, leading to race conditions or double-initialization.
+- **Fix:**
+    1.  **Restart the Server:** `make run-frontend` (or `wrangler dev`) should be restarted to clear stale HMR state.
+    2.  **Initialization Guards:** Use a global flag (e.g., `window.sportyResultsInitialized`) to ensure initialization logic (like `init()`) runs exactly once per page load.
+
+### 2. Session Storage
+- **Persistence:** `sessionStorage` is generally reliable across page loads in the same tab, but debugging it can be tricky if redirects happen quickly.
+- **Debugging:** When debugging "missing data" issues, verify `sessionStorage` content manually in the console *before* assuming backend failure.
+
+### 3. Script Scoping
+- **IIFE & Debugging:** Code wrapped in an IIFE (Immediately Invoked Function Expression) is not accessible globally. To debug functions like `renderMatches` manually, you must explicitly expose them to `window` (e.g., `window.debugRenderMatches = renderMatches`) or set breakpoints.

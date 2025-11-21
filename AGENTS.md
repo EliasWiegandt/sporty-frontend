@@ -42,7 +42,7 @@ wrangler dev
 - **Validation:** Validation is performed via pure functions against the state objects, NOT by querying the DOM (`FormData`).
 - **Components:** All form steps (`BasicsStep`, etc.) and inputs (`NumberStepper`, `MeasurementField`) are **Controlled Components** (receiving `value` and `onChange`). Do not use uncontrolled inputs or `useRef` to read values manually.
 - **Verification:** Use `make snap` to verify the UI. This runs `scripts/snap_intake_flow.js`, which uses Puppeteer to automatically fill out the intake form and take screenshots of each step (Basics, Measurements, Past Sports), ensuring the flow logic is sound.
-- See `docs/intake-design.md` for the detailed design spec.
+- See the “Intake Experience” section in `docs/handbook.md` for the detailed design spec that replaced the removed documents.
 
 ## Consent & Visual Asset Guidelines
 - Follow the consent flows documented in `docs/handbook.md` (see “Consent Strategy”): always offer preview modes, gate storage behind explicit opt-ins (measurements, goals/preferences, injuries, child data), and surface revoke controls. UI copy must explain purpose, retention, and provide links to Privacy/Data Rights pages.

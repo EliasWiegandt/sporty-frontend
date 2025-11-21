@@ -485,10 +485,78 @@
     gap: clamp(1.5rem, 3vw, 2.5rem);
   }
 
+  /* Align header and sections with match grid */
+  .anchored {
+    max-width: min(96rem, 94vw);
+    width: 100%;
+    margin-inline: auto;
+  }
+
   .results-matches__grid {
     display: grid;
     gap: 1.5rem;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+
+  .match-card__descriptions {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .match-card__desc-block {
+    padding: 0.75rem 0.85rem;
+    border-radius: var(--radius-lg);
+    background-color: var(--color-surface-muted);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+  }
+
+  .match-card__desc-block h4 {
+    margin: 0 0 0.35rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .match-card__desc-block p {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--type-small-size);
+    line-height: 1.45;
+  }
+
+  .match-card__desc-note {
+    margin-top: 0.35rem;
+    color: var(--color-text);
+  }
+
+  .results-metrics__badge {
+    display: inline-block;
+    margin-left: 0.35rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    font-size: var(--type-small-size);
+    text-transform: capitalize;
+    background: var(--color-surface-muted);
+    color: var(--color-text-soft);
+  }
+
+  .results-metrics__badge--high {
+    border-color: rgba(15, 118, 110, 0.45);
+    color: var(--color-brand-800);
+    background: rgba(15, 118, 110, 0.08);
+  }
+
+  .results-metrics__badge--medium {
+    border-color: rgba(37, 99, 235, 0.35);
+    color: #1d4ed8;
+    background: rgba(37, 99, 235, 0.08);
+  }
+
+  .results-metrics__badge--low {
+    border-color: rgba(148, 163, 184, 0.4);
+    color: var(--color-text-soft);
+    background: rgba(148, 163, 184, 0.15);
   }
 
   .results-matches__header {
@@ -640,6 +708,7 @@
     margin-top: 0.75rem;
   }
 
+ 
   .premium-measurements {
     display: grid;
     gap: 1.25rem;

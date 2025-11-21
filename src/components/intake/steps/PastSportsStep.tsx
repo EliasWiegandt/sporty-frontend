@@ -23,14 +23,16 @@ const PastSportsStep: FunctionalComponent<Props> = ({ entries, onUpdate }) => {
       setCatalogLoading(true);
       const { data, error } = await client
         .from('sports_subcategories')
-        .select('id, slug, category')
-        .order('slug', { ascending: true });
+        .select('id, name, slug, category')
+        .order('name', { ascending: true });
 
       if (error) {
         console.error('Failed to fetch past sports catalog', error);
       } else {
         const normalized = (data || []).map((row: any) => {
-          const label = row.category?.sport?.name || row.slug || 'Sport';
+          const label = typeof row.name === 'string' && row.name.trim()
+            ? row.name.trim()
+            : row.category?.sport?.name || row.slug || 'Sport';
           const searchText = `${label} ${row.slug || ''}`.toLowerCase();
           return { id: row.id, label, searchText };
         });
@@ -54,7 +56,7 @@ const PastSportsStep: FunctionalComponent<Props> = ({ entries, onUpdate }) => {
       had_flair: null,
       achieved_skill: null,
     };
-    onUpdate([...entries, newEntry]);
+    onUpdate([newEntry, ...entries]);
   };
 
   const handleRemove = (id: string) => {

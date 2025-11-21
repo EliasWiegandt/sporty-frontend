@@ -1,80 +1,48 @@
 (function () {
-  const impactSection = document.querySelector('[data-impact-summary]');
-  const impactBar = document.querySelector('[data-impact-bar]');
-  const impactLegend = document.querySelector('[data-impact-legend]');
-  const matchesSection = document.querySelector('[data-results-matches]');
-  const matchGrid = document.querySelector('[data-match-grid]');
-  const highlightsSection = document.querySelector('[data-results-highlights]');
-  const highlightsList = document.querySelector('[data-highlights-list]');
-  const metricsSection = document.querySelector('[data-results-metrics]');
-  const componentsTableEl = document.querySelector('[data-components-table]');
-  const measurementsTableEl = document.querySelector('[data-measurements-table]');
-  const fallback = document.querySelector('[data-empty-state]');
-  const messageEl = document.querySelector('[data-results-message]');
-  const historySection = document.querySelector('[data-history-picker]');
-  const historySelect = document.querySelector('[data-history-select]');
-  const historyRefreshBtn = document.querySelector('[data-history-refresh]');
+  const STORAGE_KEY = 'sporty:lastResult';
+  const container = document.querySelector('[data-results-container]');
+  const emptyState = document.querySelector('[data-empty-state]');
+
+  // Configuration
   const storageBase = resolveStorageBase();
-  const sportyApp = window.SportyApp;
 
-  if (!matchesSection && !impactSection && !metricsSection && !fallback) {
-    return;
-  }
+  function init() {
+    if (window.sportyResultsInitialized) {
+      return;
+    }
+    window.sportyResultsInitialized = true;
 
-  let sportySnapshot = { user: null, hasConsent: false };
-  let historyEntries = [];
+    const data = readSessionResult();
+    if (!data || !data.matches || data.matches.length === 0) {
+      showEmptyState();
+      return;
+    }
 
-  const sessionResult = readSessionResult();
-  if (sessionResult) {
-    displayResult(sessionResult);
-  } else {
-    showFallback();
-  }
-
-  if (sportyApp && sportyApp.ready) {
-    sportyApp.ready.then(() => {
-      if (typeof sportyApp.onAuthChange === 'function') {
-        sportyApp.onAuthChange((snapshot) => {
-          sportySnapshot = snapshot;
-          updateMessage(snapshot);
-          if (snapshot.user) {
-            if (snapshot.hasConsent) {
-              loadHistory(true);
-            } else {
-              historyEntries = [];
-              hideHistory();
-              if (!readSessionResult()) {
-                showFallback();
-              }
-            }
-          } else {
-            historyEntries = [];
-            hideHistory();
-            if (!readSessionResult()) {
-              showFallback();
-            }
-          }
-        });
-      } else {
-        updateMessage(sportySnapshot);
-      }
+    // Sort by score descending
+    const sortedMatches = data.matches.sort((a, b) => {
+      const scoreA = a.score ?? a.fit_score ?? 0;
+      const scoreB = b.score ?? b.fit_score ?? 0;
+      return scoreB - scoreA;
     });
-  } else {
-    updateMessage(sportySnapshot);
-  }
 
-  if (historySelect) {
-    historySelect.addEventListener('change', () => {
-      const selectedId = historySelect.value;
-      const entry = historyEntries.find((item) => item.id === selectedId);
-      if (entry && entry.summary) {
-        displayResult(entry.summary);
+    // Take top 3 distinct matches (distinct by optimal body ID)
+    const distinctMatches = [];
+    const seenBodies = new Set();
+    for (const match of sortedMatches) {
+      const id = match.optimal_body?.id;
+      if (id && !seenBodies.has(id)) {
+        seenBodies.add(id);
+        distinctMatches.push(match);
       }
-    });
-  }
+      if (distinctMatches.length >= 3) break;
+    }
 
-  if (historyRefreshBtn) {
-    historyRefreshBtn.addEventListener('click', () => loadHistory(true));
+    if (distinctMatches.length === 0) {
+      showEmptyState();
+      return;
+    }
+
+    renderMatches(distinctMatches);
   }
 
   function readSessionResult() {
@@ -88,579 +56,225 @@
     }
   }
 
-  async function loadHistory(force = false) {
-    if (!sportyApp || !sportySnapshot.user || typeof sportyApp.fetchRecommendations !== 'function') {
-      hideHistory();
-      return [];
-    }
-
-    if (!force && historyEntries.length) {
-      showHistory();
-      return historyEntries;
-    }
-
-    try {
-      const results = await sportyApp.fetchRecommendations(25);
-      historyEntries = (results || []).map((entry) => ({
-        id: entry.id,
-        created_at: entry.created_at,
-        summary: normalizeSummary(entry.summary),
-      }));
-      populateHistory(historyEntries);
-      if (historyEntries.length) {
-        showHistory();
-        const latest = historyEntries[0];
-        historySelect.value = latest.id;
-        displayResult(latest.summary);
-      } else {
-        hideHistory();
-      }
-      return historyEntries;
-    } catch (error) {
-      console.error('Failed to load recommendation history', error);
-      hideHistory();
-      return [];
-    }
-  }
-
-  function populateHistory(entries) {
-    if (!historySelect) return;
-    historySelect.innerHTML = '';
-    entries.forEach((entry) => {
-      const option = document.createElement('option');
-      const created = entry.created_at ? new Date(entry.created_at) : null;
-      const label = created
-        ? created.toLocaleString(undefined, {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })
-        : 'Saved result';
-      option.value = entry.id;
-      option.textContent = label;
-      historySelect.appendChild(option);
-    });
-  }
-
-  function showHistory() {
-    if (historySection) historySection.hidden = false;
-    if (historySelect) historySelect.disabled = false;
-  }
-
-  function hideHistory() {
-    if (historySection) historySection.hidden = true;
-    if (historySelect) historySelect.disabled = true;
-  }
-
-  function updateMessage(snapshot) {
-    if (!messageEl) return;
-    if (snapshot && snapshot.user) {
-      if (snapshot.hasConsent) {
-        messageEl.textContent = 'You are signed in. Select any saved run from the list below.';
-      } else {
-        messageEl.textContent = 'Grant data-retention consent from your profile to start saving runs automatically.';
-      }
-    } else {
-      messageEl.textContent = 'Sign in to automatically store each run and revisit them anytime.';
-    }
-  }
-
-  function displayResult(data) {
-    if (!data || !Array.isArray(data.matches) || !data.matches.length) {
-      showFallback();
-      return;
-    }
-
-    hideFallback();
-
-    const matches = data.matches.slice(0, 5);
-    const topMatch = matches[0];
-    const metricsData = extractMetrics(topMatch ? topMatch.score_breakdown : null);
-
-    renderImpact(metricsData.componentsData);
-    renderMatches(matches);
-    renderHighlights(topMatch, metricsData);
-    renderTables(metricsData);
-    renderMeasurementComparisons(metricsData);
-  }
-
-  function renderImpact(components) {
-    if (!impactSection || !impactBar || !impactLegend) return;
-    if (!components || !components.length) {
-      impactSection.hidden = true;
-      impactBar.innerHTML = '';
-      impactLegend.innerHTML = '';
-      return;
-    }
-
-    const totalWeight = components.reduce((sum, entry) => {
-      const weight = typeof entry.weight === 'number' ? entry.weight : null;
-      if (weight !== null && !Number.isNaN(weight)) return sum + Math.max(weight, 0);
-      if (typeof entry.scoreNormalized === 'number') return sum + Math.max(entry.scoreNormalized, 0);
-      return sum + 1;
-    }, 0) || components.length;
-
-    impactBar.innerHTML = components
-      .map((entry, index) => {
-        const weightValue = typeof entry.weight === 'number' ? Math.max(entry.weight, 0) : null;
-        const base = weightValue !== null && !Number.isNaN(weightValue) ? weightValue : (entry.scoreNormalized || 1);
-        const ratio = base / totalWeight;
-        const flexValue = Math.max(ratio, 0.08);
-        const color = pickComponentColor(entry.key, index);
-        return `<div class="impact-bar__segment" style="flex:${flexValue}; background:${color};" aria-label="${escapeHtml(entry.label)}" data-label="${escapeHtml(entry.label.slice(0, 8))}"></div>`;
-      })
-      .join('');
-
-    impactLegend.innerHTML = components
-      .map((entry, index) => {
-        const color = pickComponentColor(entry.key, index);
-        const display = entry.displayWeight || entry.displayScore || '—';
-        return `<li><span style="background:${color};"></span>${escapeHtml(entry.label)} · ${escapeHtml(display)}</li>`;
-      })
-      .join('');
-
-    impactSection.hidden = false;
-  }
-
-  if (matchGrid) {
-    matchGrid.addEventListener('click', handleMatchToggle);
+  function showEmptyState() {
+    if (container) container.hidden = true;
+    if (emptyState) emptyState.hidden = false;
   }
 
   function renderMatches(matches) {
-    if (!matchesSection || !matchGrid) return;
-    if (!matches || !matches.length) {
-      matchesSection.hidden = true;
-      matchGrid.innerHTML = '';
-      return;
-    }
+    if (!container) return;
+    container.innerHTML = '';
+    container.hidden = false;
+    console.log('Rendering matches:', matches.length);
 
-    const cards = matches.map((match, index) => buildMatchCard(match, index + 1)).join('');
-    matchGrid.innerHTML = cards;
-    matchesSection.hidden = false;
+    matches.forEach((match, index) => {
+      console.log('Rendering match index:', index);
+      try {
+        const card = buildMatchCard(match, index + 1);
+        container.appendChild(card);
+        console.log('Appended card for match index:', index);
+      } catch (e) {
+        console.error('Error rendering match index:', index, e);
+      }
+    });
   }
 
   function buildMatchCard(match, rank) {
+    const card = document.createElement('article');
+    card.className = 'match-card';
+
     const body = match.optimal_body || {};
     const spec = body.spec || {};
     const sport = body.sport || {};
-    const hierarchy = Array.isArray(body.category_hierarchy) ? body.category_hierarchy : [];
-    const cardMedia = match.media && match.media.card ? match.media.card : spec.media && spec.media.card ? spec.media.card : null;
-    const imageUrl = resolveMediaUrl(cardMedia, storageBase);
-    const imageAlt = cardMedia && cardMedia.alt ? cardMedia.alt : 'Sport illustration';
-    const subtitle = formatHierarchySubtitle(hierarchy, sport.name || body.sport_slug);
-    const metricsData = extractMetrics(match.score_breakdown || {});
-    const topMeasurements = (metricsData.measurements || []).slice(0, 3);
-    const summary = spec.rationale || spec.description || match.summary || 'Body alignment and biomechanics support this sport.';
-    const score = formatScore(match);
-    const mediaMarkup = imageUrl
-      ? `<div class="match-card__media"><img class="match-card__image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" loading="lazy" /></div>`
-      : `<div class="match-card__media match-card__media--empty"><span class="match-card__placeholder">Image coming soon · ${escapeHtml(sport.name || 'Sport')}</span></div>`;
+    const subcategory = body.subcategory || {};
 
-    const reasonChips = [];
-    if (topMeasurements.length) {
-      topMeasurements.slice(0, 3).forEach((entry) => {
-        if (entry.label && entry.displayScore) {
-          reasonChips.push(`${entry.label} match (${entry.displayScore})`);
-        } else if (entry.label) {
-          reasonChips.push(`${entry.label} match`);
-        }
-      });
-    }
-    const pastSports = Array.isArray(match.past_sports) ? match.past_sports : [];
-    pastSports.slice(0, 2).forEach((past) => {
-      const label = past?.sport_label || past?.label || past?.sport || null;
-      if (label) {
-        reasonChips.push(`Past: ${label}`);
-      }
-    });
-    const tagsMarkup = reasonChips.length
-      ? `<ul class="match-card__tags">${reasonChips
-          .map((chip) => `<li><span>${escapeHtml(chip)}</span></li>`)
-          .join('')}</ul>`
-      : '';
+    // 1. Header
+    const scoreRaw = match.score ?? match.fit_score ?? 0;
+    const scorePercent = Math.round(scoreRaw * 100);
+    const title = subcategory.name || body.category_slug || sport.name || body.sport_slug || 'Sport match';
 
-    const detailsMarkup = `
-      <div class="match-card__details" data-match-details hidden>
-        <p class="type-small text-slate-500">
-          Detailed contributions and measurement breakdowns are coming soon.
-        </p>
+    const header = document.createElement('header');
+    header.className = 'match-card__header';
+    header.innerHTML = `
+      <div class="match-card__rank-badge">#${rank}</div>
+      <div class="match-card__title-group">
+        <h3 class="match-card__title">${escapeHtml(title)}</h3>
+        <span class="match-card__score">${scorePercent}% Match</span>
       </div>
     `;
+    card.appendChild(header);
 
-    return `
-      <article class="match-card">
-        <header class="match-card__header">
-          <span class="match-card__rank">#${rank}</span>
-          <div>
-            <h3>${escapeHtml(sport.name || body.sport_slug || 'Sport match')}</h3>
-            ${subtitle ? `<p class="match-card__subtitle">${escapeHtml(subtitle)}</p>` : ''}
-          </div>
-          <span class="match-card__score">${score !== null ? escapeHtml(String(score)) : '—'}</span>
-        </header>
-        ${mediaMarkup}
-        <p class="match-card__summary">${escapeHtml(truncateText(summary, 160))}</p>
-        <ul class="match-card__list">
-          ${topMeasurements.length
-            ? topMeasurements.map((entry) => `<li>${escapeHtml(entry.label)} · ${escapeHtml(entry.displayScore)}</li>`).join('')
-            : '<li>Weighing body metrics only for now. Premium inputs add more nuance.</li>'}
-        </ul>
-        ${tagsMarkup}
-        <div class="match-card__actions">
-          <button
-            type="button"
-            class="btn-pill btn-pill-secondary btn-pill-xs match-card__toggle"
-            data-match-toggle
-            aria-expanded="false"
-          >
-            See why
-          </button>
+    // 2. Image
+    const cardMedia = match.media && match.media.card ? match.media.card : spec.media && spec.media.card ? spec.media.card : null;
+    const imageUrl = resolveMediaUrl(cardMedia, storageBase);
+    if (imageUrl) {
+      const imgContainer = document.createElement('div');
+      imgContainer.className = 'match-card__image-container';
+      imgContainer.innerHTML = `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}" loading="lazy" />`;
+      card.appendChild(imgContainer);
+    }
+
+    // 3. Descriptions
+    const descriptions = document.createElement('div');
+    descriptions.className = 'match-card__descriptions';
+
+    const sportDesc = subcategory.description || sport.description;
+    if (sportDesc) {
+      descriptions.innerHTML += `
+        <div class="match-card__desc-block">
+          <h4>The Sport</h4>
+          <p>${escapeHtml(sportDesc)}</p>
         </div>
-        ${detailsMarkup}
-      </article>
-    `;
+      `;
+    }
+
+    const bodyReasoning = spec.rationale || spec.overall_description;
+    if (bodyReasoning) {
+      descriptions.innerHTML += `
+        <div class="match-card__desc-block">
+          <h4>Why you fit</h4>
+          <p>${escapeHtml(bodyReasoning)}</p>
+        </div>
+      `;
+    }
+    card.appendChild(descriptions);
+
+    // 4. Factors (Top 5 + Expand)
+    const factors = extractFactors(match);
+    if (factors.length > 0) {
+      const factorsSection = document.createElement('div');
+      factorsSection.className = 'match-card__factors';
+      factorsSection.innerHTML = `<h4>Top Match Factors</h4>`;
+
+      const list = document.createElement('ul');
+      list.className = 'factor-list';
+
+      const visibleFactors = factors.slice(0, 5);
+      const hiddenFactors = factors.slice(5);
+
+      visibleFactors.forEach(f => list.appendChild(createFactorItem(f)));
+
+      if (hiddenFactors.length > 0) {
+        const hiddenContainer = document.createElement('div');
+        hiddenContainer.className = 'factor-list--hidden';
+        hiddenContainer.hidden = true;
+        hiddenFactors.forEach(f => hiddenContainer.appendChild(createFactorItem(f)));
+        list.appendChild(hiddenContainer);
+
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'btn-ghost btn-sm factor-toggle';
+        toggleBtn.textContent = `Show ${hiddenFactors.length} more factors`;
+        toggleBtn.onclick = () => {
+          const isHidden = hiddenContainer.hidden;
+          hiddenContainer.hidden = !isHidden;
+          toggleBtn.textContent = isHidden ? 'Show less' : `Show ${hiddenFactors.length} more factors`;
+        };
+        factorsSection.appendChild(list);
+        factorsSection.appendChild(toggleBtn);
+      } else {
+        factorsSection.appendChild(list);
+      }
+
+      card.appendChild(factorsSection);
+    }
+
+    // 5. Past Sports
+    const pastSports = match.past_sports || [];
+    if (pastSports.length > 0) {
+      const pastSection = document.createElement('div');
+      pastSection.className = 'match-card__past-sports';
+      pastSection.innerHTML = `<h4>Past Experience</h4>`;
+      const pastList = document.createElement('ul');
+      pastList.className = 'past-sport-list';
+
+      pastSports.forEach(ps => {
+        const li = document.createElement('li');
+        const label = ps.sport_label || ps.label || 'Sport';
+        // Use fit_score or score if available, else just list it
+        const psScore = ps.fit_score ?? ps.score;
+        const psScoreText = psScore ? `(${Math.round(psScore * 100)}% transfer)` : '';
+        li.textContent = `${label} ${psScoreText}`;
+        pastList.appendChild(li);
+      });
+      pastSection.appendChild(pastList);
+      card.appendChild(pastSection);
+    }
+
+    return card;
   }
 
-  function handleMatchToggle(event) {
-    const toggle = event.target.closest('[data-match-toggle]');
-    if (!toggle) return;
-    const card = toggle.closest('.match-card');
-    if (!card) return;
-    const details = card.querySelector('[data-match-details]');
-    if (!details) return;
-    const isVisible = !details.hasAttribute('hidden');
-    if (isVisible) {
-      details.setAttribute('hidden', '');
-      toggle.setAttribute('aria-expanded', 'false');
-      toggle.textContent = 'See why';
+  function createFactorItem(factor) {
+    const li = document.createElement('li');
+    li.className = 'factor-item';
+    const label = document.createElement('span');
+    label.className = 'factor-label';
+    label.textContent = factor.label;
+
+    const value = document.createElement('span');
+    value.className = 'factor-value';
+    // Show user value if available, else fit score
+    if (factor.user_value) {
+      value.textContent = `${factor.user_value}`;
+    } else if (factor.displayScore) {
+      value.textContent = factor.displayScore;
     } else {
-      details.removeAttribute('hidden');
-      toggle.setAttribute('aria-expanded', 'true');
-      toggle.textContent = 'Hide details';
+      value.textContent = 'Match';
     }
+
+    li.appendChild(label);
+    li.appendChild(value);
+    return li;
   }
 
-  function renderHighlights(match, metricsData) {
-    if (!highlightsSection || !highlightsList) return;
-    const highlights = gatherHighlights(match, metricsData);
-    if (!highlights.length) {
-      highlightsSection.hidden = true;
-      highlightsList.innerHTML = '';
-      return;
-    }
+  function extractFactors(match) {
+    const breakdown = match.score_breakdown || {};
+    const spec = match.optimal_body?.spec || {};
+    const factors = [];
 
-    highlightsList.innerHTML = highlights
-      .slice(0, 3)
-      .map((text, index) => `<li class="results-highlights__item"><span>${index + 1}.</span><span>${escapeHtml(text)}</span></li>`)
-      .join('');
-    highlightsSection.hidden = false;
-  }
+    // Helper to format labels
+    const formatLabel = (key) => key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-  function gatherHighlights(match, metricsData) {
-    const result = [];
-    if (!match) return result;
-    const spec = match.optimal_body && match.optimal_body.spec ? match.optimal_body.spec : {};
-
-    if (Array.isArray(match.highlights)) {
-      result.push(...match.highlights);
-    }
-    if (Array.isArray(spec.highlights)) {
-      result.push(...spec.highlights);
-    }
-    if (spec.tagline) {
-      result.push(spec.tagline);
-    }
-
-    const measurementEntries = Array.isArray(metricsData.measurementDetail)
-      ? metricsData.measurementDetail.slice(0, 3)
-      : (metricsData && Array.isArray(metricsData.measurements) ? metricsData.measurements.slice(0, 3) : []);
-    measurementEntries.forEach((entry) => {
-      const highlight = formatMeasurementHighlight(entry);
-      if (highlight) {
-        result.push(highlight);
-      }
-    });
-
-    const filtered = Array.from(new Set(result.map((item) => (item || '').trim()))).filter(Boolean);
-    if (!filtered.length) {
-      filtered.push('Strong overall body alignment drove this recommendation.');
-      filtered.push('Update measurements after a training block to see how your matches evolve.');
-    }
-    return filtered;
-  }
-
-  function renderTables(metricsData) {
-    if (!metricsSection) return;
-    const hasComponents = Boolean(metricsData.componentsTable);
-    const hasMeasurements = Boolean(metricsData.measurementsTable);
-
-    if (componentsTableEl) {
-      componentsTableEl.hidden = !hasComponents;
-      componentsTableEl.innerHTML = metricsData.componentsTable || '';
-    }
-    if (measurementsTableEl) {
-      const detailExists = Array.isArray(metricsData.measurementDetail) && metricsData.measurementDetail.length > 0;
-      measurementsTableEl.hidden = !hasMeasurements && !detailExists;
-      measurementsTableEl.innerHTML = metricsData.measurementsTable || '';
-    }
-
-    const hasDetail = Boolean(metricsData.measurementDetail && metricsData.measurementDetail.length);
-    metricsSection.hidden = !(hasComponents || hasMeasurements || hasDetail);
-  }
-
-  function renderMeasurementComparisons(metricsData) {
-    if (!measurementsTableEl) return;
-    const entries = Array.isArray(metricsData.measurementDetail) ? metricsData.measurementDetail : [];
-    if (!entries.length) return;
-    const table = buildMeasurementComparisonTable(entries);
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = table;
-    measurementsTableEl.appendChild(wrapper);
-  }
-
-  function showFallback() {
-    if (fallback) fallback.hidden = false;
-    [matchesSection, impactSection, highlightsSection, metricsSection].forEach((section) => {
-      if (section) section.hidden = true;
-    });
-    if (matchGrid) matchGrid.innerHTML = '';
-    if (componentsTableEl) componentsTableEl.innerHTML = '';
-    if (measurementsTableEl) measurementsTableEl.innerHTML = '';
-    if (impactBar) impactBar.innerHTML = '';
-    if (impactLegend) impactLegend.innerHTML = '';
-    if (highlightsList) highlightsList.innerHTML = '';
-  }
-
-  function hideFallback() {
-    if (fallback) fallback.hidden = true;
-  }
-
-  function extractMetrics(breakdown) {
-    const componentsData = [];
-    const measurements = [];
-
-    if (breakdown && typeof breakdown === 'object') {
-      const components = breakdown.components && typeof breakdown.components === 'object' ? breakdown.components : null;
-      if (components) {
-        Object.entries(components).forEach(([key, info]) => {
-          const scoreNormalized = normalizePercentValue(info && info.score);
-          const weightNormalized = normalizePercentValue(info && info.weight);
-          componentsData.push({
+    // 1. Measurements
+    if (breakdown.metrics) {
+      Object.entries(breakdown.metrics).forEach(([key, val]) => {
+        if (val.fit_score !== undefined) {
+          factors.push({
             key,
-            label: formatComponent(key),
-            scoreNormalized: scoreNormalized !== null ? scoreNormalized / 100 : null,
-            displayScore: scoreNormalized !== null ? `${scoreNormalized}%` : null,
-            weight: typeof info?.weight === 'number' ? info.weight : null,
-            displayWeight: weightNormalized !== null ? `${weightNormalized}%` : null,
-          });
-        });
-      }
-
-      const metricsSource = breakdown.metrics && typeof breakdown.metrics === 'object' ? breakdown.metrics : null;
-      const sourceEntries = metricsSource ? Object.entries(metricsSource) : [];
-      sourceEntries.forEach(([key, value]) => {
-        const normalized = normalizePercentValue(value);
-        if (normalized !== null) {
-          measurements.push({
-            key,
-            label: formatMetric(key),
-            score: normalized,
-            displayScore: `${normalized}%`,
+            label: formatLabel(key),
+            score: val.fit_score,
+            displayScore: `${Math.round(val.fit_score * 100)}%`,
+            user_value: val.user_value,
+            type: 'measurement'
           });
         }
       });
     }
 
-    measurements.sort((a, b) => (b.score || 0) - (a.score || 0));
-
-    const componentsTable = componentsData.length
-      ? buildComponentsTable(componentsData)
-      : '';
-    const measurementsTable = measurements.length
-      ? buildMeasurementsTable(measurements)
-      : '';
-
-    const measurementDetail = breakdown?.measurements_detail;
-
-    return { componentsData, measurements, componentsTable, measurementsTable, measurementDetail };
-  }
-
-  function buildComponentsTable(components) {
-    const rows = components
-      .map((entry) => `
-        <tr>
-          <th scope="row">${escapeHtml(entry.label)}</th>
-          <td>${escapeHtml(entry.displayScore || '—')}</td>
-          <td>${escapeHtml(entry.displayWeight || '—')}</td>
-        </tr>
-      `)
-      .join('');
-    return `
-      <table>
-        <caption>Signal contributions</caption>
-        <thead>
-          <tr>
-            <th scope="col">Signal</th>
-            <th scope="col">Score</th>
-            <th scope="col">Weight</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-    `;
-  }
-
-  function buildMeasurementsTable(entries) {
-    const rows = entries
-      .map((entry) => `
-        <tr>
-          <th scope="row">${escapeHtml(entry.label)}</th>
-          <td>${escapeHtml(entry.displayScore)}</td>
-        </tr>
-      `)
-      .join('');
-    return `
-    <table>
-      <caption>Measurement alignment</caption>
-      <tbody>${rows}</tbody>
-    </table>
-  `;
-}
-
-function buildMeasurementComparisonTable(entries) {
-  const sorted = entries.slice().sort((a, b) => {
-    const fitA = typeof a.fit_score === 'number' ? a.fit_score : typeof a.fit === 'number' ? a.fit : 0;
-    const fitB = typeof b.fit_score === 'number' ? b.fit_score : typeof b.fit === 'number' ? b.fit : 0;
-    return fitB - fitA;
-  });
-  const selected = sorted.slice(0, 5);
-  const rows = selected
-    .map((entry) => {
-      const fitValue = typeof entry.fit_score === 'number' ? entry.fit_score : typeof entry.fit === 'number' ? entry.fit : null;
-      const fitPercent = fitValue !== null && Number.isFinite(fitValue) ? Math.max(0, Math.min(100, Math.round(fitValue))) : 0;
-      const userValue = entry.user_value ?? entry.user_value_display ?? '—';
-      const cohortMean = entry.cohort_mean ?? '—';
-      const cohortStd = entry.cohort_std_dev ?? null;
-      const cohortText = cohortStd ? `${cohortMean} ± ${cohortStd}` : cohortMean;
-      const reasoning = entry.reasoning_short ? `<p class="results-metrics__note">${escapeHtml(entry.reasoning_short)}</p>` : '';
-      return `
-        <tr>
-          <th scope="row">
-            ${escapeHtml(entry.label || entry.key || 'Measurement')}
-            ${reasoning}
-          </th>
-          <td>${escapeHtml(String(userValue))}</td>
-          <td>${escapeHtml(String(cohortText))}</td>
-          <td>
-            <div class="results-fit">
-              <div class="results-fit__bar">
-                <div class="results-fit__bar-fill" style="width:${fitPercent}%;"></div>
-              </div>
-              <span class="results-fit__label">${fitPercent}%</span>
-            </div>
-          </td>
-        </tr>
-      `;
-    })
-    .join('');
-  return `
-    <table class="results-metrics__table-body">
-      <caption>Measurement comparisons</caption>
-      <thead>
-        <tr>
-          <th scope="col">Measurement</th>
-          <th scope="col">You</th>
-          <th scope="col">Optimal body</th>
-          <th scope="col">Fit</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
-  `;
-}
-
-  function formatScore(match) {
-    if (!match) return null;
-    const raw = match.score ?? match.fit_score ?? match.total_score ?? (match.score_breakdown && match.score_breakdown.total);
-    const normalized = normalizePercentValue(raw);
-    return normalized !== null ? `${normalized}%` : null;
-  }
-
-  function ensureSentence(text) {
-    if (!text) return null;
-    const normalized = truncateText(String(text).trim(), 160);
-    if (!normalized) return null;
-    return normalized.endsWith('.') ? normalized : `${normalized}.`;
-  }
-
-  function formatMeasurementHighlight(entry) {
-    if (!entry) return null;
-    if (entry.reasoning_short) {
-      return ensureSentence(entry.reasoning_short);
+    // 2. Traits
+    if (breakdown.details && breakdown.details.traits && breakdown.details.traits.body) {
+      Object.entries(breakdown.details.traits.body).forEach(([key, val]) => {
+        const score = val.fit_score ?? val.score;
+        if (score !== undefined) {
+          factors.push({
+            key,
+            label: formatLabel(key),
+            score: score,
+            displayScore: `${Math.round(score * 100)}%`,
+            user_value: val.value, // e.g. "low", "ectomorph"
+            type: 'trait'
+          });
+        }
+      });
     }
 
-    const label = (entry.label || entry.key || 'Measurement').toLowerCase();
-    const userValue = entry.user_value ?? entry.user_value_display ?? null;
-    const cohortMean = entry.cohort_mean ?? null;
-    const fitValue = typeof entry.fit_score === 'number' ? entry.fit_score : typeof entry.fit === 'number' ? entry.fit : null;
-    const fitPercent = fitValue !== null && Number.isFinite(fitValue) ? Math.round(Math.max(0, Math.min(100, fitValue))) : null;
-    const parts = [`Your ${label}`];
-    if (userValue) {
-      parts.push(`measured at ${userValue}`);
-    }
-    if (cohortMean) {
-      parts.push(`vs the cohort’s ${cohortMean}`);
-    }
-    const fitText = fitPercent !== null ? ` (${fitPercent}% fit)` : '';
-    const sentence = `${parts.join(' ')}${fitText} looks aligned with the researched profile.`;
-    return ensureSentence(sentence);
+    // Sort by score descending
+    return factors.sort((a, b) => b.score - a.score);
   }
 
-  function normalizePercentValue(value) {
-    if (value === null || typeof value === 'undefined') return null;
-    const num = Number(value);
-    if (Number.isNaN(num)) return null;
-    if (!Number.isFinite(num)) return null;
-    if (Math.abs(num) <= 1) {
-      return Math.round(num * 100);
-    }
-    return Math.round(num);
-  }
-
-  function formatHierarchySubtitle(hierarchy, fallbackName) {
-    if (!Array.isArray(hierarchy) || !hierarchy.length) return fallbackName || '';
-    const names = hierarchy
-      .filter((item) => item && item.key !== 'sport' && item.name)
-      .map((item) => item.name);
-    return names.join(' · ');
-  }
-
-  function pickComponentColor(key, index) {
-    const palette = {
-      body: '#0f766e',
-      preferences: '#f97316',
-      goals: '#6366f1',
-      injuries: '#ef4444',
-      past_sports: '#14b8a6',
-      default: ['#0f766e', '#2563eb', '#f97316', '#14b8a6', '#9333ea'],
-    };
-    if (key && palette[key]) return palette[key];
-    return palette.default[index % palette.default.length];
-  }
-
-  function truncateText(text, maxLength) {
-    if (!text) return '';
-    const normalized = String(text).trim();
-    if (normalized.length <= maxLength) return normalized;
-    return `${normalized.slice(0, maxLength - 1).trim()}…`;
-  }
-
+  // Helpers
   function resolveStorageBase() {
     if (typeof self !== 'undefined' && self.SPORTY_CONFIG && typeof self.SPORTY_CONFIG.SUPABASE_STORAGE_URL === 'string') {
       return self.SPORTY_CONFIG.SUPABASE_STORAGE_URL.replace(/\/$/, '');
-    }
-    if (typeof self !== 'undefined' && typeof self.SUPABASE_STORAGE_URL === 'string') {
-      return self.SUPABASE_STORAGE_URL.replace(/\/$/, '');
     }
     return '';
   }
@@ -671,13 +285,11 @@ function buildMeasurementComparisonTable(entries) {
     if (!card.path) return null;
     const cleanedPath = card.path.replace(/^\/+/g, '');
     if (base) return `${base}/${cleanedPath}`;
-    if (/^https?:/i.test(card.path)) return card.path;
     return null;
   }
 
   function escapeHtml(value) {
-    return (value || '')
-      .toString()
+    return (value || '').toString()
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
@@ -685,56 +297,10 @@ function buildMeasurementComparisonTable(entries) {
       .replace(/'/g, '&#039;');
   }
 
-  function formatMetric(metric) {
-    switch (metric) {
-      case 'height_cm':
-        return 'Height';
-      case 'weight_kg':
-        return 'Weight';
-      case 'arm_span_cm':
-        return 'Arm span';
-      case 'leg_inseam_cm':
-        return 'Leg inseam';
-      case 'shoulder_width_cm':
-        return 'Shoulder width';
-      case 'hip_width_cm':
-        return 'Hip width';
-      case 'hand_length_cm':
-        return 'Hand length';
-      case 'foot_length_cm':
-        return 'Foot length';
-      default:
-        return metric;
-    }
-  }
-
-  function formatComponent(name) {
-    switch (name) {
-      case 'body':
-        return 'Body alignment';
-      case 'preferences':
-        return 'Preferences';
-      case 'goals':
-        return 'Goals';
-      case 'injuries':
-        return 'Injuries';
-      case 'past_sports':
-        return 'Past sports';
-      default:
-        return name.charAt(0).toUpperCase() + name.slice(1);
-    }
-  }
-
-  function normalizeSummary(summary) {
-    if (!summary) return { matches: [] };
-    if (summary.matches && Array.isArray(summary.matches)) {
-      return summary;
-    }
-    try {
-      const parsed = typeof summary === 'string' ? JSON.parse(summary) : summary;
-      return parsed && parsed.matches ? parsed : { matches: [] };
-    } catch (error) {
-      return { matches: [] };
-    }
+  // Initialize
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
 })();

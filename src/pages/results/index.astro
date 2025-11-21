@@ -4,97 +4,39 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 ---
 <BaseLayout
   title="Sporty — Your Matches"
-  description="Review the sport matches Sporty generated for your body."
+  description="Based on your latest intake, see the top sport matches and why they fit."
 >
-  
-  <header class="result-header">
-    <h1 class="section-title">Your sport matches</h1>
-    <p class="lead-copy">Here’s how your body lines up with pro-informed sport profiles. Each card shows why the sport fits you today and what to explore next.</p>
-    <p class="cta-inline" data-results-message>Sign in to automatically store each run and revisit them anytime.</p>
-    <div class="history-picker" data-history-picker hidden>
-      <label>
-        <span>Saved runs</span>
-        <select data-history-select></select>
-      </label>
-      <button class="btn-ghost btn-sm" type="button" data-history-refresh>Refresh</button>
-    </div>
-  </header>
-
   <main class="results-shell">
-    <section class="results-impact" data-impact-summary hidden>
-      <div class="results-impact__header">
-        <h2>What shaped this match</h2>
-        <p>How each signal contributed to your overall score.</p>
-      </div>
-      <div class="impact-bar" data-impact-bar></div>
-      <ul class="results-impact__legend" data-impact-legend></ul>
-    </section>
+    <header class="result-header anchored">
+      <h1 class="section-title">Your Top Matches</h1>
+      <p class="cta-inline">Based on your body biomechanics and past experience.</p>
+    </header>
 
-    <section class="results-matches" data-results-matches hidden>
-      <div class="results-matches__header">
-        <h2>Top matches</h2>
-      </div>
-      <div class="results-matches__grid" data-match-grid></div>
-    </section>
-
-    <section class="results-highlights" data-results-highlights hidden>
-      <h2>Why this fit stands out</h2>
-      <ul class="results-highlights__list" data-highlights-list></ul>
-    </section>
-
-    <section class="results-metrics" data-results-metrics hidden>
-      <div class="results-metrics__table" data-components-table></div>
-      <div class="results-metrics__table" data-measurements-table></div>
+    <section class="results-container" data-results-container>
+      <!-- Matches will be injected here -->
     </section>
 
     <div class="empty-state" data-empty-state hidden>
-      <h2>No matches yet</h2>
-      <p>We couldn’t find any stored results. Run a new recommendation and we’ll populate this page automatically.</p>
+      <h2>No matches found</h2>
+      <p>We couldn’t generate a match based on your inputs. Please try adjusting your intake data.</p>
       <div class="btn-row justify-center">
         <a class="btn-primary" href="/intake">Start a new match</a>
       </div>
     </div>
   </main>
 
-    <section class="section-shell section-narrow" id="whats-next">
-      <h2 class="section-title">Next steps</h2>
-      <div class="grid-cards">
-      <article class="card-shell">
-        <h3 class="card-title">Share with a coach or friend</h3>
-        <p class="card-copy">Show them how your body stacks up and discuss drills or clubs to explore.</p>
-      </article>
-      <article class="card-shell">
-        <h3 class="card-title">Track progress</h3>
-        <p class="card-copy">Jot down how the suggested sports feel. Once credits launch, revisit your <a href="/dashboard">dashboard</a> to compare saved runs.</p>
-      </article>
-      <article class="card-shell space-y-4">
-        <h3 class="card-title">Expand the analysis</h3>
-        <p class="card-copy">Upgrade for deeper insights and child forecasts as soon as credits launch. Start the premium intake to add traits, goals, and injuries.</p>
-        <a class="btn-pill btn-pill-primary" href="/intake-premium">Start premium intake</a>
-      </article>
-    </div>
-  </section>
-
   <footer class="footer">
     <div class="footer-inner">
-      <div>
-        <strong>Something off?</strong>
-        <p class="lead-copy">Email hello@sporty.test with feedback. Every suggestion helps us fine-tune the matching engine.</p>
-      </div>
       <nav class="footer-nav">
         <a href="/intake">Try again</a>
-        <a href="#whats-next">Next steps</a>
         <a href="/">Home</a>
-        <a href="/pricing">Pricing</a>
       </nav>
       <small>© <span id="year">2025</span> Sporty</small>
     </div>
   </footer>
 
   <Fragment slot="scripts">
-    <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script is:inline src="/config.js" defer></script>
-    <script is:inline src="/assets/js/app.js" defer></script>
     <script is:inline src="/assets/js/results.js" defer></script>
     <script>
       const yearEl = document.getElementById('year');
@@ -103,4 +45,205 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       }
     </script>
   </Fragment>
+  </Fragment>
 </BaseLayout>
+
+<style>
+  .results-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    padding: 2rem 0;
+  }
+
+  :global(.match-card) {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  :global(.match-card:hover) {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  :global(.match-card__header) {
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  :global(.match-card__rank-badge) {
+    background: #0f172a;
+    color: white;
+    font-weight: 700;
+    font-size: 1.25rem;
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  :global(.match-card__title-group) {
+    flex: 1;
+  }
+
+  :global(.match-card__title) {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.2;
+  }
+
+  :global(.match-card__score) {
+    display: inline-block;
+    font-size: 0.875rem;
+    color: #16a34a;
+    font-weight: 600;
+    margin-top: 0.25rem;
+  }
+
+  :global(.match-card__image-container) {
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    background: #e2e8f0;
+  }
+
+  :global(.match-card__image-container img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  :global(.match-card__descriptions) {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  :global(.match-card__desc-block) {
+    margin-bottom: 1rem;
+  }
+
+  :global(.match-card__desc-block:last-child) {
+    margin-bottom: 0;
+  }
+
+  :global(.match-card__desc-block h4) {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  :global(.match-card__desc-block p) {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #334155;
+    line-height: 1.5;
+  }
+
+  :global(.match-card__factors) {
+    padding: 1.5rem;
+    background: #fff;
+    flex: 1;
+  }
+
+  :global(.match-card__factors h4) {
+    margin: 0 0 1rem 0;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  :global(.factor-list) {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  :global(.factor-item) {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.9rem;
+  }
+
+  :global(.factor-item:last-child) {
+    border-bottom: none;
+  }
+
+  :global(.factor-label) {
+    color: #475569;
+    font-weight: 500;
+  }
+
+  :global(.factor-value) {
+    color: #0f172a;
+    font-weight: 600;
+  }
+
+  :global(.factor-toggle) {
+    margin-top: 1rem;
+    width: 100%;
+    text-align: center;
+    color: #2563eb;
+    font-size: 0.875rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+  }
+
+  :global(.factor-toggle:hover) {
+    text-decoration: underline;
+  }
+
+  :global(.match-card__past-sports) {
+    padding: 1rem 1.5rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  :global(.match-card__past-sports h4) {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+    font-weight: 600;
+  }
+
+  :global(.past-sport-list) {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  :global(.past-sport-list li) {
+    font-size: 0.85rem;
+    color: #475569;
+    background: #e2e8f0;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+  }
+</style>
