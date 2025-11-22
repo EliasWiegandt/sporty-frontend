@@ -87,3 +87,10 @@ It is built with **Astro** and adapted for **Cloudflare Workers**, ensuring high
 
 ### 3. Script Scoping
 - **IIFE & Debugging:** Code wrapped in an IIFE (Immediately Invoked Function Expression) is not accessible globally. To debug functions like `renderMatches` manually, you must explicitly expose them to `window` (e.g., `window.debugRenderMatches = renderMatches`) or set breakpoints.
+
+### 4. Styling & Aspect Ratios
+- **Avoid `<style>` in Astro:** Do not use `<style>` blocks in `.astro` files for global component styles (like `.match-card`). They can silently override Tailwind classes and cause confusion. Always centralize these styles in `src/styles/tailwind.css`.
+- **Forcing Aspect Ratio:** To force a 1:1 (or other) aspect ratio on images that might be subject to global resets (like `img { height: auto }`):
+    1.  **Container:** Use a wrapper (e.g., `<figure>`) with `width: 100%`, `aspect-ratio: 1/1`, and `overflow: hidden`.
+    2.  **Image:** Use `display: block`, `width: 100%`, `height: 100% !important`, and `object-fit: cover`.
+    3.  **Why !important?** It may be necessary to override global resets that force `height: auto`.

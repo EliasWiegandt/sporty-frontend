@@ -12,6 +12,7 @@ Read this guide plus `docs/handbook.md` before contributing.
 - Node 20 is required in CI; commit `package-lock.json` with dependency changes.
 - Browser JS lives under `public/assets/js/` (no bundler—keep scripts compatible with plain browsers).
 - Design system → Tailwind tokens/components defined in `src/styles/tailwind.css` (buttons, layout shells, match cards, etc.); Iconify web component (`<iconify-icon>` for the laurel wreath logo).
+- **No `<style>` blocks**: Do not use `<style>` blocks in `.astro` files. They cause specificity issues. Put all component CSS in `src/styles/tailwind.css`.
 - Preline interactivity is initialised by an inline module in `BaseLayout`; add the documented `data-hs-*` attributes and Preline will auto-init after load.
 - Before reusing a layout/helper class from `src/styles/tailwind.css`, read the definition. Grid/min-width values there can hard-cap section widths (the hero bug came from `hero-shell`). If a section needs custom sizing, create/extend a dedicated stylesheet instead of stacking shortcuts.
 - Navbar CTA copy defaults to “Try free analysis” via `defaultPrimaryAction` in `BaseLayout`; update that constant if marketing copy changes.

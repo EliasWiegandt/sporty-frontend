@@ -124,6 +124,7 @@
 }
 
 @layer components {
+
   /* Typography tokens */
   .type-display {
     font-family: var(--font-display);
@@ -160,6 +161,7 @@
     line-height: 1.5;
     font-size: var(--type-small-size);
   }
+
   /* Buttons */
   .btn-pill {
     display: inline-flex;
@@ -485,6 +487,13 @@
     gap: clamp(1.5rem, 3vw, 2.5rem);
   }
 
+  .results-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    padding: 2rem 0;
+  }
+
   /* Align header and sections with match grid */
   .anchored {
     max-width: min(96rem, 94vw);
@@ -646,6 +655,23 @@
     gap: 1rem;
   }
 
+  .match-card__image-container {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    border-radius: 1rem;
+    /* rounded-2xl */
+    background-color: rgba(204, 251, 241, 0.2);
+    /* bg-teal-100/20 */
+  }
+
+  .match-card__image {
+    display: block;
+    width: 100%;
+    height: 100% !important;
+    object-fit: cover;
+  }
+
   .match-card__rank {
     font-family: var(--font-heading);
     font-weight: 700;
@@ -708,7 +734,124 @@
     margin-top: 0.75rem;
   }
 
- 
+
+  .match-card__rank-badge {
+    background: #0f172a;
+    color: white;
+    font-weight: 700;
+    font-size: 1.25rem;
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .match-card__title-group {
+    flex: 1;
+  }
+
+  .match-card__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.2;
+  }
+
+  .match-card__descriptions {
+    padding: 1.5rem;
+    /* Restored full padding */
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .match-card__factors {
+    padding: 1.5rem;
+    /* Restored full padding */
+    background: #fff;
+    flex: 1;
+  }
+
+  .match-card__factors h4,
+  .match-card__past-sports h4 {
+    margin: 0 0 1rem 0;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  .factor-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .factor-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.9rem;
+  }
+
+  .factor-item:last-child {
+    border-bottom: none;
+  }
+
+  .factor-label {
+    color: #475569;
+    font-weight: 500;
+  }
+
+  .factor-value {
+    color: #0f172a;
+    font-weight: 600;
+  }
+
+  .factor-toggle {
+    margin-top: 1rem;
+    width: 100%;
+    text-align: center;
+    color: #2563eb;
+    font-size: 0.875rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+  }
+
+  .factor-toggle:hover {
+    text-decoration: underline;
+  }
+
+  .match-card__past-sports {
+    padding: 1rem 1.5rem;
+    /* Restored full padding */
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .past-sport-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .past-sport-list li {
+    font-size: 0.85rem;
+    color: #475569;
+    background: #e2e8f0;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+  }
+
   .premium-measurements {
     display: grid;
     gap: 1.25rem;
@@ -1027,10 +1170,11 @@
     text-align: center;
   }
 }
-  .combo-option {
-    @apply flex w-full items-center justify-between gap-2 rounded-xl border border-transparent px-3 py-2 text-left text-sm text-slate-700 transition hover:border-teal-200 hover:bg-teal-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500;
-  }
 
-  .combo-option.selected {
-    @apply border-teal-300 bg-teal-50 text-teal-800;
-  }
+.combo-option {
+  @apply flex w-full items-center justify-between gap-2 rounded-xl border border-transparent px-3 py-2 text-left text-sm text-slate-700 transition hover:border-teal-200 hover:bg-teal-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500;
+}
+
+.combo-option.selected {
+  @apply border-teal-300 bg-teal-50 text-teal-800;
+}

@@ -93,9 +93,11 @@ Both `/intake` and `/intake-premium` hydrate the same Preact island (`src/compon
 - Built-in keyframes and easing live alongside the component layer—reuse those tokens before adding new animation libraries.
 - Preline provides optional interactive primitives (modals, accordions). `BaseLayout` ships an inline module that imports Preline once and runs `window.HSStaticMethods.autoInit()` after every load (`DOMContentLoaded`, `astro:page-load`, `astro:after-swap`). Drop the documented `data-hs-*` attributes into markup—no per-page bootstrapping required.
 - `BaseLayout` ensures shared fonts, nav layout, and auth controls render identically on every page. Only pass page-specific variations (e.g., nav links, primary CTA) via props.
-- For page-specific tweaks, scope styles via inline `<style>` blocks in the `.astro` file so the shared Tailwind layer stays lean.
+- **Avoid `<style>` blocks**: Do not use inline `<style>` blocks in `.astro` files for component styling. They increase specificity unpredictably and can override Tailwind classes. Centralize all component styles (like `.match-card`) in `src/styles/tailwind.css`.
 - Reuse utility classes (`.section`, `.grid-cards`, `.card`, `.button`) whenever possible to avoid divergence.
-- Images default to `display: block; max-width: 100%` via the base layer. Override locally when you need fixed dimensions (e.g., match-card thumbnails).
+- **Images & Aspect Ratios**: To force a fixed aspect ratio (e.g., 1:1) that resists global resets:
+  1. Wrapper: `width: 100%; aspect-ratio: 1/1; overflow: hidden;`
+  2. Image: `display: block; width: 100%; height: 100% !important; object-fit: cover;`
 - **Tailwind component policy**: Treat the layout helpers in `src/styles/tailwind.css` as constraints, not conveniences. Before reusing one, inspect the underlying grid and max-width settings. When a section needs bespoke sizing (e.g., the landing hero), add a purpose-built component entry in `tailwind.css` so we can reason about width/height limits in one place.
 - **Tailwind preset**: `tailwind.sporty-preset.mjs` mirrors the design tokens exported from `src/styles/tailwind.css`. Import it in other projects via Tailwind’s `presets` array to stay aligned with Sporty spacing, colors, and shadows.
 - **Landing hero pattern**
