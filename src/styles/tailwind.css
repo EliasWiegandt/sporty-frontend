@@ -1178,3 +1178,31 @@
 .combo-option.selected {
   @apply border-teal-300 bg-teal-50 text-teal-800;
 }
+
+.factor-row {
+  @apply flex items-center justify-between py-2 border-b border-slate-100 last:border-0;
+}
+
+.factor-col-left {
+  @apply flex-1 min-w-0 pr-4;
+}
+
+.factor-col-right {
+  @apply flex items-center gap-3 shrink-0;
+}
+
+.factor-bar-container {
+  @apply w-24 h-2 bg-slate-100 rounded-full overflow-hidden;
+}
+
+.factor-bar-fill {
+  @apply h-full bg-teal-600 rounded-full transition-all duration-500 ease-out;
+}
+
+.factor-tooltip {
+  @apply absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-slate-800 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none;
+}
+
+.factor-tooltip-arrow {
+  @apply absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800;
+}

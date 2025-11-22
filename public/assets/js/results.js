@@ -218,9 +218,22 @@
     // 4. Factors (Top 5 + Expand)
     const factors = extractFactors(match);
     if (factors.length > 0) {
+      const totalContribution = factors.reduce(
+        (sum, f) => sum + (f.match_contribution || 0),
+        0
+      );
+      const totalPct = Math.round(totalContribution * 100);
+
       const factorsSection = document.createElement("div");
       factorsSection.className = "match-card__factors";
-      factorsSection.innerHTML = `<h4>Top Match Factors</h4>`;
+      factorsSection.innerHTML = `
+        <div class="flex flex-col mb-2">
+          <h4 class="m-0">Body Proportion Factors</h4>
+          <span class="text-xs text-slate-500 uppercase tracking-wider font-medium mt-0.5">
+            Total Match contribution <span class="font-bold text-slate-900">${totalPct}%</span>
+          </span>
+        </div>
+        `;
 
       const list = document.createElement("ul");
       list.className = "factor-list";
@@ -241,44 +254,51 @@
 
         const toggleBtn = document.createElement("button");
         toggleBtn.className = "btn-ghost btn-sm factor-toggle";
-        toggleBtn.textContent = `Show ${hiddenFactors.length} more factors`;
+        toggleBtn.textContent = `Show all factors`;
         toggleBtn.onclick = () => {
           const isHidden = hiddenContainer.hidden;
           hiddenContainer.hidden = !isHidden;
-          toggleBtn.textContent = isHidden
-            ? "Show less"
-            : `Show ${hiddenFactors.length} more factors`;
+          toggleBtn.textContent = isHidden ? "Show less" : `Show all factors`;
         };
         factorsSection.appendChild(list);
         factorsSection.appendChild(toggleBtn);
       } else {
         factorsSection.appendChild(list);
       }
-
       card.appendChild(factorsSection);
     }
 
-    // 5. Past Sports
-    const pastSports = match.past_sports || [];
+    // 5. Past Sport Factors
+    const pastSports = match.score_breakdown?.details?.past_sports || [];
     if (pastSports.length > 0) {
-      const pastSection = document.createElement("div");
-      pastSection.className = "match-card__past-sports";
-      pastSection.innerHTML = `<h4>Past Experience</h4>`;
-      const pastList = document.createElement("ul");
-      pastList.className = "past-sport-list";
+      // Sort by contribution
+      pastSports.sort(
+        (a, b) => (b.match_contribution || 0) - (a.match_contribution || 0)
+      );
 
-      pastSports.forEach((ps) => {
-        const li = document.createElement("li");
-        const label = ps.sport_label || ps.label || "Sport";
-        // Use fit_score or score if available, else just list it
-        const psScore = ps.fit_score ?? ps.score;
-        const psScoreText = psScore
-          ? `(${Math.round(psScore * 100)}% transfer)`
-          : "";
-        li.textContent = `${label} ${psScoreText}`;
-        pastList.appendChild(li);
+      const totalContribution = pastSports.reduce(
+        (sum, p) => sum + (p.match_contribution || 0),
+        0
+      );
+      const totalPct = Math.round(totalContribution * 100);
+
+      const pastSection = document.createElement("div");
+      pastSection.className = "match-card__factors mt-4"; // Add margin top
+      pastSection.innerHTML = `
+        <div class="flex flex-col mb-2">
+          <h4 class="m-0">Past Sport Factors</h4>
+          <span class="text-xs text-slate-500 uppercase tracking-wider font-medium mt-0.5">
+            Total Match contribution <span class="font-bold text-slate-900">${totalPct}%</span>
+          </span>
+        </div>
+        `;
+
+      const list = document.createElement("ul");
+      list.className = "factor-list";
+      pastSports.forEach((sport) => {
+        list.appendChild(createPastSportItem(sport));
       });
-      pastSection.appendChild(pastList);
+      pastSection.appendChild(list);
       card.appendChild(pastSection);
     }
 
@@ -287,35 +307,141 @@
 
   function createFactorItem(factor) {
     const li = document.createElement("li");
-    li.className = "factor-item";
-    const label = document.createElement("span");
-    label.className = "factor-label";
-    label.textContent = factor.label;
+    li.className = "factor-row group relative"; // Added group relative for tooltip
 
-    const value = document.createElement("span");
-    value.className = "factor-value";
-    // Show user value if available, else fit score
-    if (factor.user_value) {
-      value.textContent = `${factor.user_value}`;
-    } else if (factor.displayScore) {
-      value.textContent = factor.displayScore;
-    } else {
-      value.textContent = "Match";
+    // Left Column: Label + Importance + Tooltip
+    const leftCol = document.createElement("div");
+    leftCol.className = "factor-col-left";
+
+    const labelContainer = document.createElement("div");
+    labelContainer.className = "flex items-center gap-2 mb-1";
+
+    const label = document.createElement("span");
+    label.className =
+      "font-medium text-slate-900 cursor-help border-b border-dotted border-slate-400";
+    label.textContent = factor.label;
+    labelContainer.appendChild(label);
+
+    // Info Icon
+    if (factor.reasoning) {
+      const icon = document.createElement("span");
+      icon.className = "text-slate-400 cursor-help";
+      icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+      </svg>`;
+      labelContainer.appendChild(icon);
+    }
+    leftCol.appendChild(labelContainer);
+
+    // Values (User vs Cohort)
+    const values = document.createElement("div");
+    values.className = "text-xs text-slate-500 mb-1"; // Added mb-1 for spacing
+    let valueHtml = `You: <span class="font-bold">${factor.user_value}</span>`;
+    if (factor.cohort_mean) {
+      valueHtml += ` - Ideal: <span class="font-bold">${factor.cohort_mean}</span>`;
+    }
+    values.innerHTML = valueHtml;
+    leftCol.appendChild(values);
+
+    // Importance Badge (New Line)
+    if (factor.importance) {
+      const importanceContainer = document.createElement("div");
+      importanceContainer.className =
+        "text-xs text-slate-500 flex items-center gap-1";
+
+      const importanceLabel = document.createElement("span");
+      importanceLabel.textContent = "Importance for succes:";
+      importanceContainer.appendChild(importanceLabel);
+
+      const badge = document.createElement("span");
+      const imp = factor.importance.toLowerCase();
+      let badgeClass =
+        "text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider ";
+      if (imp === "high") badgeClass += "bg-rose-100 text-rose-700";
+      else if (imp === "medium") badgeClass += "bg-amber-100 text-amber-700";
+      else badgeClass += "bg-slate-100 text-slate-600";
+
+      badge.className = badgeClass;
+      badge.textContent = imp;
+      importanceContainer.appendChild(badge);
+
+      leftCol.appendChild(importanceContainer);
     }
 
-    li.appendChild(label);
-    li.appendChild(value);
+    // Tooltip (Reasoning)
+    if (factor.reasoning) {
+      const tooltip = document.createElement("div");
+      tooltip.className = "factor-tooltip";
+      tooltip.textContent = factor.reasoning;
+
+      const arrow = document.createElement("div");
+      arrow.className = "factor-tooltip-arrow";
+      tooltip.appendChild(arrow);
+
+      // Append to label so it's positioned relative to it?
+      // Or append to li (which is relative) and center it.
+      // The CSS assumes li is relative.
+      li.appendChild(tooltip);
+    }
+
+    li.appendChild(leftCol);
+
+    // Right Column: Header + Bar + Contribution %
+    const rightCol = document.createElement("div");
+    rightCol.className = "flex flex-col items-end justify-center ml-4 shrink-0";
+
+    // Header
+    const header = document.createElement("span");
+    header.className =
+      "text-[9px] text-slate-400 uppercase tracking-wider font-medium mb-0.5";
+    header.textContent = "Match Contribution";
+    rightCol.appendChild(header);
+
+    // Bar Row
+    const barRow = document.createElement("div");
+    barRow.className = "flex items-center gap-3";
+
+    const barContainer = document.createElement("div");
+    barContainer.className = "factor-bar-container";
+
+    const barFill = document.createElement("div");
+    barFill.className = "factor-bar-fill";
+    // Contribution is e.g. 0.12 -> 12%
+    // We scale it visually. Let's say max possible contribution for a single factor is around 15-20%.
+    // So we might want to scale it up a bit for visibility, or just use raw %.
+    // Let's use raw % for width, maybe capped at 100.
+    // Actually, if top factor is 12%, a 12% width bar looks small.
+    // Maybe we normalize against the top factor in the list?
+    // For now, let's just do percentage * 4 to fill the space better, or just use the raw value if we want strict accuracy.
+    // User asked: "vertical bar showing the match contribution is the highest for the top match and then decreasing"
+    // Let's try a multiplier of 300 to make 0.1 (10%) -> 30% width.
+    const widthPct = Math.min(100, Math.round(factor.match_contribution * 400));
+    barFill.style.width = `${widthPct}% `;
+    barContainer.appendChild(barFill);
+
+    const pctLabel = document.createElement("span");
+    pctLabel.className = "text-xs font-bold text-slate-700 w-8 text-right";
+    pctLabel.textContent = `${Math.round(factor.match_contribution * 100)}% `;
+
+    barRow.appendChild(barContainer);
+    barRow.appendChild(pctLabel);
+
+    rightCol.appendChild(barRow);
+    li.appendChild(rightCol);
+
     return li;
   }
 
   function extractFactors(match) {
     const breakdown = match.score_breakdown || {};
-    const spec = match.optimal_body?.spec || {};
     const factors = [];
 
     // Helper to format labels
     const formatLabel = (key) =>
-      key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+      key
+        .replace(/_/g, " ")
+        .replace(" cm", "")
+        .replace(/\b\w/g, (l) => l.toUpperCase());
 
     // 1. Measurements
     if (breakdown.metrics) {
@@ -325,15 +451,18 @@
             key,
             label: formatLabel(key),
             score: val.fit_score,
-            displayScore: `${Math.round(val.fit_score * 100)}%`,
+            match_contribution: val.match_contribution || 0,
             user_value: val.user_value,
+            cohort_mean: val.cohort_mean,
+            importance: val.importance,
+            reasoning: val.reasoning,
             type: "measurement",
           });
         }
       });
     }
 
-    // 2. Traits
+    // 2. Traits (if any)
     if (
       breakdown.details &&
       breakdown.details.traits &&
@@ -346,16 +475,95 @@
             key,
             label: formatLabel(key),
             score: score,
-            displayScore: `${Math.round(score * 100)}%`,
-            user_value: val.value, // e.g. "low", "ectomorph"
+            match_contribution: 0, // Traits don't have this yet in free match
+            user_value: val.value,
+            importance: val.importance,
+            reasoning: val.reasoning,
             type: "trait",
           });
         }
       });
     }
 
-    // Sort by score descending
-    return factors.sort((a, b) => b.score - a.score);
+    // Sort by match_contribution descending
+    return factors.sort((a, b) => b.match_contribution - a.match_contribution);
+  }
+
+  function createPastSportItem(sport) {
+    const li = document.createElement("li");
+    li.className = "factor-row group relative";
+
+    // Left Column: Label (Sport Name)
+    const leftCol = document.createElement("div");
+    leftCol.className = "factor-col-left";
+
+    const label = document.createElement("span");
+    label.className = "font-medium text-slate-900";
+    // Use subcategory slug or fallback to label/id, format nicely
+    const name =
+      sport.sport_subcategory_slug ||
+      sport.sport_label ||
+      sport.sport_subcategory_id ||
+      "Sport";
+    label.textContent = name
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (l) => l.toUpperCase());
+    leftCol.appendChild(label);
+
+    li.appendChild(leftCol);
+
+    // Right Column: Header + Bar + Contribution %
+    const rightCol = document.createElement("div");
+    rightCol.className = "flex flex-col items-end justify-center ml-4 shrink-0";
+
+    // Header
+    const header = document.createElement("span");
+    header.className =
+      "text-[9px] text-slate-400 uppercase tracking-wider font-medium mb-0.5";
+    header.textContent = "Match Contribution";
+    rightCol.appendChild(header);
+
+    // Bar Row
+    const barRow = document.createElement("div");
+    barRow.className = "flex items-center gap-3";
+
+    const barContainer = document.createElement("div");
+    barContainer.className = "factor-bar-container";
+
+    const barFill = document.createElement("div");
+
+    const pctLabel = document.createElement("span");
+    pctLabel.className = "text-xs font-bold w-8 text-right";
+
+    // Check if data is missing
+    if (sport.data_missing || sport.correlation === null) {
+      barFill.className = "factor-bar-fill bg-slate-200"; // Gray out the bar
+      barFill.style.width = "0%";
+      pctLabel.className = "text-xs font-bold text-slate-400 w-8 text-right";
+      pctLabel.textContent = "N/A";
+    } else {
+      barFill.className = "factor-bar-fill";
+      // Scale visually similar to body factors
+      const widthPct = Math.min(
+        100,
+        Math.round((sport.match_contribution || 0) * 400)
+      );
+      barFill.style.width = `${widthPct}%`;
+      pctLabel.className = "text-xs font-bold text-slate-700 w-8 text-right";
+      pctLabel.textContent = `${Math.round(
+        (sport.match_contribution || 0) * 100
+      )}%`;
+    }
+
+    barContainer.appendChild(barFill);
+
+    barRow.appendChild(barContainer);
+    barRow.appendChild(pctLabel);
+
+    rightCol.appendChild(barRow);
+    li.appendChild(rightCol);
+
+    return li;
   }
 
   // Helpers

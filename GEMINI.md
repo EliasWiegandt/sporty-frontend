@@ -99,3 +99,5 @@ It is built with **Astro** and adapted for **Cloudflare Workers**, ensuring high
 - **Shared Containers:** To ensure different content blocks (e.g., a list of details vs. a paragraph of text) align perfectly, reuse the exact same container class and HTML structure.
     - *Example:* The "Sports" details box and "Athletes' bodies" box both use `.match-card__desc-block` inside `.match-card__descriptions`.
     - *Benefit:* They automatically share the same padding, margins, and font styles, guaranteeing visual consistency without manual tweaking.
+### 6. Verification Protocol
+- **Manual Verification Only:** Do NOT perform visual verification (e.g., taking screenshots, using the browser tool, or running `make snap`) unless explicitly instructed by the user. The user will handle visual verification manually.
