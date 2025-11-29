@@ -33,7 +33,7 @@
     getUser: () => state.user,
     hasConsent: () => state.hasConsent,
     onAuthChange: (callback) => {
-      if (typeof callback !== 'function') return () => {};
+      if (typeof callback !== 'function') return () => { };
       state.listeners.add(callback);
       callback(snapshot());
       return () => state.listeners.delete(callback);
@@ -49,6 +49,7 @@
     refreshConsent: () => loadConsent(),
     fetchConsents: () => fetchConsents(),
     revokeConsent: () => revokeConsent(),
+    recordConsent: (userId) => recordConsentForUser(userId),
   };
 
   window.SportyApp = api;
@@ -145,56 +146,17 @@
   }
 
   function setupAuthUI() {
-    const overlay = document.createElement('div');
-    overlay.className = 'auth-overlay';
-    overlay.setAttribute('data-auth-overlay', '');
-    overlay.hidden = true;
-    overlay.innerHTML = `
-      <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
-        <div class="auth-modal__header">
-          <h2 class="auth-modal__title" id="auth-modal-title">Log in</h2>
-          <button type="button" class="auth-modal__close" data-auth-close aria-label="Close">&times;</button>
-        </div>
-        <p class="auth-modal__status" data-auth-status hidden></p>
-        <form data-auth-form>
-          <label>
-            <span>Email</span>
-            <input type="email" name="email" required autocomplete="email" />
-          </label>
-          <label>
-            <span>Password</span>
-            <input type="password" name="password" required autocomplete="current-password" minlength="6" />
-          </label>
-          <label class="auth-modal__consent" data-signup-consent-row hidden>
-            <input type="checkbox" name="signup-consent" data-signup-consent />
-            <span>
-              I consent to Sporty storing my measurements and recommendations in line with the
-              <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.
-            </span>
-          </label>
-          <div class="auth-modal__actions">
-            <button class="btn-primary" type="submit" data-auth-submit>Log in</button>
-            <p class="auth-modal__switch">
-              <button type="button" data-auth-switch>Need an account? Sign up</button>
-            </p>
-          </div>
-        </form>
-      </div>
-    `;
-
-    document.body.appendChild(overlay);
+    // Bind to existing static modal elements
+    const overlay = document.getElementById('auth-modal');
     state.authOverlay = overlay;
-    state.authStatusEl = overlay.querySelector('[data-auth-status]');
 
-    overlay.addEventListener('click', (event) => {
-      if (event.target === overlay) {
-        closeAuthOverlay();
-      }
-    });
+    if (!overlay) return;
 
-    const closeBtn = overlay.querySelector('[data-auth-close]');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', () => closeAuthOverlay());
+    state.authStatusEl = document.getElementById('auth-status');
+    const statusText = overlay.querySelector('[data-auth-status-text]');
+    if (state.authStatusEl && statusText) {
+      // Keep reference to text span for updates
+      state.authStatusTextEl = statusText;
     }
 
     const form = overlay.querySelector('[data-auth-form]');
@@ -213,6 +175,7 @@
     setAuthMode('signin');
     updateAuthStatus();
 
+    // Bind triggers
     const loginButtons = document.querySelectorAll('[data-auth-open]');
     loginButtons.forEach((button) => {
       button.addEventListener('click', (event) => {
@@ -236,9 +199,11 @@
     state.authMode = mode === 'signup' ? 'signup' : 'signin';
     const overlay = state.authOverlay;
     if (!overlay) return;
-    const title = overlay.querySelector('.auth-modal__title');
+
+    const title = overlay.querySelector('[data-auth-title]');
     const submit = overlay.querySelector('[data-auth-submit]');
     const switchBtn = overlay.querySelector('[data-auth-switch]');
+    const switchText = overlay.querySelector('[data-auth-switch-text]');
     const passwordInput = overlay.querySelector('input[name="password"]');
     const consentRow = overlay.querySelector('[data-signup-consent-row]');
     const consentInput = overlay.querySelector('[data-signup-consent]');
@@ -246,18 +211,20 @@
     if (state.authMode === 'signin') {
       if (title) title.textContent = 'Log in';
       if (submit) submit.textContent = 'Log in';
-      if (switchBtn) switchBtn.textContent = 'Need an account? Sign up';
+      if (switchBtn) switchBtn.textContent = 'Sign up here';
+      if (switchText) switchText.textContent = "Don't have an account yet?";
       if (passwordInput) passwordInput.setAttribute('autocomplete', 'current-password');
       if (consentRow) {
-        consentRow.hidden = true;
+        consentRow.classList.add('hidden');
         if (consentInput) consentInput.checked = false;
       }
     } else {
       if (title) title.textContent = 'Create account';
       if (submit) submit.textContent = 'Sign up';
-      if (switchBtn) switchBtn.textContent = 'Already have an account? Log in';
+      if (switchBtn) switchBtn.textContent = 'Log in here';
+      if (switchText) switchText.textContent = 'Already have an account?';
       if (passwordInput) passwordInput.setAttribute('autocomplete', 'new-password');
-      if (consentRow) consentRow.hidden = false;
+      if (consentRow) consentRow.classList.remove('hidden');
     }
 
     if (!preserveStatus) {
@@ -267,16 +234,29 @@
 
   function openAuthOverlay() {
     if (!state.authOverlay) return;
-    state.authOverlay.hidden = false;
+    // Use Preline API if available
+    if (window.HSOverlay) {
+      window.HSOverlay.open(state.authOverlay);
+    } else {
+      state.authOverlay.classList.remove('hidden');
+      state.authOverlay.classList.add('open'); // Fallback
+    }
+
     const emailInput = state.authOverlay.querySelector('input[name="email"]');
     if (emailInput) {
-      setTimeout(() => emailInput.focus(), 0);
+      setTimeout(() => emailInput.focus(), 100);
     }
   }
 
   function closeAuthOverlay() {
     if (!state.authOverlay) return;
-    state.authOverlay.hidden = true;
+    if (window.HSOverlay) {
+      window.HSOverlay.close(state.authOverlay);
+    } else {
+      state.authOverlay.classList.add('hidden');
+      state.authOverlay.classList.remove('open');
+    }
+
     const form = state.authOverlay.querySelector('[data-auth-form]');
     if (form) form.reset();
     setAuthMode('signin');
@@ -285,19 +265,24 @@
 
   function updateAuthStatus(message, variant = 'info') {
     if (!state.authStatusEl) return;
+
     if (!message) {
-      state.authStatusEl.hidden = true;
-      state.authStatusEl.textContent = '';
-      state.authStatusEl.classList.remove('auth-modal__status--error');
+      state.authStatusEl.classList.add('hidden');
+      if (state.authStatusTextEl) state.authStatusTextEl.textContent = '';
+      state.authStatusEl.classList.remove('bg-red-50', 'border-red-200', 'text-red-800');
+      state.authStatusEl.classList.add('bg-teal-50', 'border-teal-200', 'text-teal-800');
       return;
     }
 
-    state.authStatusEl.hidden = false;
-    state.authStatusEl.textContent = message;
+    state.authStatusEl.classList.remove('hidden');
+    if (state.authStatusTextEl) state.authStatusTextEl.textContent = message;
+
     if (variant === 'error') {
-      state.authStatusEl.classList.add('auth-modal__status--error');
+      state.authStatusEl.classList.remove('bg-teal-50', 'border-teal-200', 'text-teal-800');
+      state.authStatusEl.classList.add('bg-red-50', 'border-red-200', 'text-red-800');
     } else {
-      state.authStatusEl.classList.remove('auth-modal__status--error');
+      state.authStatusEl.classList.remove('bg-red-50', 'border-red-200', 'text-red-800');
+      state.authStatusEl.classList.add('bg-teal-50', 'border-teal-200', 'text-teal-800');
     }
   }
 
@@ -409,18 +394,26 @@
   }
 
   async function loadConsent() {
-    if (!state.client || !state.user) return;
+    if (!state.client || !state.user) {
+      console.log('[Sporty] loadConsent: No client or user, skipping');
+      return;
+    }
 
+    console.log('[Sporty] loadConsent: Checking consent for user:', state.user.id);
     try {
       let active = await getActiveConsent(state.user.id);
+      console.log('[Sporty] loadConsent: getActiveConsent returned:', active);
       if (!active) {
         const applied = await maybeApplyPendingConsent();
+        console.log('[Sporty] loadConsent: maybeApplyPendingConsent returned:', applied);
         if (applied) {
           active = await getActiveConsent(state.user.id);
+          console.log('[Sporty] loadConsent: After applying pending, getActiveConsent returned:', active);
         }
       }
 
       state.hasConsent = Boolean(active);
+      console.log('[Sporty] loadConsent: Final hasConsent =', state.hasConsent);
       if (!state.hasConsent) {
         resolveConsentPromises(false);
       }
@@ -513,18 +506,37 @@
 
   async function recordConsentForUser(userId) {
     if (!state.client || !userId) throw new Error('Missing user for consent');
+
+    // 1. Check if we already have active consent
     const existing = await getActiveConsent(userId);
     if (existing) {
+      console.log('[Sporty] recordConsent: Consent already active, skipping insert.');
       removePendingConsent(userId);
       return true;
     }
+
+    // 2. Insert new consent
+    // Note: If a race condition occurs and a row was just inserted, the unique index 
+    // (user_id, consent_type) where revoked_at is null will cause an error.
+    // We catch that and assume success (idempotent).
     const payload = {
       user_id: userId,
       consent_type: CONSENT_TYPE,
       version: CONSENT_VERSION,
     };
+
     const { error } = await state.client.from('consents').insert(payload);
-    if (error) throw error;
+
+    if (error) {
+      // 23505 is unique_violation code in Postgres
+      if (error.code === '23505') {
+        console.log('[Sporty] recordConsent: Race condition caught, consent already active.');
+        removePendingConsent(userId);
+        return true;
+      }
+      throw error;
+    }
+
     removePendingConsent(userId);
     return true;
   }
@@ -533,6 +545,7 @@
     if (!userId) return;
     if (typeof localStorage === 'undefined') return;
     try {
+      console.log('[Sporty] Adding pending consent for:', userId);
       const ids = getPendingConsentIds();
       ids.add(userId);
       localStorage.setItem(PENDING_CONSENT_KEY, JSON.stringify(Array.from(ids)));
@@ -545,9 +558,13 @@
     if (!userId) return;
     if (typeof localStorage === 'undefined') return;
     try {
+      console.log('[Sporty] Removing pending consent for:', userId);
       const ids = getPendingConsentIds();
       if (ids.delete(userId)) {
         localStorage.setItem(PENDING_CONSENT_KEY, JSON.stringify(Array.from(ids)));
+        console.log('[Sporty] Pending consent removed successfully.');
+      } else {
+        console.log('[Sporty] No pending consent found to remove.');
       }
     } catch (error) {
       console.error('[Sporty] Failed to clear pending consent', error);
@@ -572,13 +589,28 @@
   async function maybeApplyPendingConsent() {
     if (!state.client || !state.user) return false;
     const ids = getPendingConsentIds();
+    console.log('[Sporty] Checking pending consent for:', state.user.id, 'Found:', ids.has(state.user.id));
     if (!ids.has(state.user.id)) return false;
     try {
-      const existing = await getActiveConsent(state.user.id);
-      if (existing) {
+      // Check for ANY consent record (active or revoked)
+      const { data: anyConsent } = await state.client
+        .from('consents')
+        .select('id, revoked_at')
+        .eq('user_id', state.user.id)
+        .eq('consent_type', CONSENT_TYPE)
+        .limit(1)
+        .maybeSingle();
+
+      if (anyConsent) {
+        // If we have a record, regardless of status, we should clear pending.
+        // If it's active, we're good. If it's revoked, we respect that and DO NOT re-grant.
+        console.log('[Sporty] Found existing consent record (active or revoked), clearing pending flag.');
         removePendingConsent(state.user.id);
-        return true;
+        return !anyConsent.revoked_at;
       }
+
+      // Only if NO record exists at all do we apply pending consent
+      console.log('[Sporty] Applying pending consent for new user (no DB record found).');
       await recordConsentForUser(state.user.id);
       state.hasConsent = true;
       notifyListeners();
@@ -644,7 +676,7 @@
       arm_span_cm: formPayload.arm_span_cm ?? null,
       leg_inseam_cm: formPayload.leg_inseam_cm ?? null,
       shoulder_width_cm: formPayload.shoulder_width_cm ?? null,
-      hip_width_cm: formPayload.hip_width_cm ?? null,
+      pelvic_bone_width_cm: formPayload.pelvic_bone_width_cm ?? null,
       hand_length_cm: formPayload.hand_length_cm ?? null,
       foot_length_cm: formPayload.foot_length_cm ?? null,
     };
@@ -855,36 +887,36 @@
 
     const normalized = Array.isArray(entries)
       ? entries
-          .map((entry) => {
-            const sportId = entry && entry.sport_subcategory_id ? String(entry.sport_subcategory_id).trim() : '';
-            if (!sportId) return null;
-            const record = {
-              subject_type: 'adult',
-              subject_user_id: userId,
-              sport_subcategory_id: sportId,
-            };
+        .map((entry) => {
+          const sportId = entry && entry.sport_subcategory_id ? String(entry.sport_subcategory_id).trim() : '';
+          if (!sportId) return null;
+          const record = {
+            subject_type: 'adult',
+            subject_user_id: userId,
+            sport_subcategory_id: sportId,
+          };
 
-            const intensity = normalizeIntensity(entry ? entry.intensity : null);
-            if (intensity) record.intensity = intensity;
+          const intensity = normalizeIntensity(entry ? entry.intensity : null);
+          if (intensity) record.intensity = intensity;
 
-            const years = normalizeDuration(entry ? entry.years_played : null);
-            if (years !== null) record.years_played = years;
+          const years = normalizeDuration(entry ? entry.years_played : null);
+          if (years !== null) record.years_played = years;
 
-            const age = normalizeDuration(entry ? entry.age_started_years : null);
-            if (age !== null) record.age_started_years = age;
+          const age = normalizeDuration(entry ? entry.age_started_years : null);
+          if (age !== null) record.age_started_years = age;
 
-            const liked = normalizeYesNoBoolean(entry ? entry.liked : null);
-            if (liked !== null) record.liked = liked;
+          const liked = normalizeYesNoBoolean(entry ? entry.liked : null);
+          if (liked !== null) record.liked = liked;
 
-            const flair = normalizeYesNoBoolean(entry ? entry.had_flair : null);
-            if (flair !== null) record.had_flair = flair;
+          const flair = normalizeYesNoBoolean(entry ? entry.had_flair : null);
+          if (flair !== null) record.had_flair = flair;
 
-            const skill = normalizeYesNoBoolean(entry ? entry.achieved_skill : null);
-            if (skill !== null) record.achieved_skill = skill;
+          const skill = normalizeYesNoBoolean(entry ? entry.achieved_skill : null);
+          if (skill !== null) record.achieved_skill = skill;
 
-            return record;
-          })
-          .filter(Boolean)
+          return record;
+        })
+        .filter(Boolean)
       : [];
 
     await client
@@ -999,29 +1031,50 @@
   }
 
   async function revokeConsent() {
+    console.log('[Sporty] revokeConsent: Starting revocation');
     if (!state.client || !state.user) {
       throw new Error('Not signed in');
     }
 
-    const consent = await getActiveConsent(state.user.id);
-    if (!consent) {
+    // With unique index, there should be at most one active consent
+    const { data: active, error: fetchError } = await state.client
+      .from('consents')
+      .select('id')
+      .eq('user_id', state.user.id)
+      .eq('consent_type', CONSENT_TYPE)
+      .is('revoked_at', null)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error('[Sporty] Failed to fetch consent for revocation', fetchError);
+      throw fetchError;
+    }
+
+    if (!active) {
+      console.log('[Sporty] revokeConsent: No active consent found.');
       state.hasConsent = false;
+      removePendingConsent(state.user.id);
       notifyListeners();
       resolveConsentPromises(false);
       return false;
     }
 
     const timestamp = new Date().toISOString();
+    console.log('[Sporty] revokeConsent: Revoking consent ID:', active.id);
+
     const { error } = await state.client
       .from('consents')
       .update({ revoked_at: timestamp })
-      .eq('id', consent.id)
-      .eq('user_id', state.user.id)
-      .is('revoked_at', null);
+      .eq('id', active.id);
 
-    if (error) throw error;
+    if (error) {
+      console.error('[Sporty] revokeConsent: Database update failed:', error);
+      throw error;
+    }
 
+    console.log('[Sporty] revokeConsent: Successfully revoked consent.');
     state.hasConsent = false;
+    removePendingConsent(state.user.id);
     notifyListeners();
     resolveConsentPromises(false);
     return true;

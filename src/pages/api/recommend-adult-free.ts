@@ -39,15 +39,45 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const upstreamUrl = new URL('/v1/recommend-adult-free', backendUrl);
   const body = await request.text();
+  const contentLength = body ? `${new TextEncoder().encode(body).length}` : "0";
+
+  console.log(
+    `[worker] recommend-adult-free body bytes=${contentLength} content-type=${
+      request.headers.get("content-type") ?? "<missing>"
+    }`
+  );
+  if (!body || body.trim().length === 0) {
+    return new Response(
+      JSON.stringify({
+        detail:
+          "Request body is missing. The client should POST the intake JSON payload.",
+      }),
+      {
+        status: 400,
+        headers: {
+          ...JSON_HEADERS,
+          "X-Request-Id": reqId,
+        },
+      }
+    );
+  }
+
+  const sessionId = request.headers.get('X-Session-ID');
+  const userId = request.headers.get('X-User-ID');
+
+  const upstreamHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Content-Length': contentLength,
+    'X-API-Key': apiKey,
+    'X-Request-Id': reqId,
+  };
+  if (sessionId) upstreamHeaders['X-Session-ID'] = sessionId;
+  if (userId) upstreamHeaders['X-User-ID'] = userId;
 
   try {
     const upstreamResp = await fetch(upstreamUrl.toString(), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': apiKey,
-        'X-Request-Id': reqId,
-      },
+      headers: upstreamHeaders,
       body,
       signal: AbortSignal.timeout(10_000),
     });

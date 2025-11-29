@@ -34,7 +34,7 @@ export type FreeIntakeData = {
   arm_span_cm: number;
   leg_inseam_cm: number;
   shoulder_width_cm: number;
-  hip_width_cm: number;
+  pelvic_bone_width_cm: number;
   hand_length_cm: number;
   foot_length_cm: number;
   torso_length_cm: number;
@@ -87,7 +87,7 @@ type FreePayload = {
   arm_span_cm: number;
   leg_inseam_cm: number;
   shoulder_width_cm: number;
-  hip_width_cm: number;
+  pelvic_bone_width_cm: number;
   hand_length_cm: number;
   foot_length_cm: number;
   torso_length_cm: number;
@@ -107,7 +107,7 @@ type PremiumPayload = {
   arm_span_cm: number;
   leg_inseam_cm: number;
   shoulder_width_cm: number;
-  hip_width_cm: number;
+  pelvic_bone_width_cm: number;
   hand_length_cm: number;
   foot_length_cm: number;
   torso_length_cm: number;
@@ -132,7 +132,7 @@ export function buildFreePayload(data: FreeIntakeData): FreePayload {
     arm_span_cm,
     leg_inseam_cm,
     shoulder_width_cm,
-    hip_width_cm,
+    pelvic_bone_width_cm,
     hand_length_cm,
     foot_length_cm,
     torso_length_cm,
@@ -149,7 +149,7 @@ export function buildFreePayload(data: FreeIntakeData): FreePayload {
     arm_span_cm,
     leg_inseam_cm,
     shoulder_width_cm,
-    hip_width_cm,
+    pelvic_bone_width_cm,
     hand_length_cm,
     foot_length_cm,
     torso_length_cm,
@@ -198,7 +198,7 @@ export function buildPremiumPayload(
     arm_span_cm: base.arm_span_cm,
     leg_inseam_cm: base.leg_inseam_cm,
     shoulder_width_cm: base.shoulder_width_cm,
-    hip_width_cm: base.hip_width_cm,
+    pelvic_bone_width_cm: base.pelvic_bone_width_cm,
     hand_length_cm: base.hand_length_cm,
     foot_length_cm: base.foot_length_cm,
     torso_length_cm: base.torso_length_cm,

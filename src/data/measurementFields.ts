@@ -84,13 +84,12 @@ export const measurementFields: MeasurementFieldConfig[] = [
     group: 'torso',
   },
   {
-    id: 'hip_width_cm',
-    label: 'Hip width',
+    id: 'pelvic_bone_width_cm',
+    label: 'Pelvic bone width',
     unit: 'cm',
-    hint: 'Stand with feet together. Measure across the widest part of your hips.',
+    hint: 'Measure the distance between the outer edges of your pelvic bones (iliac crests).',
     help: [
-      'Stand with feet together.',
-      'Measure across the widest part of your hips.',
+      'Measure the distance between the outer edges of your pelvic bones (iliac crests).',
     ],
     min: 30,
     max: 70,

@@ -1,5 +1,7 @@
 ---
 import '../styles/tailwind.css';
+import AuthModal from '../components/AuthModal.astro';
+
 interface NavLink {
   href: string;
   label: string;
@@ -27,8 +29,8 @@ interface Props {
 }
 
 const defaultNavLinks: NavLink[] = [
-  { href: '/about', label: 'About' },
-  { href: '/pricing', label: 'Pricing' },
+  { href: '/#science', label: 'About' },
+  { href: '/#tiers', label: 'Pricing' },
   { href: '/science', label: 'Science' },
   { href: '/dashboard', label: 'Dashboard' },
 ];
@@ -153,6 +155,7 @@ const hasActionContent = actions.length > 0 || showAuth;
       </header>
     )}
     <slot />
+    <AuthModal />
     <script>
       (function () {
         const globalWindow = window as unknown as Window & Record<string, unknown>;

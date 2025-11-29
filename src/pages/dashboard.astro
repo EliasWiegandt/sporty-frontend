@@ -17,98 +17,102 @@ const historyPlaceholders = [
 <BaseLayout title="Sporty — Dashboard" description="Review saved analyses, credit balances, and measurement locker." showAuth={true}>
   <main class="dashboard-shell" data-dashboard-root>
     <section class="dashboard-card dashboard-card--full" data-dashboard-signed-out>
-      <h1 class="section-title" style="margin:0;">Sign in to view your dashboard</h1>
-      <p class="lead-copy">History, credits, and saved measurements live here. Sign in or create an account to continue.</p>
-      <div class="btn-row">
-        <button class="btn-primary" type="button" data-auth-open data-auth-mode="signin">Log in</button>
-        <button class="btn-ghost" type="button" data-auth-open data-auth-mode="signup">Create account</button>
-        <a class="btn-ghost" href="/pricing">See pricing</a>
+      <div class="max-w-md mx-auto flex flex-col gap-6">
+        <iconify-icon icon="mingcute:lock-fill" class="text-5xl text-teal-600 mx-auto"></iconify-icon>
+        <div>
+          <h1 class="section-title">Sign in to view your dashboard</h1>
+          <p class="lead-copy mt-2">History, credits, and saved measurements live here. Sign in or create an account to continue.</p>
+        </div>
+        <div class="btn-row">
+          <button class="btn-pill btn-pill-primary" type="button" data-auth-open data-auth-mode="signin">Log in</button>
+          <button class="btn-pill btn-pill-secondary" type="button" data-auth-open data-auth-mode="signup">Create account</button>
+        </div>
+        <p class="text-sm text-slate-500 mt-4">
+          <a href="/#tiers" class="hover:text-teal-700 underline">View pricing & plans</a>
+        </p>
       </div>
     </section>
 
     <div class="dashboard-layout" data-dashboard-signed-in hidden>
       <aside class="dashboard-sidebar">
         <section class="dashboard-card" data-checkout-zone>
-          <h2>Credits</h2>
-          <p class="lead-copy">Adult: <span data-credits-adult>—</span></p>
-          <p class="lead-copy">Child: <span data-credits-child>—</span></p>
-          <p class="credit-status" data-checkout-status hidden></p>
-          <div class="button-column">
-            <button
-              class="btn-primary"
-              type="button"
-              data-checkout-product="single_adult_analysis"
-              data-checkout-credit-type="adult"
-              data-checkout-context="adult"
-            >
-              Buy adult credit
-            </button>
-            <button
-              class="btn-ghost"
-              type="button"
-              data-checkout-product="single_child_analysis"
-              data-checkout-credit-type="child"
-              data-checkout-context="child"
-            >
-              Buy child credit
-            </button>
-            <a class="btn-ghost" href="/pricing">Pricing overview</a>
-            <a class="btn-ghost" href="/intake">Start new analysis</a>
-            <a class="btn-ghost" href="/intake-premium">Premium intake</a>
-            <a class="btn-ghost" href="/child-intake">Forecast a child</a>
+          <div class="flex items-center gap-2 mb-2">
+            <iconify-icon icon="mingcute:wallet-4-fill" class="text-xl text-teal-600"></iconify-icon>
+            <h2 class="type-title text-lg">Premium analysis credits</h2>
           </div>
+          
+          <div class="stat-grid">
+            <div class="stat-card">
+              <span class="stat-label">Adult</span>
+              <span class="stat-value" data-credits-adult>—</span>
+              <button
+                class="btn-pill btn-pill-primary btn-pill-xs w-full justify-center mt-auto"
+                type="button"
+                data-checkout-product="single_adult_analysis"
+                data-checkout-credit-type="adult"
+                data-checkout-context="adult"
+              >
+                Buy premium analysis of adult
+              </button>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Child</span>
+              <span class="stat-value" data-credits-child>—</span>
+              <button
+                class="btn-pill btn-pill-primary btn-pill-xs w-full justify-center mt-auto"
+                type="button"
+                data-checkout-product="single_child_analysis"
+                data-checkout-credit-type="child"
+                data-checkout-context="child"
+              >
+                Buy premium analysis of child
+              </button>
+            </div>
+          </div>
+          <p class="credit-status text-sm text-center mt-2" data-checkout-status hidden></p>
         </section>
 
-      <section class="dashboard-card">
-        <h2>Measurement locker</h2>
-        <p data-measurement-locker-empty>No saved measurements yet. Run an analysis to store your latest inputs.</p>
-        <ul class="measurement-list" data-measurement-locker hidden></ul>
-      </section>
+        <section class="dashboard-card">
+          <div class="mb-4">
+            <div class="badge-subtle mb-2">Saved analyses</div>
+            <h2 class="type-title text-lg">Your history</h2>
+          </div>
+          <div class="history-grid" data-history-grid>
+            <!-- History items will be loaded here by dashboard.js -->
+          </div>
+        </section>
+      </aside>
 
-      <section class="dashboard-card">
-        <h2>Shortcuts</h2>
-        <ul class="shortcut-list">
-          <li><a class="shortcut-list__link" href="/results">View latest results</a></li>
-          <li><a class="shortcut-list__link" href="/account">Account → Data &amp; Privacy</a></li>
-          <li><a class="shortcut-list__link" href="/pricing">Pricing &amp; credits</a></li>
-        </ul>
-      </section>
-    </aside>
+      <section class="dashboard-content">
+        <section class="dashboard-card">
+          <header class="mb-6">
+            <h1 class="section-title text-2xl mb-1">Account & Data</h1>
+            <p class="lead-copy" data-profile-email></p>
+          </header>
 
-    <section class="dashboard-content">
-      <header class="dashboard-header">
-        <div>
-          <p class="badge">Saved analyses</p>
-          <h1 class="section-title">Your history</h1>
-          <p class="lead-copy">Track free and premium results, compare progress, and rerun analyses when you’re ready.</p>
-        </div>
-        <div class="btn-row">
-          <a class="btn-primary" href="/intake">New adult analysis</a>
-          <a class="btn-ghost" href="/child-intake">New child forecast</a>
-        </div>
-      </header>
-
-      <div class="history-grid" data-history-grid>
-        {historyPlaceholders.map((item) => (
-          <article class="history-card" data-history-placeholder>
-            <h2>{item.title}</h2>
-            <p class="history-card__meta">{item.date}</p>
-            <p>{item.summary}</p>
-            <div class="history-card__actions">
-              <button class="btn-primary btn-sm" type="button" disabled>View details (stub)</button>
-              <button class="btn-ghost btn-sm" type="button" disabled>Delete</button>
+          <div class="flex items-center justify-between py-4 border-t border-slate-100">
+            <div class="max-w-xl">
+              <h3 class="font-medium text-slate-900">Store my measurements & free results</h3>
+              <p class="text-sm text-slate-500 mt-1" data-profile-toggle-help>
+                Enable this if you want Sporty to remember your free matches. You can turn it off anytime.
+              </p>
             </div>
-          </article>
-        ))}
-      </div>
-    </section>
+            <label class="toggle flex-shrink-0 ml-4" aria-label="Data retention consent">
+              <input type="checkbox" data-consent-toggle />
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+          
+          <div class="status-area mt-2" data-profile-consent-status></div>
+        </section>
+      </section>
     </div>
   </main>
 
   <Fragment slot="scripts">
     <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script is:inline src="/config.js" defer></script>
-    <script is:inline src="/assets/js/app.js" defer></script>
+    <script is:inline src="/assets/js/app.js?v=6" defer></script>
     <script is:inline src="/assets/js/dashboard.js" defer></script>
     <script is:inline src="/assets/js/checkout.js" defer></script>
   </Fragment>

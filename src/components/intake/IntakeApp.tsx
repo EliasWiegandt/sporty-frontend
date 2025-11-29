@@ -114,7 +114,7 @@ const LOCAL_PREFILL_MEASUREMENTS: Record<string, number> = {
   arm_span_cm: 170,
   leg_inseam_cm: 80,
   shoulder_width_cm: 44,
-  hip_width_cm: 69,
+  pelvic_bone_width_cm: 69,
   hand_length_cm: 19,
   foot_length_cm: 24,
   torso_length_cm: 60,
@@ -202,6 +202,8 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
   >(() => ({
     ...LOCAL_PREFILL_MEASUREMENTS,
   }));
+  const [consentGiven, setConsentGiven] = useState(false);
+  const [consentSaving, setConsentSaving] = useState(false);
 
   // Premium controller (kept as is for now since it handles external UI blocks)
   const premiumControllerRef = useRef<PremiumController | null>(null);
@@ -218,8 +220,8 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
   const activePremiumSection =
     mode === "premium"
       ? PREMIUM_SECTION_KEYS.find(
-          (section) => premiumSectionIndexMap.get(section) === currentStepIndex
-        ) ?? null
+        (section) => premiumSectionIndexMap.get(section) === currentStepIndex
+      ) ?? null
       : null;
   const showPremiumBlock = activePremiumSection !== null;
 
@@ -247,6 +249,55 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
     }
     element.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
+
+  const handleGrantConsent = useCallback(async () => {
+    if (consentSaving || !sportySnapshot.user) return;
+
+    setConsentSaving(true);
+    try {
+      const sportyApp = typeof window !== "undefined" ? (window as any).SportyApp : null;
+      const client = sportyApp?.getClient?.();
+      const user = sportyApp?.getUser?.();
+
+      if (!client || !user) {
+        throw new Error("Not authenticated");
+      }
+
+      // Check if consent already exists
+      const { data: existing } = await client
+        .from('consents')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('consent_type', 'data_retention')
+        .is('revoked_at', null)
+        .maybeSingle();
+
+      if (!existing) {
+        // Record consent
+        if (typeof sportyApp.recordConsent === 'function') {
+          await sportyApp.recordConsent(user.id);
+        } else {
+          // Fallback
+          const payload = {
+            user_id: user.id,
+            consent_type: 'data_retention',
+            version: 'adult-data-retention-v1',
+          };
+          const { error } = await client.from('consents').insert(payload);
+          if (error) throw error;
+        }
+      }
+
+      // Refresh consent state
+      await sportyApp?.refreshConsent?.();
+      setConsentGiven(true);
+    } catch (error) {
+      console.error('[Intake] Failed to grant consent', error);
+      setConsentGiven(false);
+    } finally {
+      setConsentSaving(false);
+    }
+  }, [consentSaving, sportySnapshot.user]);
 
   const currentStepIndexRef = useRef(currentStepIndex);
   const isRestoringRef = useRef(false);
@@ -580,10 +631,13 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
         "info"
       );
 
-      let consentAccepted = snapshot.hasConsent;
+      let consentAccepted = snapshot.hasConsent || consentGiven;
       const sportyApp =
         typeof window !== "undefined" ? (window as any).SportyApp : null;
+
+      // For premium flow, still use the modal-based ensureConsent
       if (
+        wantsPremium &&
         sportyApp &&
         snapshot.user &&
         !consentAccepted &&
@@ -610,10 +664,28 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
         const endpoint = wantsPremium
           ? "/api/recommend-adult-premium"
           : "/api/recommend-adult-free";
+
+        // Get or create session ID
+        let sessionId = sessionStorage.getItem("sporty:sessionId");
+        if (!sessionId) {
+          sessionId = crypto.randomUUID();
+          sessionStorage.setItem("sporty:sessionId", sessionId);
+        }
+
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          "X-Session-ID": sessionId
+        };
+        if (userId) {
+          headers["X-User-ID"] = userId;
+        }
+
+        const requestBody = JSON.stringify(payload);
+
         const response = await fetch(endpoint, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          headers,
+          body: requestBody,
         });
 
         const bodyText = await response.text();
@@ -621,8 +693,15 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
           let detail = "We could not generate a suggestion right now.";
           try {
             const json = JSON.parse(bodyText);
-            detail = json.detail || detail;
-          } catch (_) {}
+            if (Array.isArray(json.detail)) {
+              // FastAPI validation errors: array of {msg, loc, type}
+              detail = json.detail.map((err: any) => err.msg || JSON.stringify(err)).join("; ");
+            } else if (typeof json.detail === "string") {
+              detail = json.detail;
+            } else if (json.detail) {
+              detail = JSON.stringify(json.detail);
+            }
+          } catch (_) { }
           throw new Error(detail);
         }
 
@@ -726,8 +805,11 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
   }, []);
 
   useEffect(() => {
-    const sportyApp =
-      typeof window !== "undefined" ? (window as any).SportyApp : null;
+    let unsubscribe: (() => void) | undefined;
+    let pollTimer: number | undefined;
+    let attempts = 0;
+    const MAX_ATTEMPTS = 50; // 5 seconds max
+
     const applySnapshot = (snapshot: SportySnapshot | null) => {
       const normalized = snapshot || { user: null, hasConsent: false };
       setSportySnapshot(normalized);
@@ -736,19 +818,47 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
       });
     };
 
-    if (sportyApp && sportyApp.ready) {
-      sportyApp.ready.then(() => {
-        if (typeof sportyApp.onAuthChange === "function") {
-          sportyApp.onAuthChange((snapshot: SportySnapshot | null) =>
-            applySnapshot(snapshot)
-          );
-        } else {
-          applySnapshot({ user: null, hasConsent: false });
+    const initSportyApp = () => {
+      const sportyApp = typeof window !== "undefined" ? (window as any).SportyApp : null;
+
+      if (sportyApp && sportyApp.ready) {
+        if (pollTimer) {
+          window.clearInterval(pollTimer);
+          pollTimer = undefined;
         }
-      });
-    } else {
-      applySnapshot({ user: null, hasConsent: false });
+
+        sportyApp.ready.then(() => {
+          if (typeof sportyApp.onAuthChange === "function") {
+            unsubscribe = sportyApp.onAuthChange((snapshot: SportySnapshot | null) =>
+              applySnapshot(snapshot)
+            );
+          } else {
+            applySnapshot({ user: null, hasConsent: false });
+          }
+        });
+        return true;
+      }
+      return false;
+    };
+
+    // Try immediately
+    if (!initSportyApp()) {
+      // Poll if not ready yet
+      pollTimer = window.setInterval(() => {
+        attempts++;
+        if (initSportyApp() || attempts >= MAX_ATTEMPTS) {
+          if (pollTimer) {
+            window.clearInterval(pollTimer);
+            pollTimer = undefined;
+          }
+        }
+      }, 100);
     }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+      if (pollTimer) window.clearInterval(pollTimer);
+    };
   }, []);
 
   // Auto-init Preline (if used elsewhere)
@@ -826,16 +936,21 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
             Continue
           </button>
         )}
-        {isFinalStep && (
-          <button
-            type="button"
-            onClick={() => handleSubmit()}
-            className="btn-pill btn-pill-primary"
-            data-submit
-          >
-            {submitLabel}
-          </button>
-        )}
+        {isFinalStep && (() => {
+          const needsConsent = mode === "free" && sportySnapshot.user && !sportySnapshot.hasConsent && !consentGiven;
+          const isDisabled = needsConsent;
+          return (
+            <button
+              type="button"
+              onClick={() => handleSubmit()}
+              className={`btn-pill btn-pill-primary ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              data-submit
+              disabled={isDisabled || undefined}
+            >
+              {submitLabel}
+            </button>
+          );
+        })()}
       </div>
     </div>
   );
@@ -873,8 +988,8 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
                   isCompleted
                     ? "border-teal-500 bg-teal-500 text-white"
                     : isActive
-                    ? "border-slate-900 text-slate-900"
-                    : "border-slate-300 text-slate-500",
+                      ? "border-slate-900 text-slate-900"
+                      : "border-slate-300 text-slate-500",
                 ]
                   .filter(Boolean)
                   .join(" ")}
@@ -947,6 +1062,42 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
           />
         </div>
       </div>
+
+      {/* Consent toggle for free flow */}
+      {mode === "free" && isFinalStep && sportySnapshot.user && (
+        <div className="dashboard-card border-2 border-amber-100 bg-amber-50/30">
+          <div className="flex items-center justify-between py-4">
+            <div className="max-w-xl">
+              <h3 className="font-medium text-slate-900">Store my measurements & free results</h3>
+              <p className="text-sm text-slate-500 mt-1">
+                Enable this to let Sporty remember your free matches. Required to see your results.
+              </p>
+            </div>
+            <label className="toggle flex-shrink-0 ml-4" aria-label="Data retention consent">
+              <input
+                type="checkbox"
+                checked={consentGiven || sportySnapshot.hasConsent}
+                onChange={(e) => {
+                  const target = e.target as HTMLInputElement;
+                  if (target.checked) {
+                    handleGrantConsent();
+                  } else {
+                    // Allow revocation from intake too
+                    const sportyApp = typeof window !== "undefined" ? (window as any).SportyApp : null;
+                    if (sportyApp && typeof sportyApp.revokeConsent === 'function') {
+                      sportyApp.revokeConsent().then(() => {
+                        setConsentGiven(false);
+                      });
+                    }
+                  }
+                }}
+                disabled={consentSaving}
+              />
+              <span className="toggle__track"></span>
+            </label>
+          </div>
+        </div>
+      )}
 
       {renderStepperActions()}
     </div>

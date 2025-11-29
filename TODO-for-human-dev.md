@@ -14,4 +14,11 @@
 
 The sports and subcategories should be in the order from the taxonomy yaml
 
+- Add ratios to optimal bodies
 - Add layman reasoning to sports correlations
+- Radio button sex
+- Result decomposition only fold out - harmonium?
+- update hip width - can we take both circumference and width of hip bones into account?
+- We need to handle intake of both CM and US measures (inches, feet)
+- switch to pelvic bone width (bi-iliac breadth) for hip width
+- Check that test users are being seeded correctly
