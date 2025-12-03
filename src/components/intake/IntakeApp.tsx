@@ -124,8 +124,8 @@ const LOCAL_PREFILL_MEASUREMENTS: Record<string, number> = {
 
 const LOCAL_PREFILL_PAST_SPORTS: Array<Omit<PastSportsEntry, "id">> = [
   {
-    sport_subcategory_id: "e98f2d2c-46a5-4182-991f-00f4925d62c1",
-    sport_label: "Tennis",
+    sport_subcategory_id: "soccer-forward-striker",
+    sport_label: "Soccer - Forward - Striker",
     years_played: 3,
     age_started_years: 14,
     intensity: "moderate",
@@ -134,8 +134,8 @@ const LOCAL_PREFILL_PAST_SPORTS: Array<Omit<PastSportsEntry, "id">> = [
     achieved_skill: true,
   },
   {
-    sport_subcategory_id: "e20221fd-0b55-498b-9623-c40223cc6f3c",
-    sport_label: "Soccer - Goalkeeper",
+    sport_subcategory_id: "soccer-forward-winger",
+    sport_label: "Soccer - Forward - Winger",
     years_played: 1.5,
     age_started_years: 12,
     intensity: "light",
