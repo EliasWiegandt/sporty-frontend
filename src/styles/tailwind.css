@@ -207,6 +207,15 @@
     border-color: var(--color-brand-800);
   }
 
+  .btn-pill:disabled,
+  .btn-pill[aria-disabled="true"],
+  .btn-pill-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+    box-shadow: none;
+  }
+
   .btn-pill-sm {
     padding: 0.5rem 1.1rem;
     font-size: 0.95rem;

@@ -367,7 +367,16 @@
       await state.client.auth.signOut();
     } catch (error) {
       console.error('[Sporty] Sign-out failed', error);
+      // Fallback: clear local session even if the network call failed
+      try {
+        await state.client.auth.signOut({ scope: 'local' });
+      } catch (e) {
+        console.error('[Sporty] Local sign-out also failed', e);
+      }
     }
+    // Ensure UI/state resets even if supabase fails to emit an auth change
+    updateSession(null);
+    notifyListeners();
   }
 
   function updateAuthControls() {

@@ -7,6 +7,7 @@
   const signedInBlock = root.querySelector('[data-dashboard-signed-in]');
   const creditsAdultEl = root.querySelector('[data-credits-adult]');
   const creditsChildEl = root.querySelector('[data-credits-child]');
+  const runButtons = root.querySelectorAll('[data-premium-run]');
   const lockerList = root.querySelector('[data-measurement-locker]');
   const lockerEmpty = root.querySelector('[data-measurement-locker-empty]');
   let creditsController = null;
@@ -66,6 +67,7 @@
         creditsController = null;
       }
       setCredits('-', '-');
+      updateRunButtons(0, 0);
       clearLocker();
       clearHistory();
 
@@ -88,9 +90,11 @@
     updateToggleHelp(snapshot.hasConsent);
 
     setCredits('...', '...');
+    updateRunButtons(null, null); // loading state
     const creditSnapshot = readCreditSnapshot();
     if (creditSnapshot) {
       setCredits(String(creditSnapshot.adult), String(creditSnapshot.child));
+      updateRunButtons(creditSnapshot.adult, creditSnapshot.child);
     }
     loadCredits(snapshot.user.id);
     loadHistory(snapshot.user.id);
@@ -191,11 +195,68 @@
     if (creditsChildEl) creditsChildEl.textContent = child;
   }
 
+  function updateRunButtons(adultCredits, childCredits) {
+    runButtons.forEach((btn) => {
+      const kind = btn.dataset.premiumRun;
+      const target = btn.dataset.premiumRunTarget;
+      const creditCount = kind === 'adult' ? adultCredits : childCredits;
+
+      // Loading state
+      if (adultCredits === null || childCredits === null) {
+        btn.disabled = true;
+        btn.setAttribute('aria-disabled', 'true');
+        btn.classList.add('btn-pill-disabled');
+        btn.textContent = 'Run analysis';
+        return;
+      }
+
+      const hasCredits = Number(creditCount) > 0;
+      btn.disabled = !hasCredits;
+      btn.setAttribute('aria-disabled', hasCredits ? 'false' : 'true');
+      if (!hasCredits) {
+        btn.classList.add('btn-pill-disabled');
+        btn.textContent = 'Run analysis';
+      } else {
+        btn.classList.remove('btn-pill-disabled');
+        btn.textContent = 'Run analysis';
+      }
+
+      btn.onclick = () => {
+        if (!hasCredits) return;
+        if (target) window.location.href = target;
+      };
+    });
+  }
+
   function normalizeCreditCount(value) {
     if (value === null || value === undefined) return 0;
     const numeric = Number(value);
     if (Number.isNaN(numeric) || !Number.isFinite(numeric)) return 0;
     return Math.max(0, Math.trunc(numeric));
+  }
+
+  async function loadCredits(userId) {
+    if (!sportyApp.getClient()) return;
+    const controller = new AbortController();
+    creditsController = controller;
+    try {
+      const client = sportyApp.getClient();
+      const { data, error } = await client
+        .rpc('get_credit_totals')
+        .eq('user_id', userId)
+        .single();
+      if (controller.signal.aborted) return;
+      if (error) throw error;
+      const adult = normalizeCreditCount(data?.adult);
+      const child = normalizeCreditCount(data?.child);
+      setCredits(String(adult), String(child));
+      updateRunButtons(adult, child);
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      console.error('[Dashboard] Failed to load credits', error);
+      setCredits('0', '0');
+      updateRunButtons(0, 0);
+    }
   }
 
   async function loadCredits(userId) {
@@ -224,6 +285,7 @@
       const adult = normalizeCreditCount(payload.adult_credits);
       const child = normalizeCreditCount(payload.child_credits);
       setCredits(String(adult), String(child));
+      updateRunButtons(adult, child);
       creditsController = null;
     } catch (error) {
       if (creditsController && creditsController.signal.aborted) {
@@ -232,6 +294,7 @@
       }
       console.error('[Sporty] Failed to load credits', error);
       setCredits('--', '--');
+      updateRunButtons(0, 0);
       creditsController = null;
     }
   }

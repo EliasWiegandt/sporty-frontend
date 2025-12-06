@@ -497,6 +497,9 @@
     const leftCol = document.createElement("div");
     leftCol.className = "factor-col-left";
 
+    const labelContainer = document.createElement("div");
+    labelContainer.className = "flex items-center gap-2";
+
     const label = document.createElement("span");
     label.className = "font-medium text-slate-900";
     // Use subcategory slug or fallback to label/id, format nicely
@@ -508,7 +511,26 @@
     label.textContent = name
       .replace(/_/g, " ")
       .replace(/\b\w/g, (l) => l.toUpperCase());
-    leftCol.appendChild(label);
+    labelContainer.appendChild(label);
+
+    if (sport.layman_reasoning) {
+      const icon = document.createElement("span");
+      icon.className = "text-slate-400 cursor-help";
+      icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+      </svg>`;
+      labelContainer.appendChild(icon);
+
+      const tooltip = document.createElement("div");
+      tooltip.className = "factor-tooltip";
+      tooltip.textContent = sport.layman_reasoning;
+      const arrow = document.createElement("div");
+      arrow.className = "factor-tooltip-arrow";
+      tooltip.appendChild(arrow);
+      li.appendChild(tooltip);
+    }
+
+    leftCol.appendChild(labelContainer);
 
     li.appendChild(leftCol);
 
