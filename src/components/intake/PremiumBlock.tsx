@@ -10,17 +10,17 @@ type PremiumBlockProps = {
 const sectionMeta: Record<PremiumSectionKey, { title: string; description: string; buttonLabel: string }> = {
   preferences: {
     title: 'Preferences',
-    description: 'Share the qualities you care about so we can weigh them when ranking matches.',
+    description: 'Search and add the preferences that matter to you.',
     buttonLabel: 'Add preference',
   },
   goals: {
     title: 'Goals',
-    description: 'List your training or performance goals so we can bias matches toward them.',
+    description: 'Add training or performance goals to tilt matches toward them.',
     buttonLabel: 'Add goal',
   },
   injuries: {
     title: 'Injuries',
-    description: 'Note lingering issues so we can flag risky sports or suggest safer variations.',
+    description: 'Flag current or past injuries so we can account for risk.',
     buttonLabel: 'Add injury',
   },
 };
@@ -29,41 +29,18 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
   const isActive = (section: PremiumSectionKey) => activeSection === section;
 
   return (
-    <section
-      className="card-shell space-y-6"
-      data-premium-block
-      hidden={!visible}
-    >
-      <header className="space-y-2">
-        <h2 className="type-title text-slate-900">Premium inputs</h2>
-        <p className="text-slate-600">
-          Apply a credit to capture preferences, goals, and injury context alongside your measurements.
-        </p>
-      </header>
-
+    <section className="card-shell space-y-6" data-premium-block hidden={!visible}>
       <div className="space-y-3">
         <div
           className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
           data-premium-locked
         >
           <p className="type-body font-semibold text-slate-800" data-premium-locked-message>
-            Sign in and purchase a credit to unlock the premium inputs below.
-          </p>
-          <p className="text-slate-500">
-            The toggle below shows whether a credit will be applied to this run.
+            Sign in with a credit to add preferences, goals, and injuries.
           </p>
         </div>
         <div className="text-sm text-slate-500" data-premium-summary aria-live="polite" />
       </div>
-
-      <label className="flex items-center gap-3" data-premium-toggle hidden>
-        <input
-          type="checkbox"
-          data-premium-apply
-          className="h-4 w-4 rounded border border-slate-300 text-teal-600 focus:ring-0"
-        />
-        <span className="text-sm font-semibold text-slate-800">Apply one adult analysis credit</span>
-      </label>
 
       <section
         className="space-y-3"
@@ -92,9 +69,19 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="space-y-2">
                   <span className="type-body font-semibold text-slate-800">Preference</span>
-                  <select className="input-field" data-field="preference_id">
-                    <option value="">Select preference</option>
-                  </select>
+                  <div className="relative" data-search-wrap>
+                    <input
+                      type="text"
+                      className="input-field w-full"
+                      placeholder="Search preferences…"
+                      data-search-input
+                    />
+                    <input type="hidden" data-field="preference_id" />
+                    <div
+                      className="absolute inset-x-0 top-full z-20 mt-2 max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-lg hidden"
+                      data-search-results
+                    />
+                  </div>
                 </label>
                 <label className="space-y-2">
                   <span className="type-body font-semibold text-slate-800">Priority</span>
@@ -145,9 +132,19 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="space-y-2">
                   <span className="type-body font-semibold text-slate-800">Goal</span>
-                  <select className="input-field" data-field="goal_id">
-                    <option value="">Select goal</option>
-                  </select>
+                  <div className="relative" data-search-wrap>
+                    <input
+                      type="text"
+                      className="input-field w-full"
+                      placeholder="Search goals…"
+                      data-search-input
+                    />
+                    <input type="hidden" data-field="goal_id" />
+                    <div
+                      className="absolute inset-x-0 top-full z-20 mt-2 max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-lg hidden"
+                      data-search-results
+                    />
+                  </div>
                 </label>
                 <label className="space-y-2">
                   <span className="type-body font-semibold text-slate-800">Priority</span>
@@ -196,17 +193,21 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
           <template data-template>
             <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm" data-item>
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="space-y-2">
-                  <span className="type-body font-semibold text-slate-800">Injury</span>
-                  <select className="input-field" data-field="injury_id">
-                    <option value="">Select injury</option>
-                  </select>
-                </label>
-                <label className="space-y-2">
-                  <span className="type-body font-semibold text-slate-800">Area / subcategory</span>
-                  <select className="input-field" data-field="injury_subcategory_id">
-                    <option value="">General</option>
-                  </select>
+                <label className="space-y-2 md:col-span-2">
+                  <span className="type-body font-semibold text-slate-800">Injury or area</span>
+                  <div className="relative" data-search-wrap>
+                    <input
+                      type="text"
+                      className="input-field w-full"
+                      placeholder="Search injury areas…"
+                      data-search-input
+                    />
+                    <input type="hidden" data-field="injury_subcategory_id" />
+                    <div
+                      className="absolute inset-x-0 top-full z-20 mt-2 max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-lg hidden"
+                      data-search-results
+                    />
+                  </div>
                 </label>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
@@ -217,15 +218,6 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
                     <option value="somewhat_bad">Somewhat bad</option>
                     <option value="mostly_healed">Mostly healed</option>
                   </select>
-                </label>
-                <label className="space-y-2">
-                  <span className="type-body font-semibold text-slate-800">Notes</span>
-                  <input
-                    type="text"
-                    className="input-field"
-                    data-field="notes"
-                    placeholder="Optional detail"
-                  />
                 </label>
               </div>
               <div className="flex justify-end">

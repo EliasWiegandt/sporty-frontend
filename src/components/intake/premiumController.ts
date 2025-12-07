@@ -23,18 +23,33 @@ export type PremiumController = {
 
 type PriorityEntry = {
   node: HTMLElement;
-  select: HTMLSelectElement | null;
+  searchInput: HTMLInputElement | null;
+  hiddenId: HTMLInputElement | null;
+  results: HTMLElement | null;
   priority: HTMLSelectElement | null;
+  labelEl: HTMLElement | null;
 };
 type InjuryEntry = {
   node: HTMLElement;
-  injurySelect: HTMLSelectElement | null;
-  subcategorySelect: HTMLSelectElement | null;
+  subcatSearch: HTMLInputElement | null;
+  subcatResults: HTMLElement | null;
+  injuryHidden: HTMLInputElement | null;
+  subcatHidden: HTMLInputElement | null;
   severitySelect: HTMLSelectElement | null;
-  notesInput: HTMLInputElement | null;
 };
 
-function createPriorityList(root: HTMLElement | null, config: { label: string; keyField: string; max: number }) {
+function createPriorityList(
+  root: HTMLElement | null,
+  config: {
+    label: string;
+    keyField: string;
+    max: number;
+    priorityField?: string;
+    priorityOptions?: Array<{ value: string; label: string }>;
+    defaultPriority?: string;
+    parentField?: string;
+  }
+) {
   if (!root) {
     return {
       setOptions: (_options: any[]) => {},
@@ -59,7 +74,7 @@ function createPriorityList(root: HTMLElement | null, config: { label: string; k
   }
 
   const state = {
-    options: [] as Array<{ id: string; name?: string; description?: string }>,
+    options: [] as Array<{ id: string; name?: string; description?: string; searchText?: string; parentId?: string }>,
     entries: [] as PriorityEntry[],
   };
 
@@ -69,49 +84,82 @@ function createPriorityList(root: HTMLElement | null, config: { label: string; k
     if (addBtn) addBtn.disabled = count >= config.max;
   };
 
+  if (addBtn) {
+    addBtn.addEventListener('click', () => addEntry());
+  }
+
   const hasCapacity = () => state.entries.length < config.max;
 
   const findAvailable = (current: PriorityEntry) => {
     const used = new Set(
       state.entries
         .filter((entry) => entry !== current)
-        .map((entry) => entry.select?.value)
+        .map((entry) => entry.hiddenId?.value)
         .filter(Boolean)
     );
     const available = state.options.find((opt) => !used.has(opt.id));
     return available ? available.id : '';
   };
 
-  const populateSelect = (entry: PriorityEntry, targetId?: string) => {
-    const select = entry.select;
-    if (!select) return;
-    const current = targetId || select.value;
-    const used = new Set(state.entries.map((item) => item.select?.value).filter(Boolean));
-    select.innerHTML = '';
-    state.options.forEach((option) => {
-      const optionEl = document.createElement('option');
-      optionEl.value = option.id;
-      optionEl.textContent = option.name || option.id;
-      if (option.description) optionEl.title = option.description;
-      if (used.has(option.id) && option.id !== current) {
-        optionEl.disabled = true;
-      }
-      select.appendChild(optionEl);
+  const renderResults = (entry: PriorityEntry, query: string) => {
+    if (!entry.results) return;
+    const q = query.trim().toLowerCase();
+    const candidates = state.options.map((opt) => {
+      const name = opt.name || opt.id;
+      const desc = opt.description || '';
+      const inName = name.toLowerCase().includes(q);
+      const inDesc = desc.toLowerCase().includes(q);
+      const score = (inName ? 2 : 0) + (inDesc ? 1 : 0);
+      return { opt, score };
+    }).filter(({ score }) => q === '' ? true : score > 0)
+      .sort((a, b) => b.score - a.score || (a.opt.name || '').localeCompare(b.opt.name || ''))
+      .slice(0, 20);
+
+    entry.results.innerHTML = '';
+    if (!candidates.length) {
+      entry.results.innerHTML = '<div class="px-4 py-2 text-sm text-slate-500">No matches found</div>';
+      entry.results.classList.remove('hidden');
+      return;
+    }
+    candidates.forEach(({ opt, score }) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'w-full px-4 py-2 text-left text-sm hover:bg-slate-50';
+      const name = opt.name || opt.id;
+      const desc = opt.description || '';
+      const preview = desc.length > 110 ? `${desc.slice(0, 110)}…` : desc;
+      btn.innerHTML = `<div class="font-semibold text-slate-800">${name}</div><div class="text-xs text-slate-500">${preview}</div>`;
+      btn.addEventListener('click', () => {
+        if (entry.searchInput) entry.searchInput.value = name;
+        if (entry.hiddenId) entry.hiddenId.value = opt.id;
+        entry.results?.classList.add('hidden');
+        updateUI();
+      });
+      entry.results?.appendChild(btn);
     });
-    if (!state.options.length) {
-      const placeholder = document.createElement('option');
-      placeholder.value = '';
-      placeholder.textContent = `No ${config.label.toLowerCase()} options available`;
-      placeholder.disabled = true;
-      placeholder.selected = true;
-      select.appendChild(placeholder);
-    }
-    const matches = state.options.some((opt) => opt.id === current);
-    if (matches) select.value = current;
-    else {
-      const first = Array.from(select.options).find((opt) => !opt.disabled);
-      select.value = first ? first.value : '';
-    }
+    entry.results.classList.remove('hidden');
+  };
+
+  const wireSearch = (entry: PriorityEntry, defaultId?: string) => {
+    const picked = state.options.find((o) => o.id === defaultId);
+    if (entry.hiddenId) entry.hiddenId.value = defaultId || '';
+    if (entry.searchInput && picked) entry.searchInput.value = picked.name || picked.id;
+
+    const closeResults = () => entry.results?.classList.add('hidden');
+    entry.searchInput?.addEventListener('focus', () => {
+      renderResults(entry, entry.searchInput?.value || '');
+    });
+    entry.searchInput?.addEventListener('input', (e) => {
+      const value = (e.target as HTMLInputElement).value;
+      // clear hidden id when typing free text
+      if (entry.hiddenId) entry.hiddenId.value = '';
+      renderResults(entry, value);
+    });
+    document.addEventListener('click', (evt) => {
+      if (entry.results && !entry.results.contains(evt.target as Node) && !entry.searchInput?.contains(evt.target as Node)) {
+        closeResults();
+      }
+    });
   };
 
   const addEntry = (defaultId?: string) => {
@@ -119,7 +167,9 @@ function createPriorityList(root: HTMLElement | null, config: { label: string; k
     const clone = template.content.cloneNode(true) as DocumentFragment;
     const node = clone.querySelector<HTMLElement>('[data-item]');
     if (!node) return;
-    const select = node.querySelector<HTMLSelectElement>(`[data-field="${config.keyField}"]`);
+    const searchInput = node.querySelector<HTMLInputElement>('[data-search-input]');
+    const hiddenId = node.querySelector<HTMLInputElement>(`[data-field="${config.keyField}"]`);
+    const results = node.querySelector<HTMLElement>('[data-search-results]');
     const priority = node.querySelector<HTMLSelectElement>('[data-field="priority"]');
     const remove = node.querySelector('[data-remove]');
     if (remove) {
@@ -130,20 +180,20 @@ function createPriorityList(root: HTMLElement | null, config: { label: string; k
         updateUI();
       });
     }
-    const entry = { node, select, priority };
+    const entry = { node, searchInput, hiddenId, results, priority, labelEl: null };
     state.entries.push(entry);
     itemsContainer.appendChild(node);
-    if (select) {
-      select.addEventListener('change', () => refresh());
-    }
-    const id = defaultId || findAvailable(entry);
-    populateSelect(entry, id);
-    if (priority && !priority.value) priority.value = 'must_have';
+    wireSearch(entry, defaultId);
+    if (priority && !priority.value) priority.value = config.defaultPriority || 'must_have';
     updateUI();
   };
 
   const refresh = () => {
-    state.entries.forEach((entry) => populateSelect(entry, entry.select?.value));
+    state.entries.forEach((entry) => {
+      const currentId = entry.hiddenId?.value;
+      const picked = state.options.find((o) => o.id === currentId);
+      if (entry.searchInput && picked) entry.searchInput.value = picked.name || picked.id;
+    });
   };
 
   return {
@@ -157,7 +207,7 @@ function createPriorityList(root: HTMLElement | null, config: { label: string; k
       const errors: string[] = [];
       const seen = new Set<string>();
       state.entries.forEach((entry) => {
-        const value = entry.select?.value || '';
+        const value = entry.hiddenId?.value || '';
         if (!value) {
           errors.push(`Select a ${config.label.toLowerCase()} for each entry.`);
           return;
@@ -170,7 +220,8 @@ function createPriorityList(root: HTMLElement | null, config: { label: string; k
         const option = state.options.find((opt) => opt.id === value);
         data.push({
           [config.keyField]: value,
-          priority: entry.priority?.value || 'nice_to_have',
+          [config.priorityField || 'priority']: entry.priority?.value || config.defaultPriority || 'nice_to_have',
+          ...(config.parentField && option?.parentId ? { [config.parentField]: option.parentId } : {}),
           name: option?.name,
           description: option?.description,
         });
@@ -189,9 +240,10 @@ function createPriorityList(root: HTMLElement | null, config: { label: string; k
 const createInjuryList = (root: HTMLElement | null, config: { max: number }) => {
   if (!root) {
     return {
-      setOptions: (_injuries: any[]) => {},
+      setOptions: (_injuries: any[], _subs: any) => {},
       collect: () => ({ data: [], errors: [] as string[] }),
       reset: () => {},
+      addEntry: () => {},
     };
   }
 
@@ -202,100 +254,93 @@ const createInjuryList = (root: HTMLElement | null, config: { max: number }) => 
 
   if (!itemsContainer || !template) {
     return {
-      setOptions: (_injuries: any[]) => {},
+      setOptions: (_injuries: any[], _subs: any) => {},
       collect: () => ({ data: [], errors: [] as string[] }),
       reset: () => {},
+      addEntry: () => {},
     };
   }
 
   const state = {
-    injuries: [] as Array<{ id: string; name: string; description?: string }>,
-    subcategories: {} as Record<string, Array<{ id: string; name: string; definition?: string }>>,
+    subcats: [] as Array<{ id: string; injury_id: string; name: string; description?: string }>,
     entries: [] as InjuryEntry[],
   };
 
   const updateUI = () => {
     const count = state.entries.length;
     if (countEl) countEl.textContent = `${count} / ${config.max}`;
-    if (addBtn) addBtn.disabled = count >= config.max || state.injuries.length === 0;
+    if (addBtn) addBtn.disabled = count >= config.max || state.subcats.length === 0;
   };
 
-  const populateOptions = (entry: InjuryEntry, targetId?: string) => {
-    const select = entry.injurySelect;
-    if (!select) return;
-    const current = targetId || select.value;
-    select.innerHTML = '';
-    state.injuries.forEach((injury) => {
-      const option = document.createElement('option');
-      option.value = injury.id;
-      option.textContent = injury.name;
-      if (injury.description) option.title = injury.description;
-      select.appendChild(option);
-    });
-    if (!state.injuries.length) {
-      const placeholder = document.createElement('option');
-      placeholder.value = '';
-      placeholder.textContent = 'No injuries available';
-      placeholder.disabled = true;
-      placeholder.selected = true;
-      select.appendChild(placeholder);
+  if (addBtn) {
+    addBtn.addEventListener('click', () => addEntry());
+  }
+
+  const renderOptions = (
+    query: string,
+    resultsEl: HTMLElement | null,
+    onPick: (item: { id: string; injury_id: string; name: string }) => void
+  ) => {
+    if (!resultsEl) return;
+    const q = query.trim().toLowerCase();
+    const candidates = state.subcats
+      .map((opt) => {
+        const name = opt.name;
+        const desc = opt.description || '';
+        const inName = name.toLowerCase().includes(q);
+        const inDesc = desc.toLowerCase().includes(q);
+        const score = (inName ? 2 : 0) + (inDesc ? 1 : 0);
+        return { opt, score, preview: desc.length > 110 ? `${desc.slice(0, 110)}…` : desc };
+      })
+      .filter(({ score }) => (q === '' ? true : score > 0))
+      .sort((a, b) => b.score - a.score || a.opt.name.localeCompare(b.opt.name))
+      .slice(0, 20);
+    resultsEl.innerHTML = '';
+    if (!candidates.length) {
+      resultsEl.innerHTML = '<div class="px-4 py-2 text-sm text-slate-500">No matches found</div>';
+      resultsEl.classList.remove('hidden');
+      return;
     }
-    const match = state.injuries.some((injury) => injury.id === current);
-    select.value = match ? current : state.injuries[0]?.id || '';
-    updateSubcategories(entry, true);
-  };
-
-  const updateSubcategories = (entry: InjuryEntry, preserveValue = false) => {
-    const select = entry.subcategorySelect;
-    if (!select) return;
-    const injuryId = entry.injurySelect?.value || '';
-    const subs = state.subcategories[injuryId] || [];
-    const previous = preserveValue ? select.value : '';
-    select.innerHTML = '';
-    const defaultOpt = document.createElement('option');
-    defaultOpt.value = '';
-    defaultOpt.textContent = 'General';
-    select.appendChild(defaultOpt);
-    subs.forEach((sub) => {
-      const option = document.createElement('option');
-      option.value = sub.id;
-      option.textContent = sub.name;
-      if (sub.definition) option.title = sub.definition;
-      select.appendChild(option);
+    candidates.forEach(({ opt, preview }) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'w-full px-4 py-2 text-left text-sm hover:bg-slate-50';
+      btn.innerHTML = `<div class="font-semibold text-slate-800">${opt.name}</div><div class="text-xs text-slate-500">${preview}</div>`;
+      btn.addEventListener('click', () => onPick({ id: opt.id, injury_id: opt.injury_id, name: opt.name }));
+      resultsEl.appendChild(btn);
     });
-    if (previous && subs.some((sub) => sub.id === previous)) {
-      select.value = previous;
-    } else {
-      select.value = '';
-    }
+    resultsEl.classList.remove('hidden');
   };
 
-  const collect = () => {
-    const data: Array<Record<string, unknown>> = [];
-    const errors: string[] = [];
-    const seen = new Set<string>();
-    state.entries.forEach((entry) => {
-      const injuryId = entry.injurySelect?.value || '';
-      if (!injuryId) {
-        errors.push('Select an injury for each entry.');
-        return;
-      }
-      const key = entry.subcategorySelect?.value || injuryId;
-      if (seen.has(key)) {
-        errors.push('Each injury or specific area can only be listed once.');
-        return;
-      }
-      seen.add(key);
-      const severity = entry.severitySelect?.value || 'somewhat_bad';
-      const notes = entry.notesInput?.value?.trim() || null;
-      data.push({
-        injury_id: injuryId,
-        injury_subcategory_id: entry.subcategorySelect?.value || null,
-        severity,
-        notes,
+  const wireSearch = (
+    entry: InjuryEntry,
+    defaults?: { injury_id?: string; injury_subcategory_id?: string }
+  ) => {
+    const setSubcat = (subId?: string) => {
+      const picked = state.subcats.find((s) => s.id === subId) || null;
+      if (entry.subcatHidden) entry.subcatHidden.value = picked?.id || '';
+      if (entry.injuryHidden) entry.injuryHidden.value = picked?.injury_id || '';
+      if (entry.subcatSearch) entry.subcatSearch.value = picked?.name || '';
+    };
+
+    const initial = defaults?.injury_subcategory_id;
+    if (initial) setSubcat(initial);
+
+    entry.subcatSearch?.addEventListener('focus', () => {
+      renderOptions(entry.subcatSearch?.value || '', entry.subcatResults, (item) => {
+        setSubcat(item.id);
+        entry.subcatResults?.classList.add('hidden');
       });
     });
-    return { data, errors };
+    entry.subcatSearch?.addEventListener('input', (e) => {
+      const val = (e.target as HTMLInputElement).value;
+      if (entry.subcatHidden) entry.subcatHidden.value = '';
+      if (entry.injuryHidden) entry.injuryHidden.value = '';
+      renderOptions(val, entry.subcatResults, (item) => {
+        setSubcat(item.id);
+        entry.subcatResults?.classList.add('hidden');
+      });
+    });
   };
 
   const addEntry = (defaults?: Record<string, string>) => {
@@ -303,10 +348,11 @@ const createInjuryList = (root: HTMLElement | null, config: { max: number }) => 
     const clone = template.content.cloneNode(true) as DocumentFragment;
     const node = clone.querySelector<HTMLElement>('[data-item]');
     if (!node) return;
-    const select = node.querySelector<HTMLSelectElement>('[data-field="injury_id"]');
-    const subcategory = node.querySelector<HTMLSelectElement>('[data-field="injury_subcategory_id"]');
+    const subcatSearch = node.querySelector<HTMLInputElement>('[data-search-input-subcat]');
+    const subcatResults = node.querySelector<HTMLElement>('[data-search-results-subcat]');
+    const injuryHidden = node.querySelector<HTMLInputElement>('[data-field="injury_id"]');
+    const subcatHidden = node.querySelector<HTMLInputElement>('[data-field="injury_subcategory_id"]');
     const severity = node.querySelector<HTMLSelectElement>('[data-field="severity"]');
-    const notes = node.querySelector<HTMLInputElement>('[data-field="notes"]');
     const remove = node.querySelector('[data-remove]');
     if (remove) {
       remove.addEventListener('click', () => {
@@ -317,19 +363,16 @@ const createInjuryList = (root: HTMLElement | null, config: { max: number }) => 
     }
     const entry: InjuryEntry = {
       node,
-      injurySelect: select,
-      subcategorySelect: subcategory,
+      subcatSearch,
+      subcatResults,
+      injuryHidden,
+      subcatHidden,
       severitySelect: severity,
-      notesInput: notes,
     };
     state.entries.push(entry);
     itemsContainer.appendChild(node);
-    if (select) {
-      select.addEventListener('change', () => updateSubcategories(entry));
-    }
-    const targetInjury = defaults?.injury_id;
-    populateOptions(entry, targetInjury);
     if (severity && !severity.value) severity.value = 'somewhat_bad';
+    wireSearch(entry, defaults);
     updateUI();
   };
 
@@ -341,15 +384,48 @@ const createInjuryList = (root: HTMLElement | null, config: { max: number }) => 
 
   return {
     setOptions(
-      injuries: Array<{ id: string; name: string; description?: string }>,
-      subcategories: Record<string, Array<{ id: string; name: string; definition?: string }>>
+      _injuries: Array<{ id: string; name: string; description?: string }>,
+      subcategories: Record<string, Array<{ id: string; name: string; definition?: string; injury_id?: string }>>
     ) {
-      state.injuries = Array.isArray(injuries) ? [...injuries] : [];
-      state.subcategories = subcategories || {};
-      state.entries.forEach((entry) => populateOptions(entry));
+      const flat: Array<{ id: string; injury_id: string; name: string; description?: string }> = [];
+      Object.entries(subcategories || {}).forEach(([injuryId, subs]) => {
+        subs.forEach((sub) => {
+          flat.push({
+            id: sub.id,
+            injury_id: injuryId,
+            name: sub.name,
+            description: sub.definition,
+          });
+        });
+      });
+      state.subcats = flat;
       updateUI();
     },
-    collect,
+    collect() {
+      const data: Array<Record<string, unknown>> = [];
+      const errors: string[] = [];
+      const seen = new Set<string>();
+      state.entries.forEach((entry) => {
+        const injuryId = entry.injuryHidden?.value || '';
+        const subcatId = entry.subcatHidden?.value || '';
+        if (!subcatId) {
+          errors.push('Select an injury area for each entry.');
+          return;
+        }
+        if (seen.has(subcatId)) {
+          errors.push('Each injury area can only be listed once.');
+          return;
+        }
+        seen.add(subcatId);
+      const severity = entry.severitySelect?.value || 'somewhat_bad';
+      data.push({
+        injury_id: injuryId || null,
+        injury_subcategory_id: subcatId,
+        severity,
+      });
+    });
+      return { data, errors };
+    },
     reset,
     addEntry,
   };
@@ -398,10 +474,10 @@ const toInjuryInputs = (entries: Array<Record<string, unknown>>): InjuryInput[] 
   entries.map((entry) => {
     const severity = (entry.severity as InjuryInput['severity']) || 'somewhat_bad';
     return {
-      injury_id: String(entry.injury_id),
+      injury_id: (entry.injury_id as string | null) || null,
       injury_subcategory_id: (entry.injury_subcategory_id as string | null) || null,
       severity,
-      notes: (entry.notes as string | null) || null,
+      notes: null,
     };
   });
 
@@ -424,7 +500,19 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
   const injuryRoot = block ? block.querySelector<HTMLElement>('[data-list="injuries"]') : null;
   const preferenceList = createPriorityList(preferenceRoot, { label: 'Preference', keyField: 'preference_id', max: 20 });
   const goalList = createPriorityList(goalRoot, { label: 'Goal', keyField: 'goal_id', max: 20 });
-  const injuryList = createInjuryList(injuryRoot, { max: 20 });
+  const injuryList = createPriorityList(injuryRoot, {
+    label: 'Injury area',
+    keyField: 'injury_subcategory_id',
+    max: 20,
+    priorityField: 'severity',
+    defaultPriority: 'somewhat_bad',
+    priorityOptions: [
+      { value: 'severe', label: 'Severe' },
+      { value: 'somewhat_bad', label: 'Somewhat bad' },
+      { value: 'mostly_healed', label: 'Mostly healed' },
+    ],
+    parentField: 'injury_id',
+  });
 
   let active = false;
   let applyCredit = false;
@@ -433,15 +521,8 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
   let lastUserId: string | null = null;
   let updateToken = 0;
 
-  const toggleWrapper = block ? block.querySelector<HTMLElement>('[data-premium-toggle]') : null;
-  const applyToggle = block ? block.querySelector<HTMLInputElement>('[data-premium-apply]') : null;
-
-  if (applyToggle) {
-    applyToggle.addEventListener('change', (event) => {
-      applyCredit = Boolean((event.target as HTMLInputElement).checked);
-      updateSummary();
-    });
-  }
+  const toggleWrapper = null;
+  const applyToggle = null;
 
   const updateSummary = () => {
     if (!summary) return;
@@ -449,21 +530,13 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
       summary.textContent = '';
       return;
     }
-    const creditText = creditCount === 1 ? '1 adult analysis credit available.' : `${creditCount} adult analysis credits available.`;
-    const actionText = applyCredit
-      ? 'We will apply one credit when you submit.'
-      : 'Toggle below to apply a credit for the detailed analysis.';
-    summary.textContent = consentGranted
-      ? `${creditText} ${actionText}`
-      : `${creditText} Enable data-retention consent when prompted so we can store these detailed inputs.`;
+    summary.textContent = '';
   };
 
   const activate = () => {
     active = true;
     if (locked) locked.hidden = true;
     if (block) block.hidden = false;
-    if (toggleWrapper) toggleWrapper.hidden = false;
-    if (applyToggle) applyToggle.disabled = false;
     updateSummary();
   };
 
@@ -474,11 +547,7 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
     if (block) block.hidden = true;
     if (locked) locked.hidden = false;
     if (lockedMessage) lockedMessage.textContent = message || 'Premium credits let you capture preferences, goals, and injuries alongside your measurements. Sign in and apply a credit to unlock deeper tailoring.';
-    if (toggleWrapper) toggleWrapper.hidden = true;
-    if (applyToggle) {
-      applyToggle.checked = false;
-      applyToggle.disabled = true;
-    }
+    // toggle/checkbox removed
     preferenceList.reset();
     goalList.reset();
     injuryList.reset();
@@ -517,7 +586,6 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
       }
       if (lastUserId !== userId) {
         applyCredit = false;
-        if (applyToggle) applyToggle.checked = false;
       }
       lastUserId = userId;
       let taxonomy;
@@ -537,11 +605,39 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
       if (token !== updateToken) return;
       preferenceList.setOptions(taxonomy.preferences);
       goalList.setOptions(taxonomy.goals);
-      injuryList.setOptions(taxonomy.injuries, taxonomy.injurySubcategories);
-      if (toggleWrapper) toggleWrapper.hidden = false;
-      if (applyToggle) {
-        applyToggle.disabled = false;
-        applyToggle.checked = applyCredit;
+      const flatSubcats = Object.entries(taxonomy.injurySubcategories || {}).flatMap(([injuryId, subs]) =>
+        (subs || []).map((sub: any) => ({
+          id: sub.id,
+          name: sub.name,
+          description: sub.definition,
+          parentId: injuryId,
+        }))
+      );
+      injuryList.setOptions(flatSubcats);
+      // Prefill two injury entries for quick testing if available
+      if ((injuryList as any).addEntry) {
+        (injuryList as any).addEntry(flatSubcats[0]?.id);
+        (injuryList as any).addEntry(flatSubcats[1]?.id);
+      }
+      // Prefill a couple of entries for faster local testing
+      if ((preferenceList as any).addEntry) {
+        const first = taxonomy.preferences[0]?.id;
+        const second = taxonomy.preferences[1]?.id;
+        (preferenceList as any).addEntry(first);
+        (preferenceList as any).addEntry(second);
+      }
+      if ((goalList as any).addEntry) {
+        const first = taxonomy.goals[0]?.id;
+        const second = taxonomy.goals[1]?.id;
+        (goalList as any).addEntry(first);
+        (goalList as any).addEntry(second);
+      }
+      if ((injuryList as any).addEntry) {
+        const subcats = Object.values(taxonomy.injurySubcategories || {}).flat();
+        const firstSub = subcats[0]?.id;
+        const secondSub = subcats[1]?.id;
+        (injuryList as any).addEntry({ injury_subcategory_id: firstSub, injury_id: subcats[0]?.injury_id });
+        (injuryList as any).addEntry({ injury_subcategory_id: secondSub, injury_id: subcats[1]?.injury_id });
       }
       activate();
     },

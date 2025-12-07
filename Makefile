@@ -20,4 +20,4 @@ clean:
 	rm -rf dist
 
 run-frontend: build-frontend
-	wrangler dev
+	wrangler dev --local

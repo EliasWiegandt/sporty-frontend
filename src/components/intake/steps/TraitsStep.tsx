@@ -1,4 +1,15 @@
 import type { FunctionalComponent } from 'preact';
+import RadioCards from '../controls/RadioCards';
+
+const PREFILL_TRAITS: Record<string, string> = {
+  muscle_fiber: 'fast_twitch_dominant',
+  metabolic_tendency: "don't know",
+  joint_laxity: 'medium',
+  foot_arch: 'neutral',
+  temperature_tolerance: 'balanced',
+  handedness: 'right',
+  footedness: 'right',
+};
 
 type TraitOption = { label: string; value: string; detail?: string };
 type TraitQuestion = {
@@ -11,72 +22,75 @@ type TraitQuestion = {
 const traitQuestions: TraitQuestion[] = [
   {
     name: 'muscle_fiber',
-    label: 'Muscle fiber',
-    description: 'Which description best matches how you sprint, push, or reset power?',
+    label: 'Muscle burst vs. endurance',
+    description: 'Which feels most natural in workouts?',
     options: [
       {
-        label: 'Short bursts & quick power',
-        value: 'short bursts, quick power',
-        detail: 'Explosive, fast-twitch dominance',
+        label: 'Short, explosive bursts suit me',
+        value: 'fast_twitch_dominant',
       },
       {
-        label: 'Balanced burst',
+        label: 'I’m better at steady, long efforts',
+        value: 'slow_twitch_dominant',
+      },
+      {
+        label: 'Pretty even between bursts and steady',
         value: 'balanced',
-        detail: 'Comfortable with both sprints & sustained effort',
       },
-      {
-        label: 'Long efforts & steady control',
-        value: 'long efforts, steady control',
-        detail: 'Slow-twitch emphasis and pacing',
-      },
+      { label: 'Don’t know', value: "don't know" },
     ],
   },
   {
     name: 'metabolic_tendency',
-    label: 'Metabolic tendency',
-    description: 'How does your body respond to training and diet?',
+    label: 'Weight-change tendency',
+    description: 'If you stop tracking food for a month, you usually…',
     options: [
-      { label: 'Hard to gain weight', value: 'hard to gain weight' },
-      { label: 'Easy to tune up', value: 'easy to tune up' },
-      { label: 'Weight gains quickly', value: 'weight gains' },
+      { label: 'Gain weight easily', value: 'endomorph' },
+      { label: 'Stay about the same', value: 'mesomorph' },
+      { label: 'Lose weight easily', value: 'ectomorph' },
+      { label: 'Don’t know', value: "don't know" },
     ],
   },
   {
     name: 'joint_laxity',
-    label: 'Joint laxity',
-    description: 'Think about how loose or stiff your joints feel during movement.',
+    label: 'Flexibility / laxity',
+    description: 'How do your elbows/knees feel and move?',
     options: [
-      { label: 'Low / stiff', value: 'low' },
-      { label: 'Medium / average', value: 'medium' },
-      { label: 'High / flexible', value: 'high' },
+      { label: 'Very bendy / goes past straight', value: 'high' },
+      { label: 'Average, moves normally', value: 'medium' },
+      { label: 'Feels tight / limited range', value: 'low' },
+      { label: 'Don’t know', value: "don't know" },
     ],
   },
   {
     name: 'foot_arch',
     label: 'Foot arch',
-    description: 'How does your footprint look after a long walk?',
+    description: 'Your wet footprint leaves…',
     options: [
-      { label: 'Flat / low arch', value: 'flat' },
-      { label: 'Neutral arch', value: 'neutral' },
-      { label: 'High arch', value: 'high arch' },
+      { label: 'Mostly a straight edge (low arch/flat)', value: 'flat' },
+      { label: 'A moderate curve (neutral arch)', value: 'neutral' },
+      { label: 'A narrow mid-foot (high arch)', value: 'high' },
+      { label: 'Don’t know', value: "don't know" },
     ],
   },
   {
     name: 'temperature_tolerance',
-    label: 'Temperature tolerance',
-    description: 'What temperature extremes feel most natural?',
+    label: 'Heat vs. cold comfort',
+    description: 'During hard sessions, which bothers you first?',
     options: [
-      { label: 'Cold tolerant', value: 'cold' },
-      { label: 'Balanced', value: 'balanced' },
-      { label: 'Heat tolerant', value: 'heat' },
+      { label: 'I overheat quickly', value: 'heat_tolerant' },
+      { label: 'I chill easily / cold hands and feet', value: 'cold_tolerant' },
+      { label: 'Both heat and cold are fine', value: 'balanced' },
+      { label: 'Don’t know', value: "don't know" },
     ],
   },
 ];
 
 const sideOptions: TraitOption[] = [
-  { label: 'Right-side dominant', value: 'right' },
-  { label: 'Left-side dominant', value: 'left' },
-  { label: 'Comfortable with both sides', value: 'both', detail: 'Ambidextrous or switches hands often' },
+  { label: 'Right', value: 'right' },
+  { label: 'Left', value: 'left' },
+  { label: 'Either / both', value: 'both', detail: 'Ambidextrous or switches often' },
+  { label: 'Don’t know', value: "don't know" },
 ];
 
 const TraitsStep: FunctionalComponent = () => (
@@ -96,55 +110,33 @@ const TraitsStep: FunctionalComponent = () => (
           {question.description && (
             <p className="text-sm text-slate-500">{question.description}</p>
           )}
-          <div className="grid gap-3 md:grid-cols-3">
-            {question.options.map((option) => (
-              <label
-                key={`${question.name}-${option.value}`}
-                className="relative cursor-pointer rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-slate-900 focus-within:ring-2 focus-within:ring-slate-900"
-              >
-                <input
-                  type="radio"
-                  name={question.name}
-                  value={option.value}
-                  className="sr-only"
-                />
-                <span className="font-semibold text-slate-800">{option.label}</span>
-                {option.detail && (
-                  <p className="text-sm text-slate-500">{option.detail}</p>
-                )}
-              </label>
-            ))}
-          </div>
+          <RadioCards
+            name={question.name}
+            value={undefined}
+            defaultValue={PREFILL_TRAITS[question.name]}
+            options={question.options}
+          />
         </fieldset>
       ))}
 
       <div className="grid gap-4 md:grid-cols-2">
-        {['handedness', 'sport_side'].map((field) => {
-          const label = field === 'handedness' ? 'Handedness' : 'Sport side';
+        {['handedness', 'footedness'].map((field) => {
+          const label = field === 'handedness' ? 'Handedness' : 'Footedness';
           const description =
             field === 'handedness'
-              ? 'Which hand feels natural for writing, holding, or steadying?'
-              : 'Which side do you favor in your signature sport moves?';
+              ? 'Which hand do you throw/serve/write with most?'
+              : 'Which leg do you naturally kick or jump off with?';
           return (
             <fieldset key={field} className="space-y-3" aria-label={label}>
               <legend className="type-body font-semibold text-slate-800">{label}</legend>
               <p className="text-sm text-slate-500">{description}</p>
-              <div className="grid gap-3">
-                {sideOptions.map((option) => (
-                  <label
-                    key={`${field}-${option.value}`}
-                    className="inline-flex w-full cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-slate-900 focus-within:ring-2 focus-within:ring-slate-900"
-                  >
-                    <input type="radio" name={field} value={option.value} className="mt-1 h-4 w-4 cursor-pointer" />
-                    <span>
-                      <span className="font-semibold text-slate-800">{option.label}</span>
-                      {option.detail && (
-                        <p className="text-sm text-slate-500">{option.detail}</p>
-                      )}
-                    </span>
-                  </label>
-                ))}
-              </div>
+              <RadioCards
+                name={field}
+                value={undefined}
+                defaultValue={PREFILL_TRAITS[field]}
+                options={sideOptions}
+                columns="grid-cols-1"
+              />
             </fieldset>
           );
         })}

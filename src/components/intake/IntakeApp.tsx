@@ -38,7 +38,7 @@ const TRAIT_FIELDS = [
   "foot_arch",
   "temperature_tolerance",
   "handedness",
-  "sport_side",
+  "footedness",
 ] as const;
 
 type StepKey =
@@ -69,16 +69,13 @@ const PREMIUM_STEP_KEYS: StepKey[] = [
 ];
 
 const STEP_META: Record<StepKey, { title: string; subtitle: string }> = {
-  basics: { title: "Basics", subtitle: "Birthday & sex" },
-  measurements: {
-    title: "Measurements",
-    subtitle: "Body, torso & limb inputs",
-  },
-  traits: { title: "Traits", subtitle: "Physiological cues" },
-  preferences: { title: "Preferences", subtitle: "Priority selections" },
-  goals: { title: "Goals", subtitle: "Training and performance targets" },
-  injuries: { title: "Injuries", subtitle: "Risk-aware considerations" },
-  pastSports: { title: "Past sports", subtitle: "Optional experience" },
+  basics: { title: "Basics", subtitle: "" },
+  measurements: { title: "Measurements", subtitle: "" },
+  traits: { title: "Traits", subtitle: "" },
+  preferences: { title: "Preferences", subtitle: "" },
+  goals: { title: "Goals", subtitle: "" },
+  injuries: { title: "Injuries", subtitle: "" },
+  pastSports: { title: "Past sports", subtitle: "" },
 };
 
 const PREMIUM_SECTION_KEYS: PremiumSectionKey[] = [
@@ -145,6 +142,16 @@ const LOCAL_PREFILL_PAST_SPORTS: Array<Omit<PastSportsEntry, "id">> = [
   },
 ];
 
+const LOCAL_PREFILL_TRAITS: Record<string, string> = {
+  muscle_fiber: "fast_twitch_dominant",
+  metabolic_tendency: "don't know",
+  joint_laxity: "medium",
+  foot_arch: "neutral",
+  temperature_tolerance: "don't know",
+  handedness: "right",
+  footedness: "right",
+};
+
 const SEX_OPTIONS: Set<Sex> = new Set([
   "female",
   "male",
@@ -206,7 +213,7 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
   const [consentSaving, setConsentSaving] = useState(false);
 
   // Premium controller (kept as is for now since it handles external UI blocks)
-  const premiumControllerRef = useRef<PremiumController | null>(null);
+const premiumControllerRef = useRef<PremiumController | null>(null);
 
   const premiumSectionIndexMap = new Map<PremiumSectionKey, number>();
   if (mode === "premium") {
@@ -957,56 +964,30 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid gap-3 md:grid-cols-3" data-stepper-nav>
-        {stepDefinitions.map((step, idx) => {
-          const isActive = idx === currentStepIndex;
-          const isCompleted = idx < maxVisitedIndex;
-          const stepNumber = idx + 1;
-
-          const baseClasses =
-            "btn-pill btn-pill-secondary btn-pill-sm flex items-center gap-2 text-left border border-slate-200 bg-white transition";
-          const activeClasses = isActive
-            ? "border-2 border-slate-900 shadow-none"
-            : "";
-          const completedClasses = isCompleted
-            ? "bg-teal-50 border-teal-400 text-teal-800"
-            : "";
-
-          return (
-            <button
-              key={step.key}
-              type="button"
-              className={[baseClasses, activeClasses, completedClasses]
-                .filter(Boolean)
-                .join(" ")}
-              data-step-index={step.index}
-              onClick={() => handleNavClick(idx)}
-            >
-              <span
-                className={[
-                  "flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold",
-                  isCompleted
-                    ? "border-teal-500 bg-teal-500 text-white"
-                    : isActive
-                      ? "border-slate-900 text-slate-900"
-                      : "border-slate-300 text-slate-500",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              >
-                {stepNumber}
-              </span>
-              <span className="flex flex-col items-start">
-                <span className="font-semibold text-slate-800">
-                  {step.title}
-                </span>
-                <span className="type-small text-slate-500">
-                  {step.subtitle}
-                </span>
-              </span>
-            </button>
-          );
-        })}
+      {/* Progress bar replacing step pills */}
+      <div className="w-full" data-stepper-progress>
+        <div className="flex justify-between items-baseline mb-2">
+          <span className="badge-subtle">
+            {stepDefinitions[currentStepIndex]?.title || ""}
+          </span>
+          <span className="text-sm text-slate-500">
+            Step {currentStepIndex + 1} of {stepDefinitions.length}
+          </span>
+        </div>
+        <div className="w-full bg-slate-100 rounded-full h-2.5">
+          <div
+            className="bg-teal-600 h-2.5 rounded-full transition-all duration-200"
+            style={{
+              width: `${Math.min(
+                100,
+                Math.max(
+                  0,
+                  Math.round(((currentStepIndex + 1) / stepDefinitions.length) * 100)
+                )
+              )}%`,
+            }}
+          ></div>
+        </div>
       </div>
 
       <div className="space-y-6" data-stepper-content>

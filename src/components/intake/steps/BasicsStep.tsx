@@ -1,5 +1,6 @@
 import type { FunctionalComponent } from 'preact';
 import type { Sex } from '../../../data/intakeSchema';
+import RadioCards from '../controls/RadioCards';
 
 type BasicsStepProps = {
   value: { birthday: string; sex: Sex | '' };
@@ -44,27 +45,13 @@ const BasicsStep: FunctionalComponent<BasicsStepProps> = ({ value, onChange }) =
             <span className="block text-sm text-slate-500">
               Helps line you up with cohort averages.
             </span>
-            <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-labelledby="sex-label">
-              {SEX_OPTIONS.map((option) => (
-                <label
-                  key={option.value}
-                  className={`flex items-center justify-center h-11 w-full cursor-pointer rounded-xl border text-sm font-medium transition-all focus:outline-none ${value.sex === option.value
-                    ? 'bg-teal-50 border-teal-500 text-teal-800'
-                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
-                    }`}
-                >
-                  <input
-                    type="radio"
-                    name="sex"
-                    value={option.value}
-                    checked={value.sex === option.value}
-                    onChange={() => onChange({ sex: option.value })}
-                    className="sr-only"
-                  />
-                  {option.label}
-                </label>
-              ))}
-            </div>
+            <RadioCards
+              name="sex"
+              value={value.sex}
+              options={SEX_OPTIONS}
+              onChange={(val) => onChange({ sex: val as Sex })}
+              columns="grid-cols-2 md:grid-cols-2"
+            />
           </div>
         </div>
       </fieldset>
@@ -73,4 +60,3 @@ const BasicsStep: FunctionalComponent<BasicsStepProps> = ({ value, onChange }) =
 };
 
 export default BasicsStep;
-
