@@ -20,4 +20,4 @@ clean:
 	rm -rf dist
 
 run-frontend: build-frontend
-	wrangler dev --local
+	MINIFLARE_CF_FETCH=false wrangler dev --local

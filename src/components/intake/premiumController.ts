@@ -632,13 +632,6 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
         (goalList as any).addEntry(first);
         (goalList as any).addEntry(second);
       }
-      if ((injuryList as any).addEntry) {
-        const subcats = Object.values(taxonomy.injurySubcategories || {}).flat();
-        const firstSub = subcats[0]?.id;
-        const secondSub = subcats[1]?.id;
-        (injuryList as any).addEntry({ injury_subcategory_id: firstSub, injury_id: subcats[0]?.injury_id });
-        (injuryList as any).addEntry({ injury_subcategory_id: secondSub, injury_id: subcats[1]?.injury_id });
-      }
       activate();
     },
     collect() {

@@ -193,7 +193,7 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
           <template data-template>
             <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm" data-item>
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="space-y-2 md:col-span-2">
+                <label className="space-y-2">
                   <span className="type-body font-semibold text-slate-800">Injury or area</span>
                   <div className="relative" data-search-wrap>
                     <input
@@ -209,8 +209,6 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
                     />
                   </div>
                 </label>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
                 <label className="space-y-2">
                   <span className="type-body font-semibold text-slate-800">Severity</span>
                   <select className="input-field" data-field="severity">
