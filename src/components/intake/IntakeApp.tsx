@@ -210,6 +210,7 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
     ...LOCAL_PREFILL_MEASUREMENTS,
   }));
   const [consentGiven, setConsentGiven] = useState(false);
+  const consentIntentRef = useRef(false);
   const [consentSaving, setConsentSaving] = useState(false);
 
   // Premium controller (kept as is for now since it handles external UI blocks)
@@ -584,22 +585,34 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       };
       if (premiumSelection.errors && premiumSelection.errors.length) {
         setStatus(premiumSelection.errors.join(" "), "error");
+        setSubmitBusy(false);
         return;
       }
 
       const requiresPremium = mode === "premium";
+      // If user opted in to consent in this session, record it before submit
+      if (!sportySnapshot.hasConsent && consentGiven) {
+        try {
+          await handleGrantConsent();
+          consentIntentRef.current = true;
+        } catch (err) {
+          setStatus("Unable to record consent right now. Please try again.", "error");
+          setSubmitBusy(false);
+          return;
+        }
+      }
       if (requiresPremium && !premiumSelection.applyCredit) {
         setStatus(
-          "Apply an adult analysis credit before submitting this premium intake.",
+          "No credits for a premium analysis available.",
           "error"
         );
         return;
       }
-      const wantsPremium = premiumSelection.applyCredit || requiresPremium;
+      // Only allow premium flow when we're on the premium intake or the user explicitly applied a credit in that mode.
+      const wantsPremium = requiresPremium ? true : false;
       const premiumData = premiumSelection.data || null;
       const snapshot = sportySnapshot;
-      const userId =
-        snapshot.user && snapshot.user.id ? snapshot.user.id : null;
+      const userId = snapshot.user && snapshot.user.id ? snapshot.user.id : null;
       if (wantsPremium && !userId) {
         setStatus("Sign in to apply an adult analysis credit.", "error");
         return;
@@ -638,7 +651,7 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
         "info"
       );
 
-      let consentAccepted = snapshot.hasConsent || consentGiven;
+      let consentAccepted = snapshot.hasConsent || consentGiven || consentIntentRef.current;
       const sportyApp =
         typeof window !== "undefined" ? (window as any).SportyApp : null;
 
@@ -1044,14 +1057,14 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
         </div>
       </div>
 
-      {/* Consent toggle for free flow */}
-      {mode === "free" && isFinalStep && sportySnapshot.user && (
+      {/* Consent prompt only when not already granted */}
+      {isFinalStep && sportySnapshot.user && !sportySnapshot.hasConsent && (
         <div className="dashboard-card border-2 border-amber-100 bg-amber-50/30">
           <div className="flex items-center justify-between py-4">
             <div className="max-w-xl">
-              <h3 className="font-medium text-slate-900">Store my measurements & free results</h3>
+              <h3 className="font-medium text-slate-900">Consent to Sporty handling your data</h3>
               <p className="text-sm text-slate-500 mt-1">
-                Enable this to let Sporty remember your free matches. Required to see your results.
+                Allow Sporty to process and store your intake data and results for your account.
               </p>
             </div>
             <label className="toggle flex-shrink-0 ml-4" aria-label="Data retention consent">
@@ -1060,17 +1073,8 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
                 checked={consentGiven || sportySnapshot.hasConsent}
                 onChange={(e) => {
                   const target = e.target as HTMLInputElement;
-                  if (target.checked) {
-                    handleGrantConsent();
-                  } else {
-                    // Allow revocation from intake too
-                    const sportyApp = typeof window !== "undefined" ? (window as any).SportyApp : null;
-                    if (sportyApp && typeof sportyApp.revokeConsent === 'function') {
-                      sportyApp.revokeConsent().then(() => {
-                        setConsentGiven(false);
-                      });
-                    }
-                  }
+                  consentIntentRef.current = target.checked;
+                  setConsentGiven(target.checked);
                 }}
                 disabled={consentSaving}
               />

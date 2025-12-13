@@ -632,6 +632,8 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
         (goalList as any).addEntry(first);
         (goalList as any).addEntry(second);
       }
+      // Since we have confirmed credits > 0, auto-apply a credit
+      applyCredit = true;
       activate();
     },
     collect() {
