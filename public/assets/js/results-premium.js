@@ -83,6 +83,113 @@
   renderMatches(parsed.matches || []);
   renderPremiumMeasurements(parsed.matches || []);
 
+  function extractFactors(match) {
+    const breakdown = match.score_breakdown || {};
+    const factors = [];
+
+    const formatLabel = (key) =>
+      (key || '')
+        .replace(/_/g, ' ')
+        .replace(/ cm/i, '')
+        .replace(/\b\w/g, (l) => l.toUpperCase());
+
+    // Measurements
+    if (breakdown.metrics) {
+      Object.entries(breakdown.metrics).forEach(([key, val]) => {
+        const fit = val.fit_score ?? val.score;
+        if (fit !== undefined) {
+          factors.push({
+            key,
+            label: formatLabel(key),
+            score: fit,
+            match_contribution: val.match_contribution ?? 0,
+            user_value: val.user_value,
+            cohort_mean: val.cohort_mean,
+            importance: val.importance,
+            reasoning: val.reasoning,
+            type: 'measurement',
+          });
+        }
+      });
+    }
+
+    // Traits
+    const traits = breakdown.details?.traits?.body;
+    if (traits) {
+      Object.entries(traits).forEach(([key, val]) => {
+        const fit = val.fit_score ?? val.score;
+        if (fit !== undefined) {
+          factors.push({
+            key,
+            label: formatLabel(key),
+            score: fit,
+            match_contribution: val.match_contribution ?? 0,
+            user_value: val.value,
+            importance: val.importance,
+            reasoning: val.reasoning,
+            type: 'trait',
+          });
+        }
+      });
+    }
+
+    // Past sports
+    const pastList = breakdown.details?.past_sports || breakdown.past_sports || [];
+    pastList.forEach((item) => {
+      factors.push({
+        key: item.sport_subcategory_id || item.slug || 'past_sport',
+        label: item.sport_label || item.sport_subcategory_name || item.sport_subcategory_slug || 'Past sport',
+        score: item.score,
+        match_contribution: item.match_contribution ?? item.weight ?? 0,
+        reasoning: item.layman_reasoning || item.reasoning,
+        type: 'past_sport',
+      });
+    });
+
+    // Goals
+    const goals = breakdown.details?.goals || breakdown.goals || match.goal_alignment || [];
+    goals.forEach((item) => {
+      factors.push({
+        key: item.goal_id || item.id,
+        label: item.name || item.goal_name || item.goal_id || 'Goal',
+        score: item.score ?? item.alignment_score,
+        match_contribution: item.match_contribution ?? item.weight ?? 0,
+        priority: item.priority,
+        reasoning: item.summary || item.reasoning,
+        type: 'goal',
+      });
+    });
+
+    // Preferences
+    const prefs = breakdown.details?.preferences || breakdown.preferences || match.preference_alignment || [];
+    prefs.forEach((item) => {
+      factors.push({
+        key: item.preference_id || item.id,
+        label: item.name || item.preference_name || item.preference_id || 'Preference',
+        score: item.score ?? item.alignment_score,
+        match_contribution: item.match_contribution ?? item.weight ?? 0,
+        priority: item.priority,
+        reasoning: item.summary || item.reasoning,
+        type: 'preference',
+      });
+    });
+
+    // Injuries
+    const injuries = breakdown.details?.injuries || breakdown.injuries || match.injury_considerations || [];
+    injuries.forEach((item) => {
+      factors.push({
+        key: item.injury_subcategory_id || item.injury_id || item.id,
+        label: item.injury_name || item.injury_subcategory_name || item.name || 'Injury',
+        score: item.score ?? item.alignment_score,
+        match_contribution: item.match_contribution ?? item.weight ?? 0,
+        reasoning: item.guidance || item.summary || item.reasoning,
+        type: 'injury',
+      });
+    });
+
+    return factors.sort((a, b) => (b.match_contribution || 0) - (a.match_contribution || 0));
+  }
+
   function renderComponentImpacts(components) {
     if (!componentList) return;
     componentList.innerHTML = '';
@@ -305,6 +412,8 @@
       return;
     }
     matches.forEach((match, index) => {
+      const factors = extractFactors(match);
+      match.factors = factors;
       const card = document.createElement('article');
       card.className = 'match-card';
 
@@ -338,6 +447,14 @@
       summary.textContent = ((match.optimal_body || {}).spec || {}).rationale || 'This sport aligns well with your profile.';
       card.appendChild(summary);
 
+      const factorList = buildFactorListHtml(factors);
+      if (factorList) {
+        const factorWrapper = document.createElement('div');
+        factorWrapper.className = 'premium-factor-list';
+        factorWrapper.innerHTML = factorList;
+        card.appendChild(factorWrapper);
+      }
+
       matchGrid.appendChild(card);
     });
   }
@@ -354,10 +471,12 @@
     }
     matches.forEach((match, index) => {
       const detailEntries = match.score_breakdown?.measurements_detail || match.measurements_detail || [];
+      const factors = extractFactors(match);
+      match.factors = factors;
       const tableHtml = detailEntries.length
         ? buildMeasurementComparisonTableHtml(detailEntries)
         : '<p class="premium-measurement-card__empty">Measurement detail will arrive once available.</p>';
-      const factorHtml = buildFactorListHtml(match);
+      const factorHtml = buildFactorListHtml(factors);
 
       const card = document.createElement('article');
       card.className = 'premium-measurement-card';
@@ -403,8 +522,8 @@
     });
   }
 
-  function buildFactorListHtml(match) {
-    const factorList = match.factors || match.score_breakdown?.factors || [];
+  function buildFactorListHtml(factorList) {
+    if (!Array.isArray(factorList)) return '';
     if (!Array.isArray(factorList) || !factorList.length) return '';
     const rows = factorList
       .map((factor) => {
