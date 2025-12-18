@@ -3,19 +3,8 @@
   if (!root) return;
 
   const hero = root.querySelector('[data-premium-hero]');
-  const sportEl = hero ? hero.querySelector('[data-sport]') : null;
   const reasonEl = hero ? hero.querySelector('[data-reason]') : null;
-  const creditSummaryEl = root.querySelector('[data-credit-summary]');
-  const creditAdultEl = root.querySelector('[data-credit-adult]');
-  const creditChildEl = root.querySelector('[data-credit-child]');
-  const componentList = root.querySelector('[data-component-list]');
-  const preferenceList = root.querySelector('[data-preference-list]');
-  const goalList = root.querySelector('[data-goal-list]');
-  const injuryList = root.querySelector('[data-injury-list]');
-  const nextStepsList = root.querySelector('[data-next-steps]');
-  const pastSportsList = root.querySelector('[data-past-sports]');
-  const matchGrid = root.querySelector('[data-match-grid]');
-  const measurementsContainer = root.querySelector('[data-premium-measurements]');
+  const container = root.querySelector('[data-results-container]');
   const emptyState = root.querySelector('[data-empty-state]');
   const componentPalette = {
     body: '#0f766e',
@@ -54,55 +43,30 @@
 
   if (emptyState) emptyState.hidden = true;
 
-  if (sportEl) {
-    sportEl.textContent = parsed.suggested_sport || 'Premium analysis';
-  }
   if (reasonEl) {
-    reasonEl.textContent = parsed.reason || 'Detailed rationale will appear once the backend provides it.';
+    reasonEl.textContent = parsed.reason || 'Based on your measurements and premium inputs.';
   }
 
-  if (parsed.credit && creditSummaryEl) {
-    creditSummaryEl.hidden = false;
-    if (creditAdultEl) {
-      const remainingAdult = parsed.credit.totals && parsed.credit.totals.adult !== undefined
-        ? parsed.credit.totals.adult
-        : parsed.credit.remaining_after;
-      creditAdultEl.textContent = `Adult credits: ${remainingAdult}`;
-    }
-    if (creditChildEl && parsed.credit.totals) {
-      creditChildEl.textContent = `Child credits: ${parsed.credit.totals.child ?? 0}`;
-    }
-  }
-
-  renderComponentImpacts(parsed.component_impacts || []);
-  renderAlignmentList(preferenceList, parsed.preference_alignment || [], 'preference_id');
-  renderAlignmentList(goalList, parsed.goal_alignment || [], 'goal_id');
-  renderInjuries(parsed.injury_considerations || []);
-  renderNextSteps(parsed.next_steps || []);
-  renderPastSports(parsed.past_sports || []);
   renderMatches(parsed.matches || []);
-  renderPremiumMeasurements(parsed.matches || []);
 
   function extractFactors(match) {
     const breakdown = match.score_breakdown || {};
     const factors = [];
 
     const formatLabel = (key) =>
-      (key || '')
+      key
         .replace(/_/g, ' ')
-        .replace(/ cm/i, '')
+        .replace(' cm', '')
         .replace(/\b\w/g, (l) => l.toUpperCase());
 
-    // Measurements
     if (breakdown.metrics) {
       Object.entries(breakdown.metrics).forEach(([key, val]) => {
-        const fit = val.fit_score ?? val.score;
-        if (fit !== undefined) {
+        if (val.fit_score !== undefined) {
           factors.push({
             key,
             label: formatLabel(key),
-            score: fit,
-            match_contribution: val.match_contribution ?? 0,
+            score: val.fit_score,
+            match_contribution: val.match_contribution || 0,
             user_value: val.user_value,
             cohort_mean: val.cohort_mean,
             importance: val.importance,
@@ -113,17 +77,15 @@
       });
     }
 
-    // Traits
-    const traits = breakdown.details?.traits?.body;
-    if (traits) {
-      Object.entries(traits).forEach(([key, val]) => {
-        const fit = val.fit_score ?? val.score;
-        if (fit !== undefined) {
+    if (breakdown.details && breakdown.details.traits && breakdown.details.traits.body) {
+      Object.entries(breakdown.details.traits.body).forEach(([key, val]) => {
+        const score = val.fit_score ?? val.score;
+        if (score !== undefined) {
           factors.push({
             key,
             label: formatLabel(key),
-            score: fit,
-            match_contribution: val.match_contribution ?? 0,
+            score: score,
+            match_contribution: 0,
             user_value: val.value,
             importance: val.importance,
             reasoning: val.reasoning,
@@ -133,61 +95,7 @@
       });
     }
 
-    // Past sports
-    const pastList = breakdown.details?.past_sports || breakdown.past_sports || [];
-    pastList.forEach((item) => {
-      factors.push({
-        key: item.sport_subcategory_id || item.slug || 'past_sport',
-        label: item.sport_label || item.sport_subcategory_name || item.sport_subcategory_slug || 'Past sport',
-        score: item.score,
-        match_contribution: item.match_contribution ?? item.weight ?? 0,
-        reasoning: item.layman_reasoning || item.reasoning,
-        type: 'past_sport',
-      });
-    });
-
-    // Goals
-    const goals = breakdown.details?.goals || breakdown.goals || match.goal_alignment || [];
-    goals.forEach((item) => {
-      factors.push({
-        key: item.goal_id || item.id,
-        label: item.name || item.goal_name || item.goal_id || 'Goal',
-        score: item.score ?? item.alignment_score,
-        match_contribution: item.match_contribution ?? item.weight ?? 0,
-        priority: item.priority,
-        reasoning: item.summary || item.reasoning,
-        type: 'goal',
-      });
-    });
-
-    // Preferences
-    const prefs = breakdown.details?.preferences || breakdown.preferences || match.preference_alignment || [];
-    prefs.forEach((item) => {
-      factors.push({
-        key: item.preference_id || item.id,
-        label: item.name || item.preference_name || item.preference_id || 'Preference',
-        score: item.score ?? item.alignment_score,
-        match_contribution: item.match_contribution ?? item.weight ?? 0,
-        priority: item.priority,
-        reasoning: item.summary || item.reasoning,
-        type: 'preference',
-      });
-    });
-
-    // Injuries
-    const injuries = breakdown.details?.injuries || breakdown.injuries || match.injury_considerations || [];
-    injuries.forEach((item) => {
-      factors.push({
-        key: item.injury_subcategory_id || item.injury_id || item.id,
-        label: item.injury_name || item.injury_subcategory_name || item.name || 'Injury',
-        score: item.score ?? item.alignment_score,
-        match_contribution: item.match_contribution ?? item.weight ?? 0,
-        reasoning: item.guidance || item.summary || item.reasoning,
-        type: 'injury',
-      });
-    });
-
-    return factors.sort((a, b) => (b.match_contribution || 0) - (a.match_contribution || 0));
+    return factors.sort((a, b) => b.match_contribution - a.match_contribution);
   }
 
   function renderComponentImpacts(components) {
@@ -402,73 +310,943 @@
   }
 
   function renderMatches(matches) {
-    if (!matchGrid) return;
-    matchGrid.innerHTML = '';
+    if (!container) return;
+    container.innerHTML = '';
     if (!matches.length) {
-      const div = document.createElement('div');
-      div.className = 'alignment-item';
-      div.textContent = 'No shortlisted sports returned.';
-      matchGrid.appendChild(div);
+      container.hidden = true;
+      if (emptyState) emptyState.hidden = false;
       return;
     }
-    matches.forEach((match, index) => {
-      const factors = extractFactors(match);
-      match.factors = factors;
-      const card = document.createElement('article');
-      card.className = 'match-card';
+    container.hidden = false;
+    matches
+      .slice()
+      .sort((a, b) => (b.score ?? b.fit_score ?? 0) - (a.score ?? a.fit_score ?? 0))
+      .forEach((match, index) => {
+        const card = buildMatchCard(match, index + 1);
+        container.appendChild(card);
+      });
+  }
 
-      const header = document.createElement('div');
-      header.className = 'match-card__header';
-      const rank = document.createElement('span');
-      rank.className = 'match-card__rank';
-      rank.textContent = `${index + 1}`;
-      header.appendChild(rank);
+  function buildMatchCard(match, rank) {
+    const card = document.createElement('article');
+    card.className = 'match-card';
 
-      const titleWrap = document.createElement('div');
-      const sportName = ((match.optimal_body || {}).sport_slug || 'Sport').replace(/[-_]/g, ' ');
-      const h3 = document.createElement('h3');
-      h3.textContent = sportName;
-      titleWrap.appendChild(h3);
-      const subtitle = document.createElement('p');
-      subtitle.className = 'match-card__subtitle';
-      subtitle.textContent = (match.optimal_body || {}).cohort || '';
-      titleWrap.appendChild(subtitle);
-      header.appendChild(titleWrap);
+    const body = match.optimal_body || {};
+    const spec = body.spec || {};
+    const sport = body.sport || {};
+    const subcategory = body.subcategory || {};
 
-      const score = document.createElement('span');
-      score.className = 'match-card__score';
-      score.textContent = `${Math.round((match.score || 0) * 100)}%`;
-      header.appendChild(score);
+    const scoreRaw = match.score ?? match.fit_score ?? 0;
+    const scorePercent = Math.round(scoreRaw * 100);
+    const title = subcategory.name || body.category_slug || sport.name || body.sport_slug || 'Sport match';
 
-      card.appendChild(header);
+    const header = document.createElement('header');
+    header.className = 'match-card__header';
+    header.innerHTML = `
+      <div class="match-card__rank-badge">${rank}</div>
+      <div class="match-card__title-group">
+        <h3 class="match-card__title">${escapeHtml(title)}</h3>
+        <span class="match-card__score">${scorePercent}% Match</span>
+      </div>
+    `;
+    card.appendChild(header);
 
-      const summary = document.createElement('p');
-      summary.className = 'match-card__summary';
-      summary.textContent = ((match.optimal_body || {}).spec || {}).rationale || 'This sport aligns well with your profile.';
-      card.appendChild(summary);
+    const cardMedia = match.media?.card || spec.media?.card || null;
+    const imageUrl = resolveMediaUrl(cardMedia, resolveStorageBase());
+    if (imageUrl) {
+      const imgContainer = document.createElement('figure');
+      imgContainer.className = 'match-card__image-container';
+      imgContainer.innerHTML = `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}" class="match-card__image" loading="lazy" />`;
+      card.appendChild(imgContainer);
+    }
 
-      const factorList = buildFactorListHtml(factors);
-      if (factorList) {
-        const factorWrapper = document.createElement('div');
-        factorWrapper.className = 'premium-factor-list';
-        factorWrapper.innerHTML = factorList;
-        card.appendChild(factorWrapper);
+    const descriptions = document.createElement('div');
+    descriptions.className = 'match-card__descriptions';
+
+    // Sport Details (Category Hierarchy)
+    const category = subcategory.category || {};
+    if (Object.keys(category).length > 0) {
+      const detailsContainer = document.createElement('div');
+      detailsContainer.className = 'match-card__desc-block';
+
+      const listContainer = document.createElement('div');
+      listContainer.className = 'space-y-1 text-sm';
+
+      const detailHeader = document.createElement('h4');
+      detailHeader.textContent = 'Sport';
+      detailsContainer.appendChild(detailHeader);
+      detailsContainer.appendChild(listContainer);
+
+      Object.entries(category).forEach(([key, val]) => {
+        if (!val || !val.name) return;
+
+        const row = document.createElement('div');
+        row.className = 'match-card__detail-row group relative flex items-center';
+
+        const label = key.charAt(0).toUpperCase() + key.slice(1);
+        const value = val.name;
+        const description = val.description;
+
+        row.innerHTML = `
+          <span class="font-medium text-slate-700 w-24 shrink-0">${escapeHtml(label)}:</span>
+          <span class="text-slate-900 truncate mr-1">${escapeHtml(value)}</span>
+        `;
+
+        if (description) {
+          const iconContainer = document.createElement('div');
+          iconContainer.className = 'relative flex items-center';
+
+          const icon = document.createElement('span');
+          icon.className = 'cursor-help text-slate-400 hover:text-slate-600 transition-colors';
+          icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+           </svg>`;
+
+          const tooltip = document.createElement('div');
+          tooltip.className =
+            'absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-2 bg-slate-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 leading-snug';
+          tooltip.textContent = description;
+
+          const arrow = document.createElement('div');
+          arrow.className =
+            'absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-slate-800';
+          tooltip.appendChild(arrow);
+
+          iconContainer.appendChild(icon);
+          iconContainer.appendChild(tooltip);
+          row.appendChild(iconContainer);
+        }
+
+        listContainer.appendChild(row);
+      });
+
+      descriptions.appendChild(detailsContainer);
+    }
+
+    const sportDesc = subcategory.description || sport.description;
+    if (sportDesc) {
+      descriptions.innerHTML += `
+        <div class="match-card__desc-block">
+          <h4>The Sport</h4>
+          <p>${escapeHtml(sportDesc)}</p>
+        </div>
+      `;
+    }
+    const bodyReasoning = spec.rationale || spec.overall_description;
+    if (bodyReasoning) {
+      descriptions.innerHTML += `
+        <div class="match-card__desc-block">
+          <h4>Athletes' bodies</h4>
+          <p>${escapeHtml(bodyReasoning)}</p>
+        </div>
+      `;
+    }
+    card.appendChild(descriptions);
+
+    // Body Proportion Factors (mirror free results)
+    const factors = extractFactors(match);
+    if (factors.length > 0) {
+      const totalContribution = factors.reduce(
+        (sum, f) => sum + (f.match_contribution || 0),
+        0
+      );
+      const totalPct = Math.round(totalContribution * 100);
+
+      const factorsSection = document.createElement('div');
+      factorsSection.className = 'match-card__factors';
+      factorsSection.innerHTML = `
+        <div class="flex flex-col mb-2">
+          <h4 class="m-0">Body Proportion Factors</h4>
+          <span class="text-xs text-slate-500 uppercase tracking-wider font-medium mt-0.5">
+            Total Match contribution <span class="font-bold text-slate-900">${totalPct}%</span>
+          </span>
+        </div>
+        `;
+
+      const list = document.createElement('ul');
+      list.className = 'factor-list';
+
+      const visibleFactors = factors.slice(0, 5);
+      const hiddenFactors = factors.slice(5);
+
+      visibleFactors.forEach((f) => list.appendChild(createFactorItem(f)));
+
+      if (hiddenFactors.length > 0) {
+        const hiddenContainer = document.createElement('div');
+        hiddenContainer.className = 'factor-list--hidden';
+        hiddenContainer.hidden = true;
+        hiddenFactors.forEach((f) => hiddenContainer.appendChild(createFactorItem(f)));
+        list.appendChild(hiddenContainer);
+
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'btn-ghost btn-sm factor-toggle';
+        toggleBtn.textContent = 'Show all factors';
+        toggleBtn.onclick = () => {
+          const isHidden = hiddenContainer.hidden;
+          hiddenContainer.hidden = !isHidden;
+          toggleBtn.textContent = isHidden ? 'Show less' : 'Show all factors';
+        };
+        factorsSection.appendChild(list);
+        factorsSection.appendChild(toggleBtn);
+      } else {
+        factorsSection.appendChild(list);
       }
 
-      matchGrid.appendChild(card);
+      card.appendChild(factorsSection);
+    }
+
+    // Past Sport Factors (mirror free results)
+    const pastSports = match.score_breakdown?.details?.past_sports || [];
+    if (pastSports.length > 0) {
+      pastSports.sort((a, b) => (b.match_contribution || 0) - (a.match_contribution || 0));
+
+      const totalContribution = pastSports.reduce((sum, p) => sum + (p.match_contribution || 0), 0);
+      const totalPct = Math.round(totalContribution * 100);
+
+      const pastSection = document.createElement('div');
+      pastSection.className = 'match-card__factors mt-4';
+      pastSection.innerHTML = `
+        <div class="flex flex-col mb-2">
+          <h4 class="m-0">Past Sport Factors</h4>
+          <span class="text-xs text-slate-500 uppercase tracking-wider font-medium mt-0.5">
+            Total Match contribution <span class="font-bold text-slate-900">${totalPct}%</span>
+          </span>
+        </div>
+        `;
+
+      const list = document.createElement('ul');
+      list.className = 'factor-list';
+      pastSports.forEach((sport) => {
+        list.appendChild(createPastSportItem(sport));
+      });
+      pastSection.appendChild(list);
+      card.appendChild(pastSection);
+    }
+
+    // Trait Factors (premium-only)
+    const traitFactors = extractTraitFactors(match);
+    if (traitFactors.length > 0) {
+      const totalContribution = traitFactors.reduce(
+        (sum, f) => sum + (f.match_contribution || 0),
+        0
+      );
+      const totalPct = Math.round(totalContribution * 100);
+
+      const traitSection = document.createElement('div');
+      traitSection.className = 'match-card__factors mt-4';
+      traitSection.innerHTML = `
+        <div class="flex flex-col mb-2">
+          <h4 class="m-0">Trait Factors</h4>
+          <span class="text-xs text-slate-500 uppercase tracking-wider font-medium mt-0.5">
+            Total Match contribution <span class="font-bold text-slate-900">${totalPct}%</span>
+          </span>
+        </div>
+        `;
+
+      const list = document.createElement('ul');
+      list.className = 'factor-list';
+
+      const visibleFactors = traitFactors.slice(0, 5);
+      const hiddenFactors = traitFactors.slice(5);
+
+      visibleFactors.forEach((f) => list.appendChild(createFactorItem(f)));
+
+      if (hiddenFactors.length > 0) {
+        const hiddenContainer = document.createElement('div');
+        hiddenContainer.className = 'factor-list--hidden';
+        hiddenContainer.hidden = true;
+        hiddenFactors.forEach((f) => hiddenContainer.appendChild(createFactorItem(f)));
+        list.appendChild(hiddenContainer);
+
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'btn-ghost btn-sm factor-toggle';
+        toggleBtn.textContent = 'Show all factors';
+        toggleBtn.onclick = () => {
+          const isHidden = hiddenContainer.hidden;
+          hiddenContainer.hidden = !isHidden;
+          toggleBtn.textContent = isHidden ? 'Show less' : 'Show all factors';
+        };
+        traitSection.appendChild(list);
+        traitSection.appendChild(toggleBtn);
+      } else {
+        traitSection.appendChild(list);
+      }
+
+      card.appendChild(traitSection);
+    }
+
+    // Goal Factors (premium-only)
+    const goalFactors = extractGoalFactors(match);
+    if (goalFactors.length > 0) {
+      const totalContribution = goalFactors.reduce((sum, f) => sum + (f.match_contribution || 0), 0);
+      const totalPct = Math.round(totalContribution * 100);
+
+      const goalSection = document.createElement('div');
+      goalSection.className = 'match-card__factors mt-4';
+      goalSection.innerHTML = `
+        <div class="flex flex-col mb-2">
+          <h4 class="m-0">Goal Factors</h4>
+          <span class="text-xs text-slate-500 uppercase tracking-wider font-medium mt-0.5">
+            Total Match contribution <span class="font-bold text-slate-900">${totalPct}%</span>
+          </span>
+        </div>
+        `;
+
+      const list = document.createElement('ul');
+      list.className = 'factor-list';
+
+      const visibleFactors = goalFactors.slice(0, 5);
+      const hiddenFactors = goalFactors.slice(5);
+
+      visibleFactors.forEach((f) => list.appendChild(createFactorItem(f)));
+
+      if (hiddenFactors.length > 0) {
+        const hiddenContainer = document.createElement('div');
+        hiddenContainer.className = 'factor-list--hidden';
+        hiddenContainer.hidden = true;
+        hiddenFactors.forEach((f) => hiddenContainer.appendChild(createFactorItem(f)));
+        list.appendChild(hiddenContainer);
+
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'btn-ghost btn-sm factor-toggle';
+        toggleBtn.textContent = 'Show all factors';
+        toggleBtn.onclick = () => {
+          const isHidden = hiddenContainer.hidden;
+          hiddenContainer.hidden = !isHidden;
+          toggleBtn.textContent = isHidden ? 'Show less' : 'Show all factors';
+        };
+        goalSection.appendChild(list);
+        goalSection.appendChild(toggleBtn);
+      } else {
+        goalSection.appendChild(list);
+      }
+
+      card.appendChild(goalSection);
+    }
+
+    // Preference Factors (premium-only)
+    const preferenceFactors = extractPreferenceFactors(match);
+    if (preferenceFactors.length > 0) {
+      const totalContribution = preferenceFactors.reduce((sum, f) => sum + (f.match_contribution || 0), 0);
+      const totalPct = Math.round(totalContribution * 100);
+
+      const prefSection = document.createElement('div');
+      prefSection.className = 'match-card__factors mt-4';
+      prefSection.innerHTML = `
+        <div class="flex flex-col mb-2">
+          <h4 class="m-0">Preference Factors</h4>
+          <span class="text-xs text-slate-500 uppercase tracking-wider font-medium mt-0.5">
+            Total Match contribution <span class="font-bold text-slate-900">${totalPct}%</span>
+          </span>
+        </div>
+        `;
+
+      const list = document.createElement('ul');
+      list.className = 'factor-list';
+
+      const visibleFactors = preferenceFactors.slice(0, 5);
+      const hiddenFactors = preferenceFactors.slice(5);
+
+      visibleFactors.forEach((f) => list.appendChild(createFactorItem(f)));
+
+      if (hiddenFactors.length > 0) {
+        const hiddenContainer = document.createElement('div');
+        hiddenContainer.className = 'factor-list--hidden';
+        hiddenContainer.hidden = true;
+        hiddenFactors.forEach((f) => hiddenContainer.appendChild(createFactorItem(f)));
+        list.appendChild(hiddenContainer);
+
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'btn-ghost btn-sm factor-toggle';
+        toggleBtn.textContent = 'Show all factors';
+        toggleBtn.onclick = () => {
+          const isHidden = hiddenContainer.hidden;
+          hiddenContainer.hidden = !isHidden;
+          toggleBtn.textContent = isHidden ? 'Show less' : 'Show all factors';
+        };
+        prefSection.appendChild(list);
+        prefSection.appendChild(toggleBtn);
+      } else {
+        prefSection.appendChild(list);
+      }
+
+      card.appendChild(prefSection);
+    }
+
+    // Injury Factors (premium-only)
+    const injuryEntries = match.score_breakdown?.details?.injuries || [];
+    if (injuryEntries.length > 0) {
+      const totalContribution = injuryEntries.reduce(
+        (sum, entry) => sum + (entry.match_contribution || 0),
+        0
+      );
+      const totalPct = Math.round(totalContribution * 100);
+
+      const injurySection = document.createElement('div');
+      injurySection.className = 'match-card__factors mt-4';
+      injurySection.innerHTML = `
+        <div class="flex flex-col mb-2">
+          <h4 class="m-0">Injury Factors</h4>
+          <span class="text-xs text-slate-500 uppercase tracking-wider font-medium mt-0.5">
+            Total Match contribution <span class="font-bold text-slate-900">${totalPct}%</span>
+          </span>
+        </div>
+        `;
+
+      const list = document.createElement('ul');
+      list.className = 'factor-list';
+
+      injuryEntries
+        .slice()
+        .sort((a, b) => (b.match_contribution || 0) - (a.match_contribution || 0))
+        .forEach((entry) => list.appendChild(buildInjuryFactorRow(entry)));
+
+      injurySection.appendChild(list);
+      card.appendChild(injurySection);
+    }
+
+    return card;
+  }
+
+  function extractTraitFactors(match) {
+    const breakdown = match.score_breakdown || {};
+    const traitBody = breakdown.details?.traits?.body || {};
+
+    const formatLabel = (key) =>
+      key
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (l) => l.toUpperCase());
+
+    return Object.entries(traitBody)
+      .map(([key, val]) => ({
+        key,
+        label: formatLabel(key),
+        user_value: val.user_value ?? breakdown.details?.traits?.user?.[key],
+        cohort_mean: val.value,
+        importance: val.importance,
+        reasoning: val.reasoning,
+        match_contribution: val.match_contribution || 0,
+        type: 'trait',
+      }))
+      .sort((a, b) => (b.match_contribution || 0) - (a.match_contribution || 0));
+  }
+
+  function extractGoalFactors(match) {
+    const breakdown = match.score_breakdown || {};
+    const goals = breakdown.details?.goals || [];
+
+    const formatLabel = (key) =>
+      (key || '')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (l) => l.toUpperCase());
+
+    return goals
+      .map((item) => ({
+        key: item.goal_id || item.id,
+        label: formatLabel(item.name || item.goal_id || item.id || 'Goal'),
+        user_value: item.priority,
+        cohort_mean: item.alignment,
+        alignment: item.alignment,
+        priority: item.priority,
+        reasoning: item.reasoning,
+        match_contribution: item.match_contribution || 0,
+        type: 'goal',
+      }))
+      .sort((a, b) => (b.match_contribution || 0) - (a.match_contribution || 0));
+  }
+
+  function extractPreferenceFactors(match) {
+    const breakdown = match.score_breakdown || {};
+    const prefs = breakdown.details?.preferences || [];
+
+    const formatLabel = (key) =>
+      (key || '')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (l) => l.toUpperCase());
+
+    return prefs
+      .map((item) => ({
+        key: item.preference_id || item.id,
+        label: formatLabel(item.name || item.preference_id || item.id || 'Preference'),
+        user_value: item.priority,
+        cohort_mean: item.alignment,
+        alignment: item.alignment,
+        priority: item.priority,
+        reasoning: item.reasoning,
+        match_contribution: item.match_contribution || 0,
+        type: 'preference',
+      }))
+      .sort((a, b) => (b.match_contribution || 0) - (a.match_contribution || 0));
+  }
+
+  function buildInjuryFactorRow(entry) {
+    const li = document.createElement('li');
+    // Avoid `group` here: the outer factor rows use `group` for their own tooltips.
+    // If we keep it, all nested injury sub-tooltips would show at once on row hover.
+    li.className = 'factor-row relative';
+
+    const leftCol = document.createElement('div');
+    leftCol.className = 'factor-col-left';
+
+    const labelRow = document.createElement('div');
+    labelRow.className = 'flex items-center gap-2 mb-1';
+
+    const label = document.createElement('span');
+    label.className = 'font-medium text-slate-900';
+    const rawLabel = entry.injury_subcategory_name || entry.injury_subcategory_id || entry.injury_id || 'Injury';
+    label.textContent = String(rawLabel).replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+    labelRow.appendChild(label);
+    leftCol.appendChild(labelRow);
+
+    if (entry.severity) {
+      const severityContainer = document.createElement('div');
+      severityContainer.className = 'text-xs text-slate-500 flex items-center gap-1 mb-2';
+
+      const severityLabel = document.createElement('span');
+      severityLabel.textContent = 'Severity:';
+      severityContainer.appendChild(severityLabel);
+
+      severityContainer.appendChild(buildSeverityBadge(entry.severity));
+      leftCol.appendChild(severityContainer);
+    }
+
+    const pairGrid = document.createElement('div');
+    pairGrid.className = 'grid grid-cols-[1fr_auto] gap-x-6 gap-y-1 items-center text-xs text-slate-600';
+
+    // Right header row (single header for all three sub-bars)
+    const spacer = document.createElement('div');
+    spacer.textContent = '';
+    pairGrid.appendChild(spacer);
+
+    const header = document.createElement('div');
+    header.className = 'text-[9px] text-slate-400 uppercase tracking-wider font-medium mb-0.5 text-right';
+    header.textContent = 'Match Contribution';
+    pairGrid.appendChild(header);
+
+    const pairs = [
+      {
+        label: 'Risk factor',
+        value: entry.risk,
+        tone: 'risk',
+        reasoning: entry.risk_reasoning,
+        contribution: entry.risk_match_contribution ?? 0,
+        short: 'Risk',
+      },
+      {
+        label: 'Prevention factor',
+        value: entry.prevention,
+        tone: 'support',
+        reasoning: entry.prevention_reasoning,
+        contribution: entry.prevention_match_contribution ?? 0,
+        short: 'Prevent',
+      },
+      {
+        label: 'Heal factor',
+        value: entry.heal,
+        tone: 'support',
+        reasoning: entry.heal_reasoning,
+        contribution: entry.heal_match_contribution ?? 0,
+        short: 'Heal',
+      },
+    ];
+
+    pairs.forEach((pair) => {
+      pairGrid.appendChild(
+        buildInjurySubfactor({
+          label: pair.label,
+          value: pair.value,
+          tone: pair.tone,
+          reasoning: pair.reasoning,
+        })
+      );
+      pairGrid.appendChild(buildMiniContributionBar(pair.short, pair.contribution));
     });
+
+    leftCol.appendChild(pairGrid);
+    li.appendChild(leftCol);
+    return li;
+  }
+
+  function buildContributionColumn(contribution) {
+    const rightCol = document.createElement('div');
+    rightCol.className = 'flex flex-col items-end justify-center ml-4 shrink-0';
+
+    const header = document.createElement('span');
+    header.className = 'text-[9px] text-slate-400 uppercase tracking-wider font-medium mb-0.5';
+    header.textContent = 'Match Contribution';
+    rightCol.appendChild(header);
+
+    const barRow = document.createElement('div');
+    barRow.className = 'flex items-center gap-3';
+
+    const barContainer = document.createElement('div');
+    barContainer.className = 'factor-bar-container';
+
+    const barFill = document.createElement('div');
+    barFill.className = 'factor-bar-fill';
+    const widthPct = Math.min(100, Math.round(Number(contribution || 0) * 400));
+    barFill.style.width = `${widthPct}% `;
+    barContainer.appendChild(barFill);
+
+    const pctLabel = document.createElement('span');
+    pctLabel.className = 'text-xs font-bold text-slate-700 w-8 text-right';
+    pctLabel.textContent = `${Math.round(Number(contribution || 0) * 100)}% `;
+
+    barRow.appendChild(barContainer);
+    barRow.appendChild(pctLabel);
+    rightCol.appendChild(barRow);
+    return rightCol;
+  }
+
+  function buildMiniContributionBar(label, value) {
+    const barRow = document.createElement('div');
+    barRow.className = 'flex items-center gap-2 justify-end';
+
+    const miniLabel = document.createElement('span');
+    miniLabel.className = 'text-[10px] text-slate-500 w-12 text-right';
+    miniLabel.textContent = label;
+    barRow.appendChild(miniLabel);
+
+    const barContainer = document.createElement('div');
+    barContainer.className = 'factor-bar-container';
+
+    const barFill = document.createElement('div');
+    barFill.className = 'factor-bar-fill';
+    const widthPct = Math.min(100, Math.round(Number(value || 0) * 400));
+    barFill.style.width = `${widthPct}% `;
+    barContainer.appendChild(barFill);
+    barRow.appendChild(barContainer);
+
+    const pctLabel = document.createElement('span');
+    pctLabel.className = 'text-[11px] font-bold text-slate-700 w-8 text-right';
+    pctLabel.textContent = `${Math.round(Number(value || 0) * 100)}% `;
+    barRow.appendChild(pctLabel);
+
+    return barRow;
+  }
+
+  function buildSeverityBadge(severity) {
+    const badge = document.createElement('span');
+    let badgeClass = 'text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider ';
+    const sev = String(severity || '').toLowerCase();
+    if (sev === 'severe') badgeClass += 'bg-rose-100 text-rose-700';
+    else if (sev === 'mostly_healed') badgeClass += 'bg-emerald-100 text-emerald-700';
+    else badgeClass += 'bg-amber-100 text-amber-700';
+    badge.className = badgeClass;
+    badge.textContent = sev.replace(/_/g, ' ');
+    return badge;
+  }
+
+  function buildLevelBadge(value, tone) {
+    const badge = document.createElement('span');
+    const level = String(value || 'none').toLowerCase();
+
+    // Base styling
+    let cls = 'text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider ';
+    if (tone === 'risk') {
+      if (level === 'high') cls += 'bg-rose-100 text-rose-700';
+      else if (level === 'medium') cls += 'bg-amber-100 text-amber-700';
+      else if (level === 'low') cls += 'bg-slate-100 text-slate-700';
+      else cls += 'bg-slate-50 text-slate-500';
+    } else {
+      if (level === 'high') cls += 'bg-emerald-100 text-emerald-700';
+      else if (level === 'medium') cls += 'bg-teal-100 text-teal-700';
+      else if (level === 'low') cls += 'bg-slate-100 text-slate-700';
+      else cls += 'bg-slate-50 text-slate-500';
+    }
+    badge.className = cls;
+    badge.textContent = level.replace(/_/g, ' ');
+    return badge;
+  }
+
+  function buildInjurySubfactor({ label, value, tone, reasoning }) {
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2';
+
+    const title = document.createElement('span');
+    title.className = 'text-slate-600';
+    title.textContent = `${label}:`;
+    row.appendChild(title);
+
+    row.appendChild(buildLevelBadge(value, tone));
+
+    if (reasoning) {
+      const wrapper = document.createElement('span');
+      wrapper.className = 'relative group flex items-center';
+
+      const icon = document.createElement('span');
+      icon.className = 'cursor-help text-slate-400 hover:text-slate-600 transition-colors';
+      icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+      </svg>`;
+      wrapper.appendChild(icon);
+
+      const tooltip = document.createElement('div');
+      tooltip.className =
+        'absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-2 bg-slate-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 leading-snug';
+      tooltip.textContent = reasoning;
+
+      const arrow = document.createElement('div');
+      arrow.className =
+        'absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-slate-800';
+      tooltip.appendChild(arrow);
+
+      wrapper.appendChild(tooltip);
+      row.appendChild(wrapper);
+    }
+
+    return row;
+  }
+
+  function createFactorItem(factor) {
+    const li = document.createElement('li');
+    li.className = 'factor-row group relative';
+
+    const leftCol = document.createElement('div');
+    leftCol.className = 'factor-col-left';
+
+    const labelContainer = document.createElement('div');
+    labelContainer.className = 'flex items-center gap-2 mb-1';
+
+    const label = document.createElement('span');
+    label.className =
+      'font-medium text-slate-900 cursor-help border-b border-dotted border-slate-400';
+    label.textContent = factor.label;
+    labelContainer.appendChild(label);
+
+    if (factor.reasoning) {
+      const icon = document.createElement('span');
+      icon.className = 'text-slate-400 cursor-help';
+      icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+      </svg>`;
+      labelContainer.appendChild(icon);
+    }
+    leftCol.appendChild(labelContainer);
+
+    if (factor.type === 'goal' || factor.type === 'preference') {
+      const alignmentLine = document.createElement('div');
+      alignmentLine.className = 'text-xs text-slate-500 mb-1';
+      const alignment = factor.alignment ?? factor.cohort_mean;
+      alignmentLine.innerHTML = `Sports alignment: <span class="font-bold">${escapeHtml(
+        String(alignment || 'none').replace(/_/g, ' ')
+      )}</span>`;
+      leftCol.appendChild(alignmentLine);
+    } else {
+      const values = document.createElement('div');
+      values.className = 'text-xs text-slate-500 mb-1';
+      let valueHtml = `You: <span class="font-bold">${escapeHtml(factor.user_value)}</span>`;
+      if (factor.cohort_mean) {
+        valueHtml += ` - Ideal: <span class="font-bold">${escapeHtml(factor.cohort_mean)}</span>`;
+      }
+      values.innerHTML = valueHtml;
+      leftCol.appendChild(values);
+    }
+
+    if (factor.importance) {
+      const importanceContainer = document.createElement('div');
+      importanceContainer.className = 'text-xs text-slate-500 flex items-center gap-1';
+
+      const importanceLabel = document.createElement('span');
+      importanceLabel.textContent = 'Importance for succes:';
+      importanceContainer.appendChild(importanceLabel);
+
+      const badge = document.createElement('span');
+      const imp = factor.importance.toLowerCase();
+      let badgeClass = 'text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider ';
+      // Importance is a positive indicator of "this matters a lot".
+      // Risk/negative signals (e.g. injury risk) use separate red-toned badges.
+      if (imp === 'high') badgeClass += 'bg-emerald-100 text-emerald-700';
+      else if (imp === 'medium') badgeClass += 'bg-amber-100 text-amber-700';
+      else badgeClass += 'bg-slate-100 text-slate-600';
+
+      badge.className = badgeClass;
+      badge.textContent = imp;
+      importanceContainer.appendChild(badge);
+
+      leftCol.appendChild(importanceContainer);
+    }
+
+    if ((factor.type === 'goal' || factor.type === 'preference') && factor.priority) {
+      const priorityContainer = document.createElement('div');
+      priorityContainer.className = 'text-xs text-slate-500 flex items-center gap-1';
+
+      const priorityLabel = document.createElement('span');
+      priorityLabel.textContent = 'Your priority:';
+      priorityContainer.appendChild(priorityLabel);
+
+      const badge = document.createElement('span');
+      let badgeClass = 'text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider ';
+      const pr = String(factor.priority).toLowerCase();
+      if (pr === 'must_have') badgeClass += 'bg-indigo-100 text-indigo-700';
+      else badgeClass += 'bg-slate-100 text-slate-600';
+      badge.className = badgeClass;
+      badge.textContent = pr.replace(/_/g, ' ').toUpperCase();
+      priorityContainer.appendChild(badge);
+
+      leftCol.appendChild(priorityContainer);
+    } else if (factor.priority) {
+      const priorityContainer = document.createElement('div');
+      priorityContainer.className = 'text-xs text-slate-500 flex items-center gap-1';
+
+      const priorityLabel = document.createElement('span');
+      priorityLabel.textContent = 'Priority:';
+      priorityContainer.appendChild(priorityLabel);
+
+      const badge = document.createElement('span');
+      let badgeClass = 'text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider ';
+      const pr = String(factor.priority).toLowerCase();
+      if (pr === 'must_have') badgeClass += 'bg-indigo-100 text-indigo-700';
+      else badgeClass += 'bg-slate-100 text-slate-600';
+      badge.className = badgeClass;
+      badge.textContent = pr.replace(/_/g, ' ');
+      priorityContainer.appendChild(badge);
+
+      leftCol.appendChild(priorityContainer);
+    }
+
+    if (factor.severity) {
+      const severityContainer = document.createElement('div');
+      severityContainer.className = 'text-xs text-slate-500 flex items-center gap-1';
+
+      const severityLabel = document.createElement('span');
+      severityLabel.textContent = 'Severity:';
+      severityContainer.appendChild(severityLabel);
+
+      severityContainer.appendChild(buildSeverityBadge(factor.severity));
+      leftCol.appendChild(severityContainer);
+    }
+
+    if (factor.reasoning) {
+      const tooltip = document.createElement('div');
+      tooltip.className = 'factor-tooltip';
+      tooltip.textContent = factor.reasoning;
+
+      const arrow = document.createElement('div');
+      arrow.className = 'factor-tooltip-arrow';
+      tooltip.appendChild(arrow);
+
+      li.appendChild(tooltip);
+    }
+
+    li.appendChild(leftCol);
+
+    const rightCol = document.createElement('div');
+    rightCol.className = 'flex flex-col items-end justify-center ml-4 shrink-0';
+
+    const header = document.createElement('span');
+    header.className = 'text-[9px] text-slate-400 uppercase tracking-wider font-medium mb-0.5';
+    header.textContent = 'Match Contribution';
+    rightCol.appendChild(header);
+
+    const barRow = document.createElement('div');
+    barRow.className = 'flex items-center gap-3';
+
+    const barContainer = document.createElement('div');
+    barContainer.className = 'factor-bar-container';
+
+    const barFill = document.createElement('div');
+    barFill.className = 'factor-bar-fill';
+    const widthPct = Math.min(100, Math.round(factor.match_contribution * 400));
+    barFill.style.width = `${widthPct}% `;
+    barContainer.appendChild(barFill);
+
+    const pctLabel = document.createElement('span');
+    pctLabel.className = 'text-xs font-bold text-slate-700 w-8 text-right';
+    pctLabel.textContent = `${Math.round(factor.match_contribution * 100)}% `;
+
+    barRow.appendChild(barContainer);
+    barRow.appendChild(pctLabel);
+
+    rightCol.appendChild(barRow);
+    li.appendChild(rightCol);
+
+    return li;
+  }
+
+  function createPastSportItem(sport) {
+    const li = document.createElement('li');
+    li.className = 'factor-row group relative';
+
+    const leftCol = document.createElement('div');
+    leftCol.className = 'factor-col-left';
+
+    const labelContainer = document.createElement('div');
+    labelContainer.className = 'flex items-center gap-2';
+
+    const label = document.createElement('span');
+    label.className = 'font-medium text-slate-900';
+    const name = sport.sport_subcategory_slug || sport.sport_label || sport.sport_subcategory_id || 'Sport';
+    label.textContent = name.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+    labelContainer.appendChild(label);
+
+    if (sport.layman_reasoning) {
+      const icon = document.createElement('span');
+      icon.className = 'text-slate-400 cursor-help';
+      icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+      </svg>`;
+      labelContainer.appendChild(icon);
+
+      const tooltip = document.createElement('div');
+      tooltip.className = 'factor-tooltip';
+      tooltip.textContent = sport.layman_reasoning;
+      const arrow = document.createElement('div');
+      arrow.className = 'factor-tooltip-arrow';
+      tooltip.appendChild(arrow);
+      li.appendChild(tooltip);
+    }
+
+    leftCol.appendChild(labelContainer);
+    li.appendChild(leftCol);
+
+    const rightCol = document.createElement('div');
+    rightCol.className = 'flex flex-col items-end justify-center ml-4 shrink-0';
+
+    const header = document.createElement('span');
+    header.className = 'text-[9px] text-slate-400 uppercase tracking-wider font-medium mb-0.5';
+    header.textContent = 'Match Contribution';
+    rightCol.appendChild(header);
+
+    const barRow = document.createElement('div');
+    barRow.className = 'flex items-center gap-3';
+
+    const barContainer = document.createElement('div');
+    barContainer.className = 'factor-bar-container';
+
+    const barFill = document.createElement('div');
+
+    const pctLabel = document.createElement('span');
+    pctLabel.className = 'text-xs font-bold w-8 text-right';
+
+    if (sport.data_missing || sport.correlation === null) {
+      barFill.className = 'factor-bar-fill bg-slate-200';
+      barFill.style.width = '0%';
+      pctLabel.className = 'text-xs font-bold text-slate-400 w-8 text-right';
+      pctLabel.textContent = 'N/A';
+    } else {
+      barFill.className = 'factor-bar-fill';
+      const widthPct = Math.min(100, Math.round((sport.match_contribution || 0) * 400));
+      barFill.style.width = `${widthPct}%`;
+      pctLabel.className = 'text-xs font-bold text-slate-700 w-8 text-right';
+      pctLabel.textContent = `${Math.round((sport.match_contribution || 0) * 100)}%`;
+    }
+
+    barContainer.appendChild(barFill);
+
+    barRow.appendChild(barContainer);
+    barRow.appendChild(pctLabel);
+
+    rightCol.appendChild(barRow);
+    li.appendChild(rightCol);
+
+    return li;
   }
 
   function renderPremiumMeasurements(matches) {
     if (!measurementsContainer) return;
     measurementsContainer.innerHTML = '';
-    if (!matches.length) {
-      const placeholder = document.createElement('p');
-      placeholder.className = 'premium-measurement-empty';
-      placeholder.textContent = 'Measurement and factor breakdowns appear alongside each premium match.';
-      measurementsContainer.appendChild(placeholder);
-      return;
-    }
+    if (!matches.length) return;
     matches.forEach((match, index) => {
       const detailEntries = match.score_breakdown?.measurements_detail || match.measurements_detail || [];
       const factors = extractFactors(match);
@@ -608,5 +1386,25 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  function resolveStorageBase() {
+    if (
+      typeof self !== 'undefined' &&
+      self.SPORTY_CONFIG &&
+      typeof self.SPORTY_CONFIG.SUPABASE_STORAGE_URL === 'string'
+    ) {
+      return self.SPORTY_CONFIG.SUPABASE_STORAGE_URL.replace(/\/$/, '');
+    }
+    return '';
+  }
+
+  function resolveMediaUrl(card, base) {
+    if (!card) return null;
+    if (card.url) return card.url;
+    if (!card.path) return null;
+    const cleanedPath = card.path.replace(/^\/+/, '');
+    if (base) return `${base}/${cleanedPath}`;
+    return null;
   }
 })();

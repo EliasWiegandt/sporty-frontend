@@ -8,61 +8,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   
   <main class="results-shell" data-premium-root>
     <header class="result-header anchored" data-premium-hero>
-      <div>
-        <h1 class="section-title">Your Premium Matches</h1>
-        <p class="cta-inline" data-reason>We’ll populate this with the detailed rationale once your analysis loads.</p>
-      </div>
-      <div class="flex flex-wrap items-center gap-2" data-credit-summary hidden>
-        <span class="badge-subtle" data-sport>Premium analysis ready</span>
-        <span class="premium-credit__pill" data-credit-adult>Adult credits: —</span>
-        <span class="premium-credit__pill" data-credit-child>Child credits: —</span>
-      </div>
+      <h1 class="section-title">Your Premium Matches</h1>
+      <p class="cta-inline" data-reason>Based on your measurements and premium inputs.</p>
     </header>
 
-    <section class="card-stack">
-      <h2>Match shortlist</h2>
-      <div class="results-container" data-match-grid></div>
-    </section>
-
-    <section class="card-stack grid gap-6 lg:grid-cols-3">
-      <div class="lg:col-span-2 space-y-4">
-        <article class="component-card">
-          <h2>Component impact</h2>
-          <ul class="component-list" data-component-list></ul>
-        </article>
-        <article class="alignment-card">
-          <h2>Measurement &amp; factor breakdowns</h2>
-          <div class="premium-measurements" data-premium-measurements></div>
-        </article>
-      </div>
-      <div class="space-y-4">
-        <article class="alignment-card">
-          <h2>Preferences &amp; goals</h2>
-          <div class="card-stack">
-            <div>
-              <h3>Preferences</h3>
-              <ul class="alignment-list" data-preference-list></ul>
-            </div>
-            <div>
-              <h3>Goals</h3>
-              <ul class="alignment-list" data-goal-list></ul>
-            </div>
-          </div>
-        </article>
-        <article class="alignment-card">
-          <h2>Injury considerations</h2>
-          <ul class="injury-list" data-injury-list></ul>
-        </article>
-        <article class="alignment-card">
-          <h2>Past sports carried forward</h2>
-          <ul class="alignment-list" data-past-sports></ul>
-        </article>
-        <article class="insight-card">
-          <h2>Next steps</h2>
-          <ul class="next-steps-list" data-next-steps></ul>
-        </article>
-      </div>
-    </section>
+    <div class="results-container" data-results-container></div>
 
     <div class="empty-state" data-empty-state hidden>
       <h2>No premium analysis loaded</h2>

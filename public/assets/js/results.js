@@ -357,7 +357,9 @@
       const imp = factor.importance.toLowerCase();
       let badgeClass =
         "text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider ";
-      if (imp === "high") badgeClass += "bg-rose-100 text-rose-700";
+      // Importance is a positive indicator of "this matters a lot".
+      // Risk/negative signals (e.g. injury risk) use separate red-toned badges elsewhere.
+      if (imp === "high") badgeClass += "bg-emerald-100 text-emerald-700";
       else if (imp === "medium") badgeClass += "bg-amber-100 text-amber-700";
       else badgeClass += "bg-slate-100 text-slate-600";
 

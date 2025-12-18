@@ -13,7 +13,7 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 - Prototype the child forecast QA flow so backend forecasting can be exercised end-to-end.
 - Keep navigation, typography, and layout consistent across all pages. The primary navbar now uses the Sporty wordmark with the Iconify laurel wreath (`<iconify-icon icon="mingcute:laurel-wreath-fill">`)—adjust `BaseLayout` if the brand lockup changes. Brand teal tokens live in the Tailwind theme (`src/styles/tailwind.css`) and feed the shared component layer. The default header CTA copy (“Try free analysis”) comes from `defaultPrimaryAction` in `BaseLayout`.
 - Proxy `/api/recommend-adult-free` and `/api/forecast-child` through the Cloudflare runtime so browsers never see backend secrets.
-- Free adult match now requires the full measurement set (birthday, sex, height, weight, arm span, leg inseam, shoulder width, hip width, hand length, foot length) and renders numeric inputs with +/- controls, contextual tooltips, and autosave across steps. Premium-only inputs (preferences, goals, injuries) remain locked behind credits until a paid analysis is available.
+- Free adult match now requires the full measurement set (birthday, sex, height, weight, arm span, leg inseam, shoulder width, pelvic bone width, torso length, hand length, foot length, ankle circumference, wrist circumference) and renders numeric inputs with +/- controls, contextual tooltips, and autosave across steps. Premium-only inputs (preferences, goals, injuries) remain locked behind credits until a paid analysis is available.
 - When an authenticated user has credits, the intake toggles “Apply credit” to run `/api/recommend-adult-premium`; the premium journey redirects to `/results/premium` with component breakdowns pulled from the backend.
 - Adult intake now exposes two routes (`/intake` and `/intake-premium`) that both hydrate the Preact island at `src/components/intake/IntakeApp.tsx`; the free page keeps traits locked behind the premium controller, while the premium page flips the `mode` prop so the traits/goals/injuries steps appear and the credit-backed submission posts to `/api/recommend-adult-premium`.
 - The payload sent to `/api/recommend-adult-premium` now includes the trait answers collected in the Traits step (`muscle_fiber`, `metabolic_tendency`, `joint_laxity`, `foot_arch`, `temperature_tolerance`, `handedness`, `sport_side`) so the matching service can incorporate those signals into premium scoring.
@@ -168,6 +168,14 @@ Both `/intake` and `/intake-premium` hydrate the same Preact island (`src/compon
 
 ---
 
+## Results Storage Note (Session Storage)
+
+- `/results` reads the most recent free analysis from `sessionStorage["sporty:lastResult"]`.
+- `/results/premium` reads the most recent premium analysis from `sessionStorage["sporty:lastPremiumResult"]`.
+- `sessionStorage` is scoped to the page origin (scheme + host + port). If you submit intake on one origin (e.g. `http://localhost:4321`) but view results on another (e.g. `http://127.0.0.1:8787`), the results pages will appear empty because the stored payload is not shared across origins.
+
+---
+
 ## 7. Deployment & Operations
 
 - Workflow: `.github/workflows/deploy.yml` runs `npm ci` → `npm run build` → `wrangler deploy` for `test` and `main` branches.
@@ -316,7 +324,7 @@ Get a deeper, personalized analysis including goals, preferences, injuries, and 
 ### Key Pages Involved
 
 - `/dashboard`
-- `/intake?premium=true`
+- `/intake-premium`
 - `/results/premium`
 - `/pricing`
 
