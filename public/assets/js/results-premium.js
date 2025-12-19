@@ -47,6 +47,22 @@
     reasonEl.textContent = parsed.reason || 'Based on your measurements and premium inputs.';
   }
 
+  const SECTION_STATE = (function () {
+    const store =
+      window.__sportyPremiumSectionState ||
+      (window.__sportyPremiumSectionState = Object.create(null));
+    return {
+      get(matchKey, sectionKey) {
+        return Boolean(store[`${matchKey}:${sectionKey}`]);
+      },
+      set(matchKey, sectionKey, isOpen) {
+        store[`${matchKey}:${sectionKey}`] = Boolean(isOpen);
+      },
+    };
+  })();
+
+  const STICKY_MIN_ITEMS = 8;
+
   renderMatches(parsed.matches || []);
 
   function extractFactors(match) {
@@ -318,13 +334,23 @@
       return;
     }
     container.hidden = false;
-    matches
-      .slice()
-      .sort((a, b) => (b.score ?? b.fit_score ?? 0) - (a.score ?? a.fit_score ?? 0))
-      .forEach((match, index) => {
-        const card = buildMatchCard(match, index + 1);
-        container.appendChild(card);
-      });
+    try {
+      matches
+        .slice()
+        .sort((a, b) => (b.score ?? b.fit_score ?? 0) - (a.score ?? a.fit_score ?? 0))
+        .forEach((match, index) => {
+          try {
+            const card = buildMatchCard(match, index + 1);
+            container.appendChild(card);
+          } catch (error) {
+            console.error('[Sporty] Failed to render premium match card', error, match);
+          }
+        });
+    } catch (error) {
+      console.error('[Sporty] Failed to render premium matches', error);
+      container.hidden = true;
+      if (emptyState) emptyState.hidden = false;
+    }
   }
 
   function buildMatchCard(match, rank) {
@@ -335,6 +361,7 @@
     const spec = body.spec || {};
     const sport = body.sport || {};
     const subcategory = body.subcategory || {};
+    const matchKey = String(body.id ?? body.category_slug ?? body.sport_slug ?? rank);
 
     const scoreRaw = match.score ?? match.fit_score ?? 0;
     const scorePercent = Math.round(scoreRaw * 100);
@@ -443,6 +470,80 @@
     }
     card.appendChild(descriptions);
 
+    const sectionsContainer = document.createElement('div');
+    sectionsContainer.className = 'mt-4 flex flex-col gap-4';
+    const sectionControllers = [];
+
+    function createExpandableSection({ sectionKey, title, totalPct, isLong, contentEl }) {
+      const wrapper = document.createElement('section');
+      wrapper.className = 'match-card__factors';
+
+      const contentId = `premium-${matchKey}-${sectionKey}-content`;
+      const isOpen = SECTION_STATE.get(matchKey, sectionKey);
+      const stickyClasses = [
+        'sticky',
+        'top-2',
+        'z-10',
+        'bg-white/90',
+        'backdrop-blur',
+        'border',
+        'border-slate-100',
+      ];
+
+      const header = document.createElement('button');
+      header.type = 'button';
+      header.className =
+        'w-full text-left flex items-start justify-between gap-4 rounded-lg hover:bg-slate-50 transition-colors';
+      header.setAttribute('aria-controls', contentId);
+      header.setAttribute('aria-expanded', String(isOpen));
+
+      const left = document.createElement('div');
+      left.className = 'flex flex-col py-2 px-2';
+      left.innerHTML = `
+        <h4 class="m-0">${escapeHtml(title)}</h4>
+        <span class="text-xs text-slate-500 uppercase tracking-wider font-medium mt-0.5">
+          Total Match contribution <span class="font-bold text-slate-900">${totalPct}%</span>
+        </span>
+      `;
+
+      const right = document.createElement('div');
+      right.className = 'flex items-center py-2 pr-2 shrink-0';
+      right.innerHTML = `
+        <svg viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-slate-400 transition-transform">
+          <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
+        </svg>
+      `;
+      const chevron = right.querySelector('svg');
+
+      header.appendChild(left);
+      header.appendChild(right);
+      wrapper.appendChild(header);
+
+      const content = document.createElement('div');
+      content.id = contentId;
+      content.className = 'px-2 pb-2';
+      content.hidden = !isOpen;
+      wrapper.appendChild(content);
+
+      if (isLong && isOpen) header.classList.add(...stickyClasses);
+
+      if (isOpen && chevron) chevron.classList.add('rotate-180');
+
+      const setOpen = (open) => {
+        SECTION_STATE.set(matchKey, sectionKey, open);
+        header.setAttribute('aria-expanded', String(open));
+        content.hidden = !open;
+        if (isLong) stickyClasses.forEach((cls) => header.classList.toggle(cls, open));
+        if (chevron) chevron.classList.toggle('rotate-180', open);
+      };
+
+      header.addEventListener('click', () => setOpen(content.hidden));
+
+      content.appendChild(contentEl);
+
+      return { el: wrapper, setOpen };
+    }
+
     // Body Proportion Factors (mirror free results)
     const factors = extractFactors(match);
     if (factors.length > 0) {
@@ -452,47 +553,19 @@
       );
       const totalPct = Math.round(totalContribution * 100);
 
-      const factorsSection = document.createElement('div');
-      factorsSection.className = 'match-card__factors';
-      factorsSection.innerHTML = `
-        <div class="flex flex-col mb-2">
-          <h4 class="m-0">Body Proportion Factors</h4>
-          <span class="text-xs text-slate-500 uppercase tracking-wider font-medium mt-0.5">
-            Total Match contribution <span class="font-bold text-slate-900">${totalPct}%</span>
-          </span>
-        </div>
-        `;
-
       const list = document.createElement('ul');
       list.className = 'factor-list';
+      factors.forEach((f) => list.appendChild(createFactorItem(f)));
 
-      const visibleFactors = factors.slice(0, 5);
-      const hiddenFactors = factors.slice(5);
-
-      visibleFactors.forEach((f) => list.appendChild(createFactorItem(f)));
-
-      if (hiddenFactors.length > 0) {
-        const hiddenContainer = document.createElement('div');
-        hiddenContainer.className = 'factor-list--hidden';
-        hiddenContainer.hidden = true;
-        hiddenFactors.forEach((f) => hiddenContainer.appendChild(createFactorItem(f)));
-        list.appendChild(hiddenContainer);
-
-        const toggleBtn = document.createElement('button');
-        toggleBtn.className = 'btn-ghost btn-sm factor-toggle';
-        toggleBtn.textContent = 'Show all factors';
-        toggleBtn.onclick = () => {
-          const isHidden = hiddenContainer.hidden;
-          hiddenContainer.hidden = !isHidden;
-          toggleBtn.textContent = isHidden ? 'Show less' : 'Show all factors';
-        };
-        factorsSection.appendChild(list);
-        factorsSection.appendChild(toggleBtn);
-      } else {
-        factorsSection.appendChild(list);
-      }
-
-      card.appendChild(factorsSection);
+      const section = createExpandableSection({
+        sectionKey: 'body',
+        title: 'Body Proportion Factors',
+        totalPct,
+        isLong: factors.length >= STICKY_MIN_ITEMS,
+        contentEl: list,
+      });
+      sectionControllers.push(section);
+      sectionsContainer.appendChild(section.el);
     }
 
     // Past Sport Factors (mirror free results)
@@ -503,24 +576,20 @@
       const totalContribution = pastSports.reduce((sum, p) => sum + (p.match_contribution || 0), 0);
       const totalPct = Math.round(totalContribution * 100);
 
-      const pastSection = document.createElement('div');
-      pastSection.className = 'match-card__factors mt-4';
-      pastSection.innerHTML = `
-        <div class="flex flex-col mb-2">
-          <h4 class="m-0">Past Sport Factors</h4>
-          <span class="text-xs text-slate-500 uppercase tracking-wider font-medium mt-0.5">
-            Total Match contribution <span class="font-bold text-slate-900">${totalPct}%</span>
-          </span>
-        </div>
-        `;
-
       const list = document.createElement('ul');
       list.className = 'factor-list';
       pastSports.forEach((sport) => {
         list.appendChild(createPastSportItem(sport));
       });
-      pastSection.appendChild(list);
-      card.appendChild(pastSection);
+      const section = createExpandableSection({
+        sectionKey: 'past_sports',
+        title: 'Past Sport Factors',
+        totalPct,
+        isLong: pastSports.length >= STICKY_MIN_ITEMS,
+        contentEl: list,
+      });
+      sectionControllers.push(section);
+      sectionsContainer.appendChild(section.el);
     }
 
     // Trait Factors (premium-only)
@@ -532,47 +601,19 @@
       );
       const totalPct = Math.round(totalContribution * 100);
 
-      const traitSection = document.createElement('div');
-      traitSection.className = 'match-card__factors mt-4';
-      traitSection.innerHTML = `
-        <div class="flex flex-col mb-2">
-          <h4 class="m-0">Trait Factors</h4>
-          <span class="text-xs text-slate-500 uppercase tracking-wider font-medium mt-0.5">
-            Total Match contribution <span class="font-bold text-slate-900">${totalPct}%</span>
-          </span>
-        </div>
-        `;
-
       const list = document.createElement('ul');
       list.className = 'factor-list';
+      traitFactors.forEach((f) => list.appendChild(createFactorItem(f)));
 
-      const visibleFactors = traitFactors.slice(0, 5);
-      const hiddenFactors = traitFactors.slice(5);
-
-      visibleFactors.forEach((f) => list.appendChild(createFactorItem(f)));
-
-      if (hiddenFactors.length > 0) {
-        const hiddenContainer = document.createElement('div');
-        hiddenContainer.className = 'factor-list--hidden';
-        hiddenContainer.hidden = true;
-        hiddenFactors.forEach((f) => hiddenContainer.appendChild(createFactorItem(f)));
-        list.appendChild(hiddenContainer);
-
-        const toggleBtn = document.createElement('button');
-        toggleBtn.className = 'btn-ghost btn-sm factor-toggle';
-        toggleBtn.textContent = 'Show all factors';
-        toggleBtn.onclick = () => {
-          const isHidden = hiddenContainer.hidden;
-          hiddenContainer.hidden = !isHidden;
-          toggleBtn.textContent = isHidden ? 'Show less' : 'Show all factors';
-        };
-        traitSection.appendChild(list);
-        traitSection.appendChild(toggleBtn);
-      } else {
-        traitSection.appendChild(list);
-      }
-
-      card.appendChild(traitSection);
+      const section = createExpandableSection({
+        sectionKey: 'traits',
+        title: 'Trait Factors',
+        totalPct,
+        isLong: traitFactors.length >= STICKY_MIN_ITEMS,
+        contentEl: list,
+      });
+      sectionControllers.push(section);
+      sectionsContainer.appendChild(section.el);
     }
 
     // Goal Factors (premium-only)
@@ -581,47 +622,19 @@
       const totalContribution = goalFactors.reduce((sum, f) => sum + (f.match_contribution || 0), 0);
       const totalPct = Math.round(totalContribution * 100);
 
-      const goalSection = document.createElement('div');
-      goalSection.className = 'match-card__factors mt-4';
-      goalSection.innerHTML = `
-        <div class="flex flex-col mb-2">
-          <h4 class="m-0">Goal Factors</h4>
-          <span class="text-xs text-slate-500 uppercase tracking-wider font-medium mt-0.5">
-            Total Match contribution <span class="font-bold text-slate-900">${totalPct}%</span>
-          </span>
-        </div>
-        `;
-
       const list = document.createElement('ul');
       list.className = 'factor-list';
+      goalFactors.forEach((f) => list.appendChild(createFactorItem(f)));
 
-      const visibleFactors = goalFactors.slice(0, 5);
-      const hiddenFactors = goalFactors.slice(5);
-
-      visibleFactors.forEach((f) => list.appendChild(createFactorItem(f)));
-
-      if (hiddenFactors.length > 0) {
-        const hiddenContainer = document.createElement('div');
-        hiddenContainer.className = 'factor-list--hidden';
-        hiddenContainer.hidden = true;
-        hiddenFactors.forEach((f) => hiddenContainer.appendChild(createFactorItem(f)));
-        list.appendChild(hiddenContainer);
-
-        const toggleBtn = document.createElement('button');
-        toggleBtn.className = 'btn-ghost btn-sm factor-toggle';
-        toggleBtn.textContent = 'Show all factors';
-        toggleBtn.onclick = () => {
-          const isHidden = hiddenContainer.hidden;
-          hiddenContainer.hidden = !isHidden;
-          toggleBtn.textContent = isHidden ? 'Show less' : 'Show all factors';
-        };
-        goalSection.appendChild(list);
-        goalSection.appendChild(toggleBtn);
-      } else {
-        goalSection.appendChild(list);
-      }
-
-      card.appendChild(goalSection);
+      const section = createExpandableSection({
+        sectionKey: 'goals',
+        title: 'Goal Factors',
+        totalPct,
+        isLong: goalFactors.length >= STICKY_MIN_ITEMS,
+        contentEl: list,
+      });
+      sectionControllers.push(section);
+      sectionsContainer.appendChild(section.el);
     }
 
     // Preference Factors (premium-only)
@@ -630,47 +643,19 @@
       const totalContribution = preferenceFactors.reduce((sum, f) => sum + (f.match_contribution || 0), 0);
       const totalPct = Math.round(totalContribution * 100);
 
-      const prefSection = document.createElement('div');
-      prefSection.className = 'match-card__factors mt-4';
-      prefSection.innerHTML = `
-        <div class="flex flex-col mb-2">
-          <h4 class="m-0">Preference Factors</h4>
-          <span class="text-xs text-slate-500 uppercase tracking-wider font-medium mt-0.5">
-            Total Match contribution <span class="font-bold text-slate-900">${totalPct}%</span>
-          </span>
-        </div>
-        `;
-
       const list = document.createElement('ul');
       list.className = 'factor-list';
+      preferenceFactors.forEach((f) => list.appendChild(createFactorItem(f)));
 
-      const visibleFactors = preferenceFactors.slice(0, 5);
-      const hiddenFactors = preferenceFactors.slice(5);
-
-      visibleFactors.forEach((f) => list.appendChild(createFactorItem(f)));
-
-      if (hiddenFactors.length > 0) {
-        const hiddenContainer = document.createElement('div');
-        hiddenContainer.className = 'factor-list--hidden';
-        hiddenContainer.hidden = true;
-        hiddenFactors.forEach((f) => hiddenContainer.appendChild(createFactorItem(f)));
-        list.appendChild(hiddenContainer);
-
-        const toggleBtn = document.createElement('button');
-        toggleBtn.className = 'btn-ghost btn-sm factor-toggle';
-        toggleBtn.textContent = 'Show all factors';
-        toggleBtn.onclick = () => {
-          const isHidden = hiddenContainer.hidden;
-          hiddenContainer.hidden = !isHidden;
-          toggleBtn.textContent = isHidden ? 'Show less' : 'Show all factors';
-        };
-        prefSection.appendChild(list);
-        prefSection.appendChild(toggleBtn);
-      } else {
-        prefSection.appendChild(list);
-      }
-
-      card.appendChild(prefSection);
+      const section = createExpandableSection({
+        sectionKey: 'preferences',
+        title: 'Preference Factors',
+        totalPct,
+        isLong: preferenceFactors.length >= STICKY_MIN_ITEMS,
+        contentEl: list,
+      });
+      sectionControllers.push(section);
+      sectionsContainer.appendChild(section.el);
     }
 
     // Injury Factors (premium-only)
@@ -682,17 +667,6 @@
       );
       const totalPct = Math.round(totalContribution * 100);
 
-      const injurySection = document.createElement('div');
-      injurySection.className = 'match-card__factors mt-4';
-      injurySection.innerHTML = `
-        <div class="flex flex-col mb-2">
-          <h4 class="m-0">Injury Factors</h4>
-          <span class="text-xs text-slate-500 uppercase tracking-wider font-medium mt-0.5">
-            Total Match contribution <span class="font-bold text-slate-900">${totalPct}%</span>
-          </span>
-        </div>
-        `;
-
       const list = document.createElement('ul');
       list.className = 'factor-list';
 
@@ -700,9 +674,32 @@
         .slice()
         .sort((a, b) => (b.match_contribution || 0) - (a.match_contribution || 0))
         .forEach((entry) => list.appendChild(buildInjuryFactorRow(entry)));
+      const section = createExpandableSection({
+        sectionKey: 'injuries',
+        title: 'Injury Factors',
+        totalPct,
+        isLong: injuryEntries.length >= STICKY_MIN_ITEMS,
+        contentEl: list,
+      });
+      sectionControllers.push(section);
+      sectionsContainer.appendChild(section.el);
+    }
 
-      injurySection.appendChild(list);
-      card.appendChild(injurySection);
+    if (sectionControllers.length > 0) {
+      const controls = document.createElement('div');
+      controls.className = 'flex justify-end mt-2';
+
+      const collapseAllBtn = document.createElement('button');
+      collapseAllBtn.type = 'button';
+      collapseAllBtn.className = 'btn-ghost btn-sm';
+      collapseAllBtn.textContent = 'Collapse all';
+      collapseAllBtn.addEventListener('click', () => {
+        sectionControllers.forEach((controller) => controller.setOpen(false));
+      });
+
+      controls.appendChild(collapseAllBtn);
+      card.appendChild(controls);
+      card.appendChild(sectionsContainer);
     }
 
     return card;
