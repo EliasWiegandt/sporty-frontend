@@ -258,8 +258,8 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
     element.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
 
-  const handleGrantConsent = useCallback(async () => {
-    if (consentSaving || !sportySnapshot.user) return;
+  const handleGrantConsent = useCallback(async (): Promise<boolean> => {
+    if (consentSaving || !sportySnapshot.user) return false;
 
     setConsentSaving(true);
     try {
@@ -298,10 +298,19 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
 
       // Refresh consent state
       await sportyApp?.refreshConsent?.();
+      const hasConsent =
+        typeof sportyApp?.hasConsent === "function"
+          ? Boolean(sportyApp.hasConsent())
+          : true;
+      if (!hasConsent) {
+        throw new Error("Consent was not recorded");
+      }
       setConsentGiven(true);
+      return true;
     } catch (error) {
       console.error('[Intake] Failed to grant consent', error);
       setConsentGiven(false);
+      throw error;
     } finally {
       setConsentSaving(false);
     }
@@ -593,9 +602,10 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       // If user opted in to consent in this session, record it before submit
       if (!sportySnapshot.hasConsent && consentGiven) {
         try {
-          await handleGrantConsent();
-          consentIntentRef.current = true;
+          const ok = await handleGrantConsent();
+          consentIntentRef.current = Boolean(ok);
         } catch (err) {
+          consentIntentRef.current = false;
           setStatus("Unable to record consent right now. Please try again.", "error");
           setSubmitBusy(false);
           return;

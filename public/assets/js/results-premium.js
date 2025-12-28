@@ -20,33 +20,6 @@
     return palette[index % palette.length];
   }
 
-  let parsed = null;
-  const stored = sessionStorage.getItem('sporty:lastPremiumResult');
-  if (stored) {
-    try {
-      parsed = JSON.parse(stored);
-    } catch (error) {
-      console.error('[Sporty] Failed to parse premium analysis payload', error);
-    }
-  }
-
-  if (!parsed || typeof parsed !== 'object') {
-    if (emptyState) emptyState.hidden = false;
-    return;
-  }
-
-  try {
-    sessionStorage.removeItem('sporty:lastPremiumResult');
-  } catch (error) {
-    console.warn('[Sporty] Unable to clear premium result cache', error);
-  }
-
-  if (emptyState) emptyState.hidden = true;
-
-  if (reasonEl) {
-    reasonEl.textContent = parsed.reason || 'Based on your measurements and premium inputs.';
-  }
-
   const SECTION_STATE = (function () {
     const store =
       window.__sportyPremiumSectionState ||
@@ -63,7 +36,80 @@
 
   const STICKY_MIN_ITEMS = 8;
 
-  renderMatches(parsed.matches || []);
+  init().catch((error) => {
+    console.error('[Sporty] Failed to init premium results page', error);
+    if (emptyState) emptyState.hidden = false;
+  });
+
+  async function init() {
+    let parsed = null;
+    const stored = sessionStorage.getItem('sporty:lastPremiumResult');
+    if (stored) {
+      try {
+        parsed = JSON.parse(stored);
+      } catch (error) {
+        console.error('[Sporty] Failed to parse premium analysis payload', error);
+      }
+    }
+
+    if (!parsed) {
+      const params = new URLSearchParams(window.location.search || '');
+      const id = params.get('id');
+      if (id) {
+        parsed = await fetchPremiumResultById(id);
+      }
+    }
+
+    if (!parsed || typeof parsed !== 'object') {
+      if (emptyState) emptyState.hidden = false;
+      return;
+    }
+
+    try {
+      sessionStorage.removeItem('sporty:lastPremiumResult');
+    } catch (error) {
+      console.warn('[Sporty] Unable to clear premium result cache', error);
+    }
+
+    if (emptyState) emptyState.hidden = true;
+
+    if (reasonEl) {
+      reasonEl.textContent = parsed.reason || 'Based on your measurements and premium inputs.';
+    }
+
+    renderMatches(parsed.matches || []);
+  }
+
+  async function fetchPremiumResultById(id) {
+    try {
+      const sportyApp = window.SportyApp || window.sportyApp;
+      const client = sportyApp && sportyApp.getClient ? sportyApp.getClient() : null;
+      if (!client) return null;
+
+      const { data, error } = await client
+        .from('recommendations')
+        .select('result_payload, summary')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+
+      if (data && data.result_payload) {
+        return data.result_payload;
+      }
+      if (data && data.summary) {
+        try {
+          return JSON.parse(data.summary);
+        } catch (_) {
+          return null;
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('[Sporty] Failed to fetch premium analysis by id', error);
+      return null;
+    }
+  }
 
   function extractFactors(match) {
     const breakdown = match.score_breakdown || {};

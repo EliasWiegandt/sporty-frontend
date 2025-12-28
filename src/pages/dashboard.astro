@@ -124,6 +124,81 @@ const historyPlaceholders = [
           </div>
           
           <div class="status-area mt-2" data-profile-consent-status></div>
+
+          <div class="flex items-center justify-between py-4 border-t border-slate-100 mt-4">
+            <div class="max-w-xl">
+              <h3 class="font-medium text-slate-900">Family</h3>
+              <p class="text-sm text-slate-500 mt-1">
+                Your registered children and linked guardians.
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-2" data-family-zone>
+            <div class="rounded-lg border border-slate-100 bg-white px-4 py-3 mb-3" data-invite-inbox>
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="badge-subtle mb-2">Invites</div>
+                  <h4 class="m-0 text-slate-900 font-medium">Pending guardian invites</h4>
+                </div>
+              </div>
+              <p class="text-sm text-slate-500 py-2" data-invite-loading hidden>Loading invites…</p>
+              <p class="text-sm text-slate-500 py-2" data-invite-empty hidden>No pending invites.</p>
+              <ul class="space-y-2" data-invite-list></ul>
+            </div>
+
+            <div class="flex items-center justify-between gap-3 py-2">
+              <button class="btn-pill btn-pill-secondary btn-pill-sm" type="button" data-family-add-open>
+                Add child
+              </button>
+            </div>
+
+            <form class="rounded-lg border border-slate-100 bg-white px-4 py-3 mt-2" data-family-add-form hidden>
+              <div class="grid gap-3 sm:grid-cols-3">
+                <label class="field">
+                  <span class="field__label">Name</span>
+                  <input class="input-base" type="text" name="name" placeholder="Optional" />
+                </label>
+                <label class="field">
+                  <span class="field__label">Birthdate</span>
+                  <input class="input-base" type="date" name="birthdate" required />
+                </label>
+                <label class="field">
+                  <span class="field__label">Sex</span>
+                  <select class="input-base" name="sex" required>
+                    <option value="female">Female</option>
+                    <option value="male">Male</option>
+                    <option value="other">Other</option>
+                    <option value="prefer_not_to_say">Prefer not to say</option>
+                  </select>
+                </label>
+              </div>
+              <div class="grid gap-3 sm:grid-cols-2 mt-3">
+                <label class="field">
+                  <span class="field__label">Your relation</span>
+                  <select class="input-base" name="biological_role" required>
+                    <option value="unknown">Unknown</option>
+                    <option value="mother">Biological mother</option>
+                    <option value="father">Biological father</option>
+                    <option value="not_biological">Not biological parent</option>
+                  </select>
+                </label>
+              </div>
+              <div class="flex items-center justify-end gap-2 mt-3">
+                <button class="btn-pill btn-pill-secondary btn-pill-sm" type="button" data-family-add-cancel>
+                  Cancel
+                </button>
+                <button class="btn-pill btn-pill-primary btn-pill-sm" type="submit">
+                  Save child
+                </button>
+              </div>
+              <p class="text-sm text-slate-500 mt-2" data-family-add-status hidden></p>
+            </form>
+
+            <p class="text-sm text-slate-500 py-2" data-family-loading hidden>Loading family…</p>
+            <p class="text-sm text-slate-500 py-2" data-family-empty hidden>No children registered yet.</p>
+            <ul class="space-y-3" data-family-list></ul>
+          </div>
         </section>
       </section>
     </div>

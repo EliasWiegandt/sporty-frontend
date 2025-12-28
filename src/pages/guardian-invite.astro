@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Sporty — Accept guardian invite" description="Accept a guardian invite to manage a child profile." showAuth={true}>
+  <main class="dashboard-shell">
+    <section class="dashboard-card dashboard-card--full" data-guardian-invite-root>
+      <div class="max-w-xl mx-auto flex flex-col gap-4">
+        <h1 class="section-title">Join as a guardian</h1>
+        <p class="lead-copy">
+          Sign in to accept the invite, then tell us whether you are the biological mother or father.
+        </p>
+
+        <div class="rounded-lg border border-slate-100 bg-white px-4 py-4">
+          <p class="text-sm text-slate-600" data-guardian-invite-status>Loading…</p>
+
+          <form class="mt-4" data-guardian-invite-form hidden></form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Fragment slot="scripts">
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script is:inline src="/config.js" defer></script>
+    <script is:inline src="/assets/js/app.js?v=6" defer></script>
+    <script is:inline src="/assets/js/guardian-invite.js" defer></script>
+  </Fragment>
+</BaseLayout>
