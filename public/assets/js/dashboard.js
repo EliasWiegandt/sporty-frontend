@@ -35,7 +35,16 @@
   const inviteEmpty = root.querySelector('[data-invite-empty]');
   const inviteLoading = root.querySelector('[data-invite-loading]');
 
+  const childAnalysisDialog = root.querySelector('[data-child-analysis-dialog]');
+  const childAnalysisDialogList = root.querySelector('[data-child-analysis-dialog-list]');
+  const childAnalysisDialogEmpty = root.querySelector('[data-child-analysis-dialog-empty]');
+  const childAnalysisDialogLoading = root.querySelector('[data-child-analysis-dialog-loading]');
+
   let familyRequestId = 0;
+  let latestChildCredits = 0;
+  let familyChildrenCache = [];
+  let lastUserId = null;
+  let lastUserEmail = null;
 
   function readCreditSnapshot() {
     try {
@@ -103,6 +112,9 @@
       }
       setCredits('-', '-');
       updateRunButtons(0, 0);
+      latestChildCredits = 0;
+      familyChildrenCache = [];
+      lastUserId = null;
       clearLocker();
       clearHistory();
       clearFamily();
@@ -119,6 +131,8 @@
     if (emailEl) {
       emailEl.textContent = snapshot.user.email || '';
     }
+    lastUserId = snapshot.user.id;
+    lastUserEmail = snapshot.user.email || null;
     updateConsentStatus(snapshot.hasConsent);
     // Only update toggle if the state actually changed to prevent flicker
     if (consentToggle && consentToggle.checked !== Boolean(snapshot.hasConsent)) {
@@ -132,6 +146,7 @@
     if (creditSnapshot) {
       setCredits(String(creditSnapshot.adult), String(creditSnapshot.child));
       updateRunButtons(creditSnapshot.adult, creditSnapshot.child);
+      latestChildCredits = Number(creditSnapshot.child) || 0;
     }
     loadCredits(snapshot.user.id);
     loadHistory(snapshot.user.id);
@@ -323,32 +338,63 @@
 
       if (!childIds.length) {
         setFamilyState({ loading: false, empty: true });
+        familyChildrenCache = [];
         return;
       }
 
-      const [{ data: children, error: childError }, { data: allGuardianships, error: allGuardError }, { data: invites, error: inviteError }] =
-        await Promise.all([
-          client
-            .from('children')
-            .select('id,name,birthdate,sex,created_at')
-            .in('id', childIds)
-            .order('created_at', { ascending: false }),
-          client
-            .from('guardianships')
-            .select('child_id,guardian_user_id,role,biological_role,status,created_at')
-            .in('child_id', childIds)
-            .order('created_at', { ascending: true }),
-          client
-            .from('guardian_invites')
-            .select('child_id,invitee_email,invited_user_id,status,issued_at,accepted_at')
-            .in('child_id', childIds)
-            .order('issued_at', { ascending: false }),
-        ]);
+      const [
+        { data: children, error: childError },
+        { data: allGuardianships, error: allGuardError },
+        { data: invites, error: inviteError },
+      ] = await Promise.all([
+        client
+          .from('children')
+          .select('id,name,birthdate,sex,created_at')
+          .in('id', childIds)
+          .order('created_at', { ascending: false }),
+        client
+          .from('guardianships')
+          .select('child_id,guardian_user_id,role,biological_role,status,created_at')
+          .in('child_id', childIds)
+          .order('created_at', { ascending: true }),
+        client
+          .from('guardian_invites')
+          .select('child_id,invitee_email,invited_user_id,status,issued_at,accepted_at')
+          .in('child_id', childIds)
+          .order('issued_at', { ascending: false }),
+      ]);
 
       if (requestId !== familyRequestId) return;
       if (childError) throw childError;
       if (allGuardError) throw allGuardError;
       if (inviteError) throw inviteError;
+
+      // Optional queries: these may not exist yet if migrations haven't been applied.
+      let myShares = [];
+      try {
+        const { data, error } = await client
+          .from('parent_measurement_shares')
+          .select('child_id,revoked_at')
+          .eq('owner_user_id', userId)
+          .in('child_id', childIds);
+        if (error) throw error;
+        myShares = data || [];
+      } catch (error) {
+        console.warn('[Dashboard] parent_measurement_shares unavailable; skipping', error);
+        myShares = [];
+      }
+
+      let guardianEmails = [];
+      try {
+        const { data, error } = await client.rpc('get_guardian_emails_for_children', {
+          p_child_ids: childIds,
+        });
+        if (error) throw error;
+        guardianEmails = data || [];
+      } catch (error) {
+        console.warn('[Dashboard] get_guardian_emails_for_children unavailable; skipping', error);
+        guardianEmails = [];
+      }
 
       const guardiansByChild = new Map();
       (allGuardianships || []).forEach((row) => {
@@ -371,10 +417,23 @@
         if (!emailByGuardian.has(gid)) emailByGuardian.set(gid, email);
       });
 
+      (guardianEmails || []).forEach((row) => {
+        if (!row) return;
+        if (row.guardian_user_id && row.email && !emailByGuardian.has(row.guardian_user_id)) {
+          emailByGuardian.set(row.guardian_user_id, row.email);
+        }
+      });
+
       const childrenSorted = (children || []).slice().sort((a, b) => {
         const da = new Date(a.created_at || 0).getTime();
         const db = new Date(b.created_at || 0).getTime();
         return db - da;
+      });
+
+      const myShareEnabledByChild = new Map();
+      (myShares || []).forEach((row) => {
+        if (!row || !row.child_id) return;
+        myShareEnabledByChild.set(row.child_id, row.revoked_at == null);
       });
 
       childrenSorted.forEach((child) => {
@@ -398,7 +457,84 @@
         `;
 
         titleRow.appendChild(left);
+
+        if (latestChildCredits > 0) {
+          const runBtn = document.createElement('button');
+          runBtn.type = 'button';
+          runBtn.className = 'btn-pill btn-pill-primary btn-pill-xs flex-shrink-0';
+          runBtn.textContent = 'Run analysis';
+          runBtn.addEventListener('click', () => {
+            window.location.assign(`/child-intake?child_id=${encodeURIComponent(child.id)}`);
+          });
+          titleRow.appendChild(runBtn);
+        }
         li.appendChild(titleRow);
+
+        const myGuardianship = (guardiansByChild.get(child.id) || []).find(
+          (g) => g.guardian_user_id === userId && g.status === 'active'
+        );
+
+        // Parent measurement sharing (biological parents only; share is consumed by all active guardians).
+        const myBio = myGuardianship && myGuardianship.biological_role ? String(myGuardianship.biological_role) : null;
+        if (myBio === 'mother' || myBio === 'father') {
+          const sharingBlock = document.createElement('div');
+          sharingBlock.className = 'mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3';
+
+          const leftCopy = document.createElement('div');
+          leftCopy.className = 'min-w-0';
+          leftCopy.innerHTML = `
+            <div class="text-sm font-medium text-slate-900">Share my latest measurements</div>
+            <div class="text-xs text-slate-500">Allow all active guardians to use your latest saved measurements when forecasting this child.</div>
+          `;
+
+          const toggle = document.createElement('input');
+          toggle.type = 'checkbox';
+          toggle.checked = Boolean(myShareEnabledByChild.get(child.id));
+
+          const wrapper = document.createElement('label');
+          wrapper.className = 'toggle flex-shrink-0';
+          wrapper.setAttribute('aria-label', 'Share my latest measurements with guardians');
+          wrapper.appendChild(toggle);
+          const track = document.createElement('span');
+          track.className = 'toggle__track';
+          wrapper.appendChild(track);
+
+          const status = document.createElement('p');
+          status.className = 'text-xs text-slate-500 mt-2';
+          status.hidden = true;
+
+          toggle.addEventListener('change', async () => {
+            toggle.disabled = true;
+            status.hidden = false;
+            status.className = 'text-xs text-slate-500 mt-2';
+            status.textContent = 'Saving…';
+            try {
+              const { error } = await client.rpc('set_parent_measurement_share', {
+                p_child_id: child.id,
+                p_enabled: Boolean(toggle.checked),
+              });
+              if (error) throw error;
+              status.textContent = toggle.checked ? 'Sharing enabled.' : 'Sharing disabled.';
+              myShareEnabledByChild.set(child.id, Boolean(toggle.checked));
+            } catch (error) {
+              console.error('[Dashboard] Failed to update measurement sharing', error);
+              toggle.checked = !toggle.checked;
+              status.className = 'text-xs text-red-600 mt-2';
+              status.textContent =
+                (error && error.message) || 'Unable to update sharing. Please try again.';
+            } finally {
+              toggle.disabled = false;
+              setTimeout(() => {
+                status.hidden = true;
+              }, 2500);
+            }
+          });
+
+          sharingBlock.appendChild(leftCopy);
+          sharingBlock.appendChild(wrapper);
+          li.appendChild(sharingBlock);
+          li.appendChild(status);
+        }
 
         // Invite co-guardian (creator-driven assignment)
         const inviteBlock = document.createElement('div');
@@ -466,9 +602,6 @@
 
         li.appendChild(inviteBlock);
 
-        const myGuardianship = (guardiansByChild.get(child.id) || []).find(
-          (g) => g.guardian_user_id === userId
-        );
         if (myGuardianship) {
           const relBlock = document.createElement('div');
           relBlock.className = 'mt-3';
@@ -551,10 +684,7 @@
             const role = g.role ? String(g.role).replace(/_/g, ' ') : 'guardian';
             const status = g.status ? String(g.status).replace(/_/g, ' ') : 'active';
             const bio = g.biological_role ? String(g.biological_role).replace(/_/g, ' ') : null;
-            const who =
-              gid === userId
-                ? 'You'
-                : emailByGuardian.get(gid) || 'Guardian';
+            const who = emailByGuardian.get(gid) || (gid === userId ? lastUserEmail || 'You' : 'Guardian');
 
             chip.className = 'badge-subtle';
             chip.textContent = `${who} · ${role}${bio ? ` · ${bio}` : ''} · ${status}`;
@@ -590,10 +720,14 @@
         familyList.appendChild(li);
       });
 
+      familyChildrenCache = childrenSorted.slice();
       setFamilyState({ loading: false, empty: childrenSorted.length === 0 });
+      return childrenSorted;
     } catch (error) {
       console.error('[Sporty] Failed to load family data', error);
       setFamilyState({ loading: false, empty: true });
+      familyChildrenCache = [];
+      return [];
     }
   }
 
@@ -719,6 +853,10 @@
 
       btn.onclick = () => {
         if (!hasCredits) return;
+        if (kind === 'child') {
+          handleStartChildAnalysis();
+          return;
+        }
         if (target) window.location.href = target;
       };
     });
@@ -782,6 +920,12 @@
       const child = normalizeCreditCount(payload.child_credits);
       setCredits(String(adult), String(child));
       updateRunButtons(adult, child);
+      const previousChildCredits = latestChildCredits;
+      latestChildCredits = child;
+      if (previousChildCredits !== latestChildCredits && lastUserId) {
+        // Re-render child rows so per-child CTA reflects credit availability.
+        loadFamily(lastUserId);
+      }
       creditsController = null;
     } catch (error) {
       if (creditsController && creditsController.signal.aborted) {
@@ -791,8 +935,105 @@
       console.error('[Sporty] Failed to load credits', error);
       setCredits('--', '--');
       updateRunButtons(0, 0);
+      latestChildCredits = 0;
       creditsController = null;
     }
+  }
+
+  function setChildAnalysisDialogState({ loading, empty }) {
+    if (childAnalysisDialogLoading) childAnalysisDialogLoading.hidden = !loading;
+    if (childAnalysisDialogEmpty) childAnalysisDialogEmpty.hidden = !empty;
+    if (childAnalysisDialogList) childAnalysisDialogList.hidden = Boolean(empty);
+  }
+
+  function renderChildChooser(children) {
+    if (!childAnalysisDialogList) return;
+    childAnalysisDialogList.innerHTML = '';
+    const rows = Array.isArray(children) ? children : [];
+    if (!rows.length) {
+      setChildAnalysisDialogState({ loading: false, empty: true });
+      return;
+    }
+
+    setChildAnalysisDialogState({ loading: false, empty: false });
+    rows.forEach((child) => {
+      const li = document.createElement('li');
+      li.className =
+        'flex items-center justify-between gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2';
+
+      const left = document.createElement('div');
+      left.className = 'min-w-0';
+      const title = document.createElement('div');
+      title.className = 'text-sm font-medium text-slate-900 truncate';
+      title.textContent = child.name || 'Child';
+      const meta = document.createElement('div');
+      meta.className = 'text-xs text-slate-500';
+      meta.textContent = child.birthdate ? `Born ${child.birthdate}` : '';
+      left.appendChild(title);
+      if (meta.textContent) left.appendChild(meta);
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-pill btn-pill-primary btn-pill-xs flex-shrink-0';
+      btn.textContent = 'Continue';
+      btn.addEventListener('click', () => {
+        try {
+          childAnalysisDialog?.close?.();
+        } catch (_) {}
+        window.location.assign(`/child-intake?child_id=${encodeURIComponent(child.id)}`);
+      });
+
+      li.appendChild(left);
+      li.appendChild(btn);
+      childAnalysisDialogList.appendChild(li);
+    });
+  }
+
+  async function handleStartChildAnalysis() {
+    if (latestChildCredits <= 0) return;
+
+    if (Array.isArray(familyChildrenCache) && familyChildrenCache.length === 1) {
+      const only = familyChildrenCache[0];
+      if (only && only.id) {
+        window.location.assign(`/child-intake?child_id=${encodeURIComponent(only.id)}`);
+        return;
+      }
+    }
+
+    if (!childAnalysisDialog) {
+      window.location.assign('/child-intake');
+      return;
+    }
+
+    setChildAnalysisDialogState({ loading: true, empty: false });
+    if (childAnalysisDialogList) childAnalysisDialogList.innerHTML = '';
+
+    try {
+      let rows = familyChildrenCache;
+      if ((!rows || !rows.length) && lastUserId) {
+        rows = (await loadFamily(lastUserId)) || [];
+      }
+      renderChildChooser(rows || []);
+    } catch (error) {
+      console.warn('[Dashboard] Unable to load children for chooser', error);
+      renderChildChooser([]);
+    }
+
+    if (typeof childAnalysisDialog.showModal === 'function') {
+      childAnalysisDialog.showModal();
+    } else if (typeof childAnalysisDialog.show === 'function') {
+      childAnalysisDialog.show();
+    }
+  }
+
+  if (childAnalysisDialog) {
+    childAnalysisDialog.addEventListener('click', (event) => {
+      if (event.target === childAnalysisDialog) {
+        try {
+          childAnalysisDialog.close();
+        } catch (_) {}
+      }
+    });
   }
 
   function clearLocker() {

@@ -1,206 +1,26 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import ChildForecastApp from '../components/child/ChildForecastApp';
 
-const adultGroups = [
-  '18-20 years',
-  '20-25 years',
-  '25-35 years',
-  '35-45 years',
-];
+const adultGroups = ['18-20 years', '20-25 years', '25-35 years', '35-45 years'];
 ---
 <BaseLayout
   title="Sporty — Child Forecast Intake"
   description="Project a child’s future body metrics using parent measurements and cohort data."
 >
-  
-  <main class="intake">
-    <section class="banner" data-child-banner>
-      Combine a child’s current measurements with parent data to project their adult body profile. Use the prefilled test family to validate the flow, or overwrite with your own numbers.
-    </section>
-
-    <form class="card-shell grid" data-child-intake-form>
-      <header>
-        <h1 class="section-title" style="margin:0;">Child forecast intake</h1>
-        <p class="lead">Provide age, optional ethnicity, and measurements for the child plus any available parent data.</p>
-      </header>
-
-      <section class="grid" aria-labelledby="who">
-        <h2 id="who" class="section-subtitle" style="margin:0;">Who are we forecasting?</h2>
-        <div class="input-row">
-          <label class="field">
-            <span class="field__label">Existing child ID</span>
-            <input class="input-base" type="text" name="child_id" data-required placeholder="UUID from Supabase" />
-          </label>
-          <label class="field">
-            <span class="field__label">Guardian user ID (optional)</span>
-            <input class="input-base" type="text" name="guardian_user_id" placeholder="UUID of signed-in guardian" />
-          </label>
-          <label class="field">
-            <span class="field__label">Birthdate</span>
-            <input class="input-base" type="date" name="birthdate" data-required />
-          </label>
-          <label class="field">
-            <span class="field__label">Sex</span>
-            <select class="input-base" name="sex" data-required>
-              <option value="female">Female</option>
-              <option value="male">Male</option>
-              <option value="other">Other</option>
-              <option value="prefer_not">Prefer not to say</option>
-            </select>
-          </label>
-          <label class="field">
-            <span class="field__label">Ethnicity (optional)</span>
-            <select class="input-base" name="ethnicity">
-              <option value="">General population</option>
-              <option value="caucasian">Caucasian</option>
-              <option value="asian">Asian</option>
-            </select>
-          </label>
-          <label class="field">
-            <span class="field__label">Target adult cohort</span>
-            <select class="input-base" name="adult_age_group">
-              {adultGroups.map((group) => <option value={group}>{group}</option>)}
-            </select>
-          </label>
-        </div>
+  <main class="mx-auto max-w-5xl space-y-10 pb-32">
+    <div data-intake-root>
+      <section class="section-shell space-y-8">
+        <form id="child-intake-form" class="space-y-10" data-child-intake-form>
+          <ChildForecastApp client:load adultAgeGroups={adultGroups} />
+        </form>
       </section>
-
-      <fieldset class="intake-fieldset">
-        <legend>Child measurements (cm)</legend>
-        <div class="measurements">
-          <label class="field">
-            <span class="field__label">Weight (kg)</span>
-            <input class="input-base" type="number" step="0.1" name="child_weight_kg" data-group="child" data-measurement="weight_kg" required />
-          </label>
-          <label class="field">
-            <span class="field__label">Height</span>
-            <input class="input-base" type="number" step="0.1" name="child_height_cm" data-group="child" data-measurement="height_cm" required />
-          </label>
-          <label class="field">
-            <span class="field__label">Arm span</span>
-            <input class="input-base" type="number" step="0.1" name="child_arm_span_cm" data-group="child" data-measurement="arm_span_cm" />
-          </label>
-          <label class="field">
-            <span class="field__label">Leg inseam</span>
-            <input class="input-base" type="number" step="0.1" name="child_leg_inseam_cm" data-group="child" data-measurement="leg_inseam_cm" />
-          </label>
-          <label class="field">
-            <span class="field__label">Shoulder width</span>
-            <input class="input-base" type="number" step="0.1" name="child_shoulder_width_cm" data-group="child" data-measurement="shoulder_width_cm" />
-          </label>
-          <label class="field">
-            <span class="field__label">Hip width</span>
-            <input class="input-base" type="number" step="0.1" name="child_hip_width_cm" data-group="child" data-measurement="hip_width_cm" />
-          </label>
-          <label class="field">
-            <span class="field__label">Hand length</span>
-            <input class="input-base" type="number" step="0.1" name="child_hand_length_cm" data-group="child" data-measurement="hand_length_cm" />
-          </label>
-          <label class="field">
-            <span class="field__label">Foot length</span>
-            <input class="input-base" type="number" step="0.1" name="child_foot_length_cm" data-group="child" data-measurement="foot_length_cm" />
-          </label>
-        </div>
-      </fieldset>
-
-      <fieldset class="intake-fieldset">
-        <legend>Mother measurements (optional)</legend>
-        <div class="measurements">
-          <label class="field">
-            <span class="field__label">Weight (kg)</span>
-            <input class="input-base" type="number" step="0.1" name="mother_weight_kg" data-group="mother" data-measurement="weight_kg" />
-          </label>
-          <label class="field">
-            <span class="field__label">Height</span>
-            <input class="input-base" type="number" step="0.1" name="mother_height_cm" data-group="mother" data-measurement="height_cm" />
-          </label>
-          <label class="field">
-            <span class="field__label">Arm span</span>
-            <input class="input-base" type="number" step="0.1" name="mother_arm_span_cm" data-group="mother" data-measurement="arm_span_cm" />
-          </label>
-          <label class="field">
-            <span class="field__label">Leg inseam</span>
-            <input class="input-base" type="number" step="0.1" name="mother_leg_inseam_cm" data-group="mother" data-measurement="leg_inseam_cm" />
-          </label>
-          <label class="field">
-            <span class="field__label">Shoulder width</span>
-            <input class="input-base" type="number" step="0.1" name="mother_shoulder_width_cm" data-group="mother" data-measurement="shoulder_width_cm" />
-          </label>
-          <label class="field">
-            <span class="field__label">Hip width</span>
-            <input class="input-base" type="number" step="0.1" name="mother_hip_width_cm" data-group="mother" data-measurement="hip_width_cm" />
-          </label>
-          <label class="field">
-            <span class="field__label">Hand length</span>
-            <input class="input-base" type="number" step="0.1" name="mother_hand_length_cm" data-group="mother" data-measurement="hand_length_cm" />
-          </label>
-          <label class="field">
-            <span class="field__label">Foot length</span>
-            <input class="input-base" type="number" step="0.1" name="mother_foot_length_cm" data-group="mother" data-measurement="foot_length_cm" />
-          </label>
-        </div>
-      </fieldset>
-
-      <fieldset class="intake-fieldset">
-        <legend>Father measurements (optional)</legend>
-        <div class="measurements">
-          <label class="field">
-            <span class="field__label">Weight (kg)</span>
-            <input class="input-base" type="number" step="0.1" name="father_weight_kg" data-group="father" data-measurement="weight_kg" />
-          </label>
-          <label class="field">
-            <span class="field__label">Height</span>
-            <input class="input-base" type="number" step="0.1" name="father_height_cm" data-group="father" data-measurement="height_cm" />
-          </label>
-          <label class="field">
-            <span class="field__label">Arm span</span>
-            <input class="input-base" type="number" step="0.1" name="father_arm_span_cm" data-group="father" data-measurement="arm_span_cm" />
-          </label>
-          <label class="field">
-            <span class="field__label">Leg inseam</span>
-            <input class="input-base" type="number" step="0.1" name="father_leg_inseam_cm" data-group="father" data-measurement="leg_inseam_cm" />
-          </label>
-          <label class="field">
-            <span class="field__label">Shoulder width</span>
-            <input class="input-base" type="number" step="0.1" name="father_shoulder_width_cm" data-group="father" data-measurement="shoulder_width_cm" />
-          </label>
-          <label class="field">
-            <span class="field__label">Hip width</span>
-            <input class="input-base" type="number" step="0.1" name="father_hip_width_cm" data-group="father" data-measurement="hip_width_cm" />
-          </label>
-          <label class="field">
-            <span class="field__label">Hand length</span>
-            <input class="input-base" type="number" step="0.1" name="father_hand_length_cm" data-group="father" data-measurement="hand_length_cm" />
-          </label>
-          <label class="field">
-            <span class="field__label">Foot length</span>
-            <input class="input-base" type="number" step="0.1" name="father_foot_length_cm" data-group="father" data-measurement="foot_length_cm" />
-          </label>
-        </div>
-      </fieldset>
-
-      <section class="card-shell">
-        <div class="grid">
-          <div>
-            <h2 style="margin:0;">Ready to forecast?</h2>
-            <p class="lead">Submit these measurements to project the child’s future adult body. You can add preferences and premiums on the next step.</p>
-          </div>
-        </div>
-      </section>
-
-      <div class="status-area" data-status></div>
-      <div class="input-row" style="align-items:center;">
-        <button class="btn-primary" type="submit" data-submit>Forecast future body</button>
-        <button class="btn-ghost" type="button" data-reset>Clear all</button>
-        <a class="btn-ghost" href="/child-results">View last forecast</a>
-      </div>
-    </form>
+    </div>
   </main>
 
   <Fragment slot="scripts">
     <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script is:inline src="/config.js" defer></script>
-    <script is:inline src="/assets/js/app.js?v=4" defer></script>
-    <script is:inline src="/assets/js/child-intake.js" defer></script>
+    <script is:inline src="/assets/js/app.js?v=6" defer></script>
   </Fragment>
 </BaseLayout>

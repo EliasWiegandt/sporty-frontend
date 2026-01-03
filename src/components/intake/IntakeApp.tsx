@@ -100,56 +100,12 @@ const measurementKeys = measurementFields.map((field) => field.id) as Array<
   Exclude<keyof FreeIntakeData, "birthday" | "sex" | "pastSports">
 >;
 
-const LOCAL_PREFILL_BASICS: Pick<FreeIntakeData, "birthday" | "sex"> = {
-  birthday: "1995-05-15",
-  sex: "female",
-};
-
-const LOCAL_PREFILL_MEASUREMENTS: Record<string, number> = {
-  height_cm: 168,
-  weight_kg: 59,
-  arm_span_cm: 170,
-  leg_inseam_cm: 80,
-  shoulder_width_cm: 44,
-  pelvic_bone_width_cm: 69,
-  hand_length_cm: 19,
-  foot_length_cm: 24,
-  torso_length_cm: 60,
-  ankle_circumference_cm: 20,
-  wrist_circumference_cm: 17,
-};
-
-const LOCAL_PREFILL_PAST_SPORTS: Array<Omit<PastSportsEntry, "id">> = [
-  {
-    sport_subcategory_id: "soccer-forward-striker",
-    sport_label: "Soccer - Forward - Striker",
-    years_played: 3,
-    age_started_years: 14,
-    intensity: "moderate",
-    liked: true,
-    had_flair: true,
-    achieved_skill: true,
-  },
-  {
-    sport_subcategory_id: "soccer-forward-winger",
-    sport_label: "Soccer - Forward - Winger",
-    years_played: 1.5,
-    age_started_years: 12,
-    intensity: "light",
-    liked: true,
-    had_flair: false,
-    achieved_skill: false,
-  },
-];
-
-const LOCAL_PREFILL_TRAITS: Record<string, string> = {
-  muscle_fiber: "fast_twitch_dominant",
-  metabolic_tendency: "don't know",
-  joint_laxity: "medium",
-  foot_arch: "neutral",
-  temperature_tolerance: "don't know",
-  handedness: "right",
-  footedness: "right",
+const buildEmptyMeasurements = (): Record<string, number | null> => {
+  const output: Record<string, number | null> = {};
+  measurementKeys.forEach((id) => {
+    output[id] = null;
+  });
+  return output;
 };
 
 const SEX_OPTIONS: Set<Sex> = new Set([
@@ -193,22 +149,13 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
     user: null,
     hasConsent: false,
   });
-  const [pastSports, setPastSports] = useState<PastSportsEntry[]>(() =>
-    LOCAL_PREFILL_PAST_SPORTS.map((entry, index) => ({
-      ...entry,
-      id: `prefill-${index}`,
-    }))
-  );
+  const [pastSports, setPastSports] = useState<PastSportsEntry[]>(() => []);
   const [basics, setBasics] = useState<{ birthday: string; sex: Sex | "" }>(
-    () => ({
-      ...LOCAL_PREFILL_BASICS,
-    })
+    () => ({ birthday: "", sex: "" })
   );
   const [measurements, setMeasurements] = useState<
     Record<string, number | null>
-  >(() => ({
-    ...LOCAL_PREFILL_MEASUREMENTS,
-  }));
+  >(() => buildEmptyMeasurements());
   const [consentGiven, setConsentGiven] = useState(false);
   const consentIntentRef = useRef(false);
   const [consentSaving, setConsentSaving] = useState(false);
@@ -468,6 +415,84 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
   useEffect(() => {
     restoreDraft();
   }, [restoreDraft]);
+
+  const hasAnyInput = useCallback(() => {
+    if (basics.birthday || basics.sex) return true;
+    if (pastSports.length) return true;
+    for (const id of measurementKeys) {
+      const value = measurements[id];
+      if (value !== null && value !== undefined && value !== ("" as any)) {
+        return true;
+      }
+    }
+    return false;
+  }, [basics.birthday, basics.sex, pastSports.length, measurements]);
+
+  const serverPrefillAppliedRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!sportySnapshot.user?.id) return;
+    if (serverPrefillAppliedRef.current) return;
+    if (hasAnyInput()) return;
+
+    // If we have a local draft, prefer that over server prefill.
+    if (supportsLocalStorage()) {
+      try {
+        const raw = window.localStorage.getItem(STORAGE_KEY);
+        if (raw) return;
+      } catch {
+        // ignore
+      }
+    }
+
+    const sportyApp = (window as any).SportyApp;
+    const client = sportyApp?.getClient?.();
+    if (!client) return;
+
+    serverPrefillAppliedRef.current = true;
+
+    (async () => {
+      try {
+        const userId = sportySnapshot.user!.id;
+
+        const [{ data: profile }, { data: measurement }] = await Promise.all([
+          client.from("profiles").select("birthdate,sex").eq("id", userId).maybeSingle(),
+          client
+            .from("measurements")
+            .select("*")
+            .eq("subject_type", "adult")
+            .eq("subject_user_id", userId)
+            .order("measured_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ]);
+
+        if (profile) {
+          setBasics((prev) => ({
+            birthday: prev.birthday || profile.birthdate || "",
+            sex: (prev.sex || (profile.sex as Sex) || "") as Sex | "",
+          }));
+        }
+
+        if (measurement) {
+          setMeasurements((prev) => {
+            const next = { ...prev };
+            measurementKeys.forEach((id) => {
+              if (next[id] !== null && next[id] !== undefined) return;
+              const value = (measurement as any)[id];
+              if (value === null || value === undefined) return;
+              const numVal = Number(value);
+              next[id] = Number.isFinite(numVal) ? numVal : null;
+            });
+            return next;
+          });
+        }
+      } catch (error) {
+        console.warn("[Intake] Unable to prefill from saved measurements", error);
+      }
+    })();
+  }, [sportySnapshot.user?.id, hasAnyInput]);
 
   const validateBasics = useCallback((): StepValidationResult<
     Pick<FreeIntakeData, "birthday" | "sex">

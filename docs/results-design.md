@@ -39,7 +39,7 @@ The free results page consumes the JSON payload returned from `POST /v1/recommen
     "arm_span_cm": 170.0,
     "leg_inseam_cm": 80.0,
     "shoulder_width_cm": 44.0,
-    "hip_width_cm": 98.0,
+    "pelvic_bone_width_cm": 98.0,
     "hand_length_cm": 19.0,
     "foot_length_cm": 24.0,
     "past_sports": [],

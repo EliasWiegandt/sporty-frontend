@@ -5,79 +5,25 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   title="Sporty — Child Premium Matches"
   description="Premium sport matches based on the projected adult body for this child."
 >
-  <main class="section-shell grid gap-[clamp(2rem,4vw,3rem)]" data-child-premium-root>
-    <section class="grid gap-3" data-hero hidden>
-      <span class="badge">Child premium matches</span>
-      <h1 data-sport>Premium matches ready</h1>
-      <p class="lead-copy" data-reason>We’ll populate this with the premium rationale once your analysis loads.</p>
-      <div class="inline-flex flex-wrap items-center gap-3 text-sm text-[var(--gray-6)]" data-credit hidden>
-        <span class="pill-teal" data-credit-adult>Adult credits: —</span>
-        <span class="pill-teal" data-credit-child>Child credits: —</span>
+  <main class="section-shell grid gap-4">
+    <div class="grid gap-2 rounded-[18px] border border-dashed border-[rgba(148,163,184,0.35)] p-[clamp(1.6rem,3vw,2.2rem)] text-center text-[var(--gray-6)]">
+      <h1 class="section-title" style="margin:0;">Redirecting…</h1>
+      <p class="lead-copy">Child results now live on a single page with tabs.</p>
+      <div class="btn-row justify-center">
+        <a class="btn-primary" href="/child-results?tab=matches">Continue</a>
       </div>
-    </section>
-
-    <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-measurement-summary hidden></section>
-
-    <section
-      class="grid gap-3 justify-items-center rounded-[18px] border border-dashed border-[rgba(148,163,184,0.35)] p-[clamp(1.6rem,3vw,2.2rem)] text-center text-[var(--gray-6)]"
-      data-empty-state
-      hidden
-    >
-      <h2>No premium run detected</h2>
-      <p>Run the child forecast, then apply a child credit on the premium step to unlock sport matches.</p>
-      <div class="cta-row btn-row justify-center mt-5">
-        <a class="btn-primary" href="/child-intake">Go to child forecast</a>
-        <a class="btn-ghost" href="/child-premium">Apply premium filters</a>
-      </div>
-    </section>
-
-    <section class="grid gap-[clamp(1.5rem,3vw,2.5rem)] lg:grid-cols-[2fr_1fr]" data-results hidden>
-      <div class="grid-stack">
-        <article class="card-shell">
-          <h2 class="card-title">Component impact</h2>
-          <ul class="list-reset grid gap-3" data-component-list></ul>
-        </article>
-        <article class="card-shell">
-          <h2 class="card-title">Preferences</h2>
-          <ul class="list-reset grid gap-3" data-preference-list></ul>
-        </article>
-        <article class="card-shell">
-          <h2 class="card-title">Goals</h2>
-          <ul class="list-reset grid gap-3" data-goal-list></ul>
-        </article>
-        <article class="card-shell">
-          <h2 class="card-title">Injury considerations</h2>
-          <ul class="list-reset grid gap-3" data-injury-list></ul>
-        </article>
-        <article class="card-shell">
-          <h2 class="card-title">Child past sports</h2>
-          <ul class="list-reset grid gap-3" data-past-sports-list></ul>
-        </article>
-        <article class="card-shell">
-          <h2 class="card-title">Next actions</h2>
-          <ul class="list-reset grid gap-3" data-next-steps-list></ul>
-        </article>
-      </div>
-      <div class="grid-stack">
-        <article class="card-shell">
-          <h2 class="card-title">Top sport matches</h2>
-          <div class="grid gap-4 lg:grid-cols-3" data-match-grid></div>
-        </article>
-        <article class="card-shell">
-          <h2 class="card-title">What’s next?</h2>
-          <div class="cta-row btn-row">
-            <a class="btn-primary" href="/child-results">View forecast details</a>
-            <a class="btn-ghost" href="/child-premium">Adjust premium inputs</a>
-          </div>
-        </article>
-      </div>
-    </section>
+    </div>
   </main>
 
   <Fragment slot="scripts">
-    <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-    <script is:inline src="/config.js" defer></script>
     <script is:inline src="/assets/js/app.js?v=4" defer></script>
-    <script is:inline src="/assets/js/child-results-premium.js" defer></script>
+    <script is:inline defer>
+      (function () {
+        try {
+          sessionStorage.setItem('sporty:childResultsTab', 'matches');
+        } catch (_) {}
+        window.location.replace('/child-results?tab=matches');
+      })();
+    </script>
   </Fragment>
 </BaseLayout>

@@ -62,73 +62,124 @@
     });
   }
 
-  function prefillForTest() {
-    const preset = {
-      child_id: '5d9dc9fd-9f5b-4b5d-b4db-77056db48e5d',
-      guardian_user_id: '',
-      birthdate: '2017-06-15',
-      sex: 'female',
-      ethnicity: 'caucasian',
-      adult_age_group: '25-35 years',
-      child: {
-        weight_kg: 36.4,
-        height_cm: 132.2,
-        arm_span_cm: 134.0,
-        leg_inseam_cm: 66.4,
-        shoulder_width_cm: 34.5,
-        hip_width_cm: 32.8,
-        hand_length_cm: 16.2,
-        foot_length_cm: 21.1,
-      },
-      mother: {
-        weight_kg: 62.5,
-        height_cm: 167.2,
-        arm_span_cm: 167.8,
-        leg_inseam_cm: 78.4,
-        shoulder_width_cm: 42.3,
-        hip_width_cm: 39.6,
-        hand_length_cm: 17.4,
-        foot_length_cm: 24.0,
-      },
-      father: {
-        weight_kg: 82.1,
-        height_cm: 184.6,
-        arm_span_cm: 185.4,
-        leg_inseam_cm: 86.7,
-        shoulder_width_cm: 46.8,
-        hip_width_cm: 41.5,
-        hand_length_cm: 19.7,
-        foot_length_cm: 27.8,
-      },
+  function getUrlChildId() {
+    try {
+      const url = new URL(window.location.href);
+      return url.searchParams.get('child_id');
+    } catch {
+      return null;
+    }
+  }
+
+  async function loadLatestMeasurementForAdult(client, userId) {
+    const { data, error } = await client
+      .from('measurements')
+      .select('*')
+      .eq('subject_type', 'adult')
+      .eq('subject_user_id', userId)
+      .order('measured_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    return data || null;
+  }
+
+  async function loadLatestMeasurementForChild(client, childId) {
+    const { data, error } = await client
+      .from('measurements')
+      .select('*')
+      .eq('subject_type', 'child')
+      .eq('subject_child_id', childId)
+      .order('measured_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    return data || null;
+  }
+
+  async function loadChildRecord(client, childId) {
+    const { data, error } = await client
+      .from('children')
+      .select('id,name,birthdate,sex')
+      .eq('id', childId)
+      .maybeSingle();
+    if (error) throw error;
+    return data || null;
+  }
+
+  async function loadFirstActiveChildForGuardian(client, userId) {
+    const { data, error } = await client
+      .from('guardianships')
+      .select('child_id, child:children(id,name,birthdate,sex)')
+      .eq('guardian_user_id', userId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: true })
+      .limit(1);
+    if (error) throw error;
+    const row = (data || [])[0];
+    if (!row) return null;
+    return {
+      child_id: row.child_id,
+      child: row.child || null,
     };
+  }
 
-    form.elements.child_id.value = preset.child_id;
-    if (form.elements.guardian_user_id) {
-      form.elements.guardian_user_id.value = preset.guardian_user_id;
-    }
-    form.elements.birthdate.value = preset.birthdate;
-    form.elements.sex.value = preset.sex;
-    if (form.elements.ethnicity) {
-      form.elements.ethnicity.value = preset.ethnicity || '';
-    }
-    form.elements.adult_age_group.value = preset.adult_age_group;
+  async function loadMyBiologicalRole(client, userId, childId) {
+    const { data, error } = await client
+      .from('guardianships')
+      .select('biological_role')
+      .eq('guardian_user_id', userId)
+      .eq('child_id', childId)
+      .eq('status', 'active')
+      .maybeSingle();
+    if (error) throw error;
+    return (data && data.biological_role) || null;
+  }
 
-    populateGroup('child', preset.child);
-    populateGroup('mother', preset.mother);
-    populateGroup('father', preset.father);
+  async function loadSharedParentMeasurements(client, childId) {
+    const { data, error } = await client.rpc('get_child_parent_measurements', {
+      p_child_id: childId,
+    });
+    if (error) throw error;
+    return data || null;
+  }
 
-    if (bannerEl) {
-      bannerEl.innerHTML =
-        'Using the seeded Sporty family. Submit the form to generate and store a forecast run.';
+  function applyChildBasics(child) {
+    if (!child) return;
+    if (form.elements.birthdate && child.birthdate) {
+      form.elements.birthdate.value = child.birthdate;
     }
+    if (form.elements.sex && child.sex) {
+      form.elements.sex.value = child.sex;
+    }
+  }
+
+  function applyMeasurementRowToGroup(group, row) {
+    if (!row) return;
+    const allowed = [
+      'height_cm',
+      'weight_kg',
+      'arm_span_cm',
+      'leg_inseam_cm',
+      'shoulder_width_cm',
+      'pelvic_bone_width_cm',
+      'hand_length_cm',
+      'foot_length_cm',
+      'torso_length_cm',
+      'ankle_circumference_cm',
+      'wrist_circumference_cm',
+    ];
+    const values = {};
+    allowed.forEach((key) => {
+      if (row[key] === undefined) return;
+      values[key] = row[key];
+    });
+    populateGroup(group, values);
   }
 
   function resetForm() {
     form.reset();
     setStatus('');
-    if (isTestBranch()) {
-      prefillForTest();
-    }
   }
 
   form.addEventListener('submit', async (event) => {
@@ -220,7 +271,7 @@
   }
 
   if (isTestBranch()) {
-    prefillForTest();
+    // no local defaults; prefer latest saved measurements when signed in
   }
 
   if (sportyApp && sportyApp.ready) {
@@ -231,6 +282,66 @@
             guardianField.value = snapshot.user.id;
           }
         });
+      }
+    });
+  }
+
+  if (sportyApp && sportyApp.ready) {
+    sportyApp.ready.then(async () => {
+      const client = sportyApp.getClient ? sportyApp.getClient() : null;
+      const user = sportyApp.getUser ? sportyApp.getUser() : null;
+      if (!client || !user || !user.id) return;
+
+      if (guardianField && !guardianField.value) {
+        guardianField.value = user.id;
+      }
+
+      try {
+        let childId = getUrlChildId();
+        if (!childId) {
+          const first = await loadFirstActiveChildForGuardian(client, user.id);
+          if (first && first.child_id) {
+            childId = first.child_id;
+          }
+        }
+
+        if (childId && form.elements.child_id && !form.elements.child_id.value) {
+          form.elements.child_id.value = childId;
+        }
+
+        if (childId) {
+          const childRecord = await loadChildRecord(client, childId);
+          applyChildBasics(childRecord);
+
+          const childMeasurement = await loadLatestMeasurementForChild(client, childId);
+          applyMeasurementRowToGroup('child', childMeasurement);
+
+          // Prefer shared parent measurements if the biological parents opted in.
+          try {
+            const shared = await loadSharedParentMeasurements(client, childId);
+            if (shared && shared.mother) applyMeasurementRowToGroup('mother', shared.mother);
+            if (shared && shared.father) applyMeasurementRowToGroup('father', shared.father);
+          } catch (error) {
+            console.warn('Unable to load shared parent measurements', error);
+          }
+
+          // Always prefill the current guardian's own parent block (if they are a biological parent),
+          // even if sharing is not enabled.
+          const biologicalRole = await loadMyBiologicalRole(client, user.id, childId);
+          if (biologicalRole === 'mother' || biologicalRole === 'father') {
+            const adultMeasurement = await loadLatestMeasurementForAdult(client, user.id);
+            applyMeasurementRowToGroup(biologicalRole, adultMeasurement);
+          }
+
+          if (bannerEl) {
+            const name = childRecord?.name ? `“${childRecord.name}”` : 'your child';
+            bannerEl.textContent = `Prefilled from the latest saved measurements we can access for ${name}.`;
+          }
+        } else if (bannerEl) {
+          bannerEl.textContent = 'Enter a Child ID to prefill saved measurements, or continue with manual entry.';
+        }
+      } catch (error) {
+        console.warn('Unable to prefill child intake from saved measurements', error);
       }
     });
   }

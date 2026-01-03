@@ -1,20 +1,23 @@
 (function () {
-  const hero = document.querySelector('[data-hero]');
-  const sportEl = document.querySelector('[data-sport]');
-  const reasonEl = document.querySelector('[data-reason]');
-  const creditWrap = document.querySelector('[data-credit]');
-  const creditAdult = document.querySelector('[data-credit-adult]');
-  const creditChild = document.querySelector('[data-credit-child]');
-  const measurementSummaryEl = document.querySelector('[data-measurement-summary]');
-  const emptyState = document.querySelector('[data-empty-state]');
-  const resultsSection = document.querySelector('[data-results]');
-  const componentList = document.querySelector('[data-component-list]');
-  const preferenceList = document.querySelector('[data-preference-list]');
-  const goalList = document.querySelector('[data-goal-list]');
-  const injuryList = document.querySelector('[data-injury-list]');
-  const pastSportsList = document.querySelector('[data-past-sports-list]');
-  const nextStepsList = document.querySelector('[data-next-steps-list]');
-  const matchGrid = document.querySelector('[data-match-grid]');
+  const root = document.querySelector('[data-child-premium-root]');
+  if (!root) return;
+
+  const hero = root.querySelector('[data-hero]');
+  const sportEl = root.querySelector('[data-sport]');
+  const reasonEl = root.querySelector('[data-reason]');
+  const creditWrap = root.querySelector('[data-credit]');
+  const creditAdult = root.querySelector('[data-credit-adult]');
+  const creditChild = root.querySelector('[data-credit-child]');
+  const measurementSummaryEl = root.querySelector('[data-measurement-summary]');
+  const emptyState = root.querySelector('[data-empty-state]');
+  const resultsSection = root.querySelector('[data-results]');
+  const componentList = root.querySelector('[data-component-list]');
+  const preferenceList = root.querySelector('[data-preference-list]');
+  const goalList = root.querySelector('[data-goal-list]');
+  const injuryList = root.querySelector('[data-injury-list]');
+  const pastSportsList = root.querySelector('[data-past-sports-list]');
+  const nextStepsList = root.querySelector('[data-next-steps-list]');
+  const matchGrid = root.querySelector('[data-match-grid]');
 
   const rawForecast = sessionStorage.getItem('sporty:lastChildForecast');
   const rawRequest = sessionStorage.getItem('sporty:lastChildForecastRequest');
@@ -87,7 +90,7 @@
       ['arm_span_cm', 'Arm span', 'cm'],
       ['leg_inseam_cm', 'Leg inseam', 'cm'],
       ['shoulder_width_cm', 'Shoulder width', 'cm'],
-      ['hip_width_cm', 'Hip width', 'cm'],
+      ['pelvic_bone_width_cm', 'Pelvic bone width', 'cm'],
       ['hand_length_cm', 'Hand length', 'cm'],
       ['foot_length_cm', 'Foot length', 'cm'],
     ];

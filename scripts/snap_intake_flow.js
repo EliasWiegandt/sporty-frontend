@@ -80,7 +80,7 @@ if (!fs.existsSync(OUT_DIR)) {
     arm_span_cm: '182',
     leg_inseam_cm: '85',
     shoulder_width_cm: '45',
-    hip_width_cm: '40',
+    pelvic_bone_width_cm: '40',
     torso_length_cm: '55',
     hand_length_cm: '19',
     foot_length_cm: '27',

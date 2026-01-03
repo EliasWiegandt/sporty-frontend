@@ -160,7 +160,10 @@
         }
       }
 
-      window.location.assign('/child-results/premium');
+      try {
+        sessionStorage.setItem('sporty:childResultsTab', 'matches');
+      } catch (_) {}
+      window.location.assign('/child-results?tab=matches');
     } catch (error) {
       console.error('Child premium analysis failed', error);
       setStatus(error.message || 'Unexpected error, please try again.', 'error');
@@ -205,7 +208,7 @@
       ['arm_span_cm', 'Arm span', 'cm'],
       ['leg_inseam_cm', 'Leg inseam', 'cm'],
       ['shoulder_width_cm', 'Shoulder width', 'cm'],
-      ['hip_width_cm', 'Hip width', 'cm'],
+      ['pelvic_bone_width_cm', 'Pelvic bone width', 'cm'],
       ['hand_length_cm', 'Hand length', 'cm'],
       ['foot_length_cm', 'Foot length', 'cm'],
     ];

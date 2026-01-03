@@ -4,6 +4,8 @@ export type PremiumControllerConfig = {
   lockedMessage: HTMLElement | null;
   summary: HTMLElement | null;
   getClient: () => any;
+  creditType?: 'adult' | 'child';
+  prefillForTesting?: boolean;
 };
 
 import type { PreferenceInput, GoalInput, InjuryInput } from '../../data/intakeSchema';
@@ -471,17 +473,21 @@ const toGoalInputs = (entries: Array<Record<string, unknown>>): GoalInput[] =>
   }));
 
 const toInjuryInputs = (entries: Array<Record<string, unknown>>): InjuryInput[] =>
-  entries.map((entry) => {
-    const severity = (entry.severity as InjuryInput['severity']) || 'somewhat_bad';
-    return {
-      injury_id: (entry.injury_id as string | null) || null,
-      injury_subcategory_id: (entry.injury_subcategory_id as string | null) || null,
-      severity,
-      notes: null,
-    };
-  });
+  entries
+    .map((entry) => {
+      const injuryId = entry.injury_id ? String(entry.injury_id) : '';
+      const injurySub = entry.injury_subcategory_id ? String(entry.injury_subcategory_id) : null;
+      const severity = (entry.severity as InjuryInput['severity']) || 'somewhat_bad';
+      return {
+        injury_id: injuryId,
+        injury_subcategory_id: injurySub,
+        severity,
+        notes: null,
+      };
+    })
+    .filter((entry) => Boolean(entry.injury_id));
 
-async function fetchAdultCredits(userId: string | null) {
+async function fetchCredits(userId: string | null, creditType: 'adult' | 'child') {
   if (!userId) return { availableCount: 0 };
   const response = await fetch(`/api/credits?user_id=${encodeURIComponent(userId)}`, {
     headers: { Accept: 'application/json' },
@@ -490,11 +496,14 @@ async function fetchAdultCredits(userId: string | null) {
     throw new Error(`Failed to fetch credits (${response.status})`);
   }
   const payload = await response.json();
-  return { availableCount: Number(payload.adult_credits) || 0 };
+  const key = creditType === 'child' ? 'child_credits' : 'adult_credits';
+  return { availableCount: Number(payload[key]) || 0 };
 }
 
 export function createPremiumController(config: PremiumControllerConfig): PremiumController {
   const { block, locked, lockedMessage, summary, getClient } = config;
+  const creditType: 'adult' | 'child' = config.creditType || 'adult';
+  const prefillForTesting = typeof config.prefillForTesting === 'boolean' ? config.prefillForTesting : true;
   const preferenceRoot = block ? block.querySelector<HTMLElement>('[data-list="preferences"]') : null;
   const goalRoot = block ? block.querySelector<HTMLElement>('[data-list="goals"]') : null;
   const injuryRoot = block ? block.querySelector<HTMLElement>('[data-list="injuries"]') : null;
@@ -566,7 +575,7 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
       }
       let credits;
       try {
-        credits = await fetchAdultCredits(userId);
+        credits = await fetchCredits(userId, creditType);
       } catch (error) {
         console.error('Failed to load premium credits', error);
         if (token === updateToken) {
@@ -577,7 +586,7 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
       if (token !== updateToken) return;
       creditCount = credits.availableCount || 0;
       if (creditCount <= 0) {
-        deactivate('Add an adult analysis credit to unlock detailed inputs.');
+        deactivate(`Add a ${creditType} analysis credit to unlock detailed inputs.`);
         return;
       }
       if (!client) {
@@ -614,23 +623,24 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
         }))
       );
       injuryList.setOptions(flatSubcats);
-      // Prefill two injury entries for quick testing if available
-      if ((injuryList as any).addEntry) {
-        (injuryList as any).addEntry(flatSubcats[0]?.id);
-        (injuryList as any).addEntry(flatSubcats[1]?.id);
-      }
-      // Prefill a couple of entries for faster local testing
-      if ((preferenceList as any).addEntry) {
-        const first = taxonomy.preferences[0]?.id;
-        const second = taxonomy.preferences[1]?.id;
-        (preferenceList as any).addEntry(first);
-        (preferenceList as any).addEntry(second);
-      }
-      if ((goalList as any).addEntry) {
-        const first = taxonomy.goals[0]?.id;
-        const second = taxonomy.goals[1]?.id;
-        (goalList as any).addEntry(first);
-        (goalList as any).addEntry(second);
+      if (prefillForTesting) {
+        // Prefill a couple of entries for faster local testing.
+        if ((injuryList as any).addEntry) {
+          (injuryList as any).addEntry(flatSubcats[0]?.id);
+          (injuryList as any).addEntry(flatSubcats[1]?.id);
+        }
+        if ((preferenceList as any).addEntry) {
+          const first = taxonomy.preferences[0]?.id;
+          const second = taxonomy.preferences[1]?.id;
+          (preferenceList as any).addEntry(first);
+          (preferenceList as any).addEntry(second);
+        }
+        if ((goalList as any).addEntry) {
+          const first = taxonomy.goals[0]?.id;
+          const second = taxonomy.goals[1]?.id;
+          (goalList as any).addEntry(first);
+          (goalList as any).addEntry(second);
+        }
       }
       // Since we have confirmed credits > 0, auto-apply a credit
       applyCredit = true;

@@ -5,90 +5,81 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   title="Sporty — Child Forecast Results"
   description="Review the projected adult measurements for your child and see how each source contributed."
 >
-  
-  <main class="section-shell grid gap-8">
-    <header class="summary-card" data-summary hidden>
-      <div>
-        <h1 class="section-title" style="margin:0;">Child forecast</h1>
-        <p class="lead-copy" data-summary-copy></p>
-      </div>
-      <dl class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-summary-meta>
-      </dl>
-    </header>
+  <main class="results-tabs" data-child-results-tabs-root>
+    <nav class="results-tabs__bar" role="tablist" aria-label="Child results views">
+      <button
+        type="button"
+        class="results-tabs__tab"
+        role="tab"
+        aria-selected="false"
+        data-tab-button="matches"
+      >
+        Matches
+      </button>
+      <button
+        type="button"
+        class="results-tabs__tab"
+        role="tab"
+        aria-selected="true"
+        data-tab-button="forecast"
+      >
+        Forecasted body
+      </button>
+    </nav>
 
-    <section class="grid gap-5" data-forecast-results hidden></section>
+    <section class="results-tabs__panel" data-tab-panel="matches" hidden>
+      <div class="results-shell" data-premium-root>
+        <header class="result-header anchored" data-premium-hero>
+          <h1 class="section-title">Your Premium Matches</h1>
+          <p class="cta-inline" data-reason>Based on your measurements and premium inputs.</p>
+        </header>
 
-    <div
-      class="grid gap-3 justify-items-center rounded-[18px] border border-dashed border-[rgba(148,163,184,0.35)] p-[clamp(1.6rem,3vw,2.2rem)] text-center text-[var(--gray-6)]"
-      data-empty-state
-    >
-      <h2>No forecast loaded</h2>
-      <p>Submit the child forecast form first. We keep the latest run locally so you can review it here.</p>
-      <div class="btn-row justify-center">
-        <a class="btn-primary" href="/child-intake">Back to intake</a>
+        <div class="results-container" data-results-container></div>
+
+        <div class="empty-state" data-empty-state hidden>
+          <h2>No premium analysis loaded</h2>
+          <p>Run a child analysis with a child credit to see detailed insights here.</p>
+          <div class="btn-row justify-center">
+            <a class="btn-primary" href="/child-intake">Run a child analysis</a>
+            <button type="button" class="btn-secondary" data-tab-jump="forecast">View forecasted body</button>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
+
+    <section class="results-tabs__panel" data-tab-panel="forecast">
+      <div class="grid gap-8" data-child-forecast-root>
+        <header class="summary-card" data-summary hidden>
+          <div>
+            <h2 class="section-title" style="margin:0;">Forecasted body</h2>
+            <p class="lead-copy" data-summary-copy></p>
+          </div>
+          <dl class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-summary-meta></dl>
+        </header>
+
+        <section class="grid gap-5" data-forecast-results hidden></section>
+
+        <div
+          class="grid gap-3 justify-items-center rounded-[18px] border border-dashed border-[rgba(148,163,184,0.35)] p-[clamp(1.6rem,3vw,2.2rem)] text-center text-[var(--gray-6)]"
+          data-empty-state
+        >
+          <h2>No forecast loaded</h2>
+          <p>Submit the child forecast form first. We keep the latest run locally so you can review it here.</p>
+          <div class="btn-row justify-center">
+            <a class="btn-primary" href="/child-intake">Back to intake</a>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
-
-  <section class="card-teal grid-stack" data-premium-section hidden>
-    <div class="grid gap-2">
-      <span class="badge">Premium sport suggestions</span>
-      <h2 class="section-title" data-premium-title>Premium analysis</h2>
-      <p class="lead-copy" data-premium-reason>When a child credit is applied we’ll summarise premium sport matches here.</p>
-      <div class="inline-flex flex-wrap items-center gap-3 text-sm text-[var(--gray-6)]" data-premium-credit hidden>
-        <span class="pill-teal" data-premium-credit-adult>Adult credits: —</span>
-        <span class="pill-teal" data-premium-credit-child>Child credits: —</span>
-      </div>
-    </div>
-    <div class="grid-stack lg:grid-cols-[2fr_1fr]">
-      <div class="grid-stack">
-        <article class="card-measurement">
-          <h3 class="card-title">Component impact</h3>
-          <ul class="list-reset grid gap-[0.65rem]" data-premium-components></ul>
-        </article>
-        <article class="card-measurement">
-          <h3 class="card-title">Preferences</h3>
-          <ul class="list-reset grid gap-[0.65rem]" data-premium-preferences></ul>
-        </article>
-        <article class="card-measurement">
-          <h3 class="card-title">Goals</h3>
-          <ul class="list-reset grid gap-[0.65rem]" data-premium-goals></ul>
-        </article>
-        <article class="card-measurement">
-          <h3 class="card-title">Injury considerations</h3>
-          <ul class="list-reset grid gap-[0.65rem]" data-premium-injuries></ul>
-        </article>
-        <article class="card-measurement">
-          <h3 class="card-title">Next actions</h3>
-          <ul class="list-reset grid gap-[0.65rem]" data-premium-next-steps></ul>
-        </article>
-        <article class="card-measurement">
-          <h3 class="card-title">Child past sports</h3>
-          <ul class="list-reset grid gap-[0.65rem]" data-premium-past-sports></ul>
-        </article>
-      </div>
-      <div class="grid-stack">
-        <article class="card-measurement">
-          <h3 class="card-title">Top sport matches</h3>
-          <div class="grid gap-[0.65rem]" data-premium-matches></div>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="card-refine gap-3" data-premium-cta hidden>
-    <h2 class="section-title" style="margin:0;">Get sports matches for this child</h2>
-    <p class="lead-copy">Use the forecasted adult build as a starting point, then add preferences, goals, injuries, and past sports to unlock tailored sport matches.</p>
-    <div class="flex flex-wrap items-center gap-4">
-      <a class="btn-primary" href="/child-premium">Get sports matches for child</a>
-      <a class="btn-ghost" href="/pricing">Buy more child credits</a>
-    </div>
-  </section>
 
   <Fragment slot="scripts">
     <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script is:inline src="/config.js" defer></script>
     <script is:inline src="/assets/js/app.js?v=4" defer></script>
+    <script is:inline src="/assets/js/child-results-tabs.js" defer></script>
+    <script is:inline src="/assets/js/child-results-premium-adapter.js" defer></script>
     <script is:inline src="/assets/js/child-results.js" defer></script>
+    <script is:inline src="/assets/js/results-premium.js" defer></script>
   </Fragment>
 </BaseLayout>

@@ -17,9 +17,9 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 - When an authenticated user has credits, the intake toggles “Apply credit” to run `/api/recommend-adult-premium`; the premium journey redirects to `/results/premium` with component breakdowns pulled from the backend.
 - Adult intake now exposes two routes (`/intake` and `/intake-premium`) that both hydrate the Preact island at `src/components/intake/IntakeApp.tsx`; the free page keeps traits locked behind the premium controller, while the premium page flips the `mode` prop so the traits/goals/injuries steps appear and the credit-backed submission posts to `/api/recommend-adult-premium`.
 - The payload sent to `/api/recommend-adult-premium` now includes the trait answers collected in the Traits step (`muscle_fiber`, `metabolic_tendency`, `joint_laxity`, `foot_arch`, `temperature_tolerance`, `handedness`, `sport_side`) so the matching service can incorporate those signals into premium scoring.
-- Child analysis now requires a child credit up front; guardians collect measurements, apply the credit, and receive both the forecast and premium sport matches in the same flow (`/child-intake` → `/child-results/premium`).
+- Child analysis now requires a child credit up front; guardians collect measurements, apply the credit, and receive both the forecast and premium sport matches in the same flow (`/child-intake` → `/child-results?tab=matches`, with a Forecast tab alongside it).
 - The free results page now mirrors the journey vision with a component impact bar, five match cards, measurement comparison tables (with fit bars), and highlight reasoning drawn from each measurement so the narrative stays grounded in the research. Interactive adjustment controls remain deferred until preview endpoints exist.
-- Child intake primes the deterministic test family (prefilled on preview branches) and collects measurements; once a child credit is applied we post to `/api/forecast-child`, capture the forecast, and let `/child-premium` gather premium inputs before `/child-results/premium` renders the paid package.
+- Child intake primes the deterministic test family (prefilled on preview branches) and collects child + parent measurements plus premium inputs; once a child credit is applied we post to `/api/forecast-child`, capture the forecast, and render both premium matches and forecast details in `/child-results` (tabs).
 - Logged-in intakes also capture past sports (searchable `sports_subcategories`, using the long-form subcategory `name` such as "Soccer - Forward - Winger", plus intensity and enjoyment/flair/skill flags) and sync them to Supabase before saving recommendations.
 - Logged-in free users can run and store unlimited analyses once they grant consent; anonymous runs still capture past-sport signals anonymously to fuel the data moat.
 - The dashboard views stored recommendations (free + premium) alongside updated credit balances so users and guardians can revisit previous analyses.
@@ -403,7 +403,7 @@ Purchase a $1 child credit to forecast a child’s body trajectory and unlock sp
 | `/results/premium` | Paid detailed analysis               | Logged-in               |
 | `/dashboard`       | Saved runs, credits, history         | Logged-in               |
 | `/child-intake`    | Child analysis intake + credit gate  | Guardians               |
-| `/child-results/premium` | Paid child analysis results     | Guardians (with credit) |
+| `/child-results` | Child results (tabs: matches + forecast) | Guardians |
 | `/account`         | Profile, consent, data rights        | Logged-in               |
 
 ---
