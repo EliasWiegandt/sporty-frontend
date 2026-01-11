@@ -165,23 +165,23 @@
     card.className = "card-measurement";
 
     const header = document.createElement("div");
-    header.className = "flex items-start justify-between gap-3";
+    header.className = "grid gap-3 md:grid-cols-[3fr_2fr] md:items-start";
 
     const left = document.createElement("div");
-    left.className = "space-y-1";
+    left.className = "flex items-center gap-3";
 
     const title = document.createElement("h4");
     title.className = "card-title";
     title.textContent = formatMeasurementLabel(key);
     left.appendChild(title);
 
-    header.appendChild(left);
-
     const detailsToggle = document.createElement("button");
     detailsToggle.type = "button";
     detailsToggle.className = "btn-ghost btn-sm";
     detailsToggle.textContent = "Hide details";
-    header.appendChild(detailsToggle);
+    left.appendChild(detailsToggle);
+
+    header.appendChild(left);
 
     card.appendChild(header);
 
@@ -190,33 +190,30 @@
       childSource && childSource.value !== null && childSource.value !== undefined
         ? Number(childSource.value)
         : null;
-    const summaryLine = document.createElement("p");
-    summaryLine.className = "text-muted text-sm";
-    const childText =
-      childValue === null || Number.isNaN(childValue)
-        ? "—"
-        : `${childValue.toFixed(digits)} ${unit}`;
-    const forecastText =
-      forecast === null || Number.isNaN(forecast)
-        ? "—"
-        : `${forecast.toFixed(digits)} ${unit}`;
-    summaryLine.textContent = `Child's current value: ${childText} · Child's forecasted value: ${forecastText}`;
-    card.appendChild(summaryLine);
-
     const deltaBar = buildForecastDeltaBar({
       mean,
       forecast,
+      childValue,
       std,
       unit,
       digits,
     });
     if (deltaBar) {
-      card.appendChild(deltaBar);
+      deltaBar.classList.add("forecast-bar-wrap--inline");
+      deltaBar.classList.add("md:w-[40%]");
+      deltaBar.classList.add("md:justify-self-end");
+      header.appendChild(deltaBar);
     }
 
     const details = document.createElement("div");
     details.hidden = false;
-    details.className = "mt-4 grid gap-3";
+    details.className = "mt-4 grid gap-3 md:max-w-[50%]";
+
+    const contributionsHeader = document.createElement("h5");
+    contributionsHeader.className = "text-xs font-semibold uppercase tracking-[0.08em] text-slate-400";
+    contributionsHeader.textContent =
+      "Contributions to difference between child forecast and population average";
+    details.appendChild(contributionsHeader);
 
     const contributions = Array.isArray(measurement.sources)
       ? measurement.sources
@@ -285,6 +282,7 @@
     detailsToggle.addEventListener("click", () => {
       details.hidden = !details.hidden;
       detailsToggle.textContent = details.hidden ? "Details" : "Hide details";
+      card.classList.toggle("details-hidden", details.hidden);
     });
 
     return card;
@@ -334,15 +332,26 @@
     return step && step < 1 ? 1 : 0;
   }
 
-  function buildForecastDeltaBar({ mean, forecast, std, unit, digits }) {
+  function buildForecastDeltaBar({ mean, forecast, childValue, std, unit, digits }) {
     if (mean === null || mean === undefined) return null;
     if (forecast === null || forecast === undefined) return null;
     if (Number.isNaN(mean) || Number.isNaN(forecast)) return null;
 
     const delta = forecast - mean;
-    const span = Math.max(Math.abs(delta), (std || 0) * 3, 1);
+    const childDelta =
+      childValue !== null && childValue !== undefined && !Number.isNaN(childValue)
+        ? childValue - mean
+        : null;
+    const span = Math.max(
+      Math.abs(delta),
+      childDelta !== null ? Math.abs(childDelta) : 0,
+      (std || 0) * 3,
+      1
+    );
     const widthPct = Math.min(50, (Math.abs(delta) / span) * 50);
-    const markerPct = 50 + (delta >= 0 ? widthPct : -widthPct);
+    const rawMarkerPct = 50 + (delta >= 0 ? widthPct : -widthPct);
+    const markerPct = clamp(rawMarkerPct, 4, 96);
+    const barWidthPct = Math.abs(markerPct - 50);
 
     const wrapper = document.createElement("div");
     wrapper.className = "forecast-bar-wrap";
@@ -359,10 +368,10 @@
       delta < 0 ? "forecast-bar__delta forecast-bar__delta--neg" : "forecast-bar__delta";
     if (delta >= 0) {
       deltaBar.style.left = "50%";
-      deltaBar.style.width = `${widthPct}%`;
+      deltaBar.style.width = `${barWidthPct}%`;
     } else {
       deltaBar.style.right = "50%";
-      deltaBar.style.width = `${widthPct}%`;
+      deltaBar.style.width = `${barWidthPct}%`;
     }
     bar.appendChild(deltaBar);
 
@@ -373,20 +382,59 @@
 
     const forecastMarker = document.createElement("div");
     forecastMarker.className = "forecast-bar__marker forecast-bar__marker--forecast";
-    forecastMarker.style.left = `${clamp(markerPct, 4, 96)}%`;
+    forecastMarker.style.left = `${markerPct}%`;
     bar.appendChild(forecastMarker);
 
     const avgLabel = document.createElement("div");
     avgLabel.className = "forecast-bar__label forecast-bar__label--avg";
     avgLabel.style.left = "50%";
-    avgLabel.textContent = `Average: ${mean.toFixed(digits)} ${unit}`;
+    avgLabel.textContent = `Adult population average: ${mean.toFixed(digits)} ${unit}`;
     bar.appendChild(avgLabel);
+
+    const deltaLabel = document.createElement("div");
+    deltaLabel.className =
+      delta < 0
+        ? "forecast-bar__label forecast-bar__label--delta forecast-bar__label--delta-neg"
+        : "forecast-bar__label forecast-bar__label--delta";
+    const deltaMid = 50 + (markerPct - 50) / 2;
+    deltaLabel.style.left = `${clamp(deltaMid, 8, 92)}%`;
+    deltaLabel.textContent = `Δ ${formatSignedNumber(delta, digits, unit)}`;
+    bar.appendChild(deltaLabel);
+
+    const deltaLine = document.createElement("div");
+    deltaLine.className =
+      delta < 0
+        ? "forecast-bar__line forecast-bar__line--delta forecast-bar__line--delta-neg"
+        : "forecast-bar__line forecast-bar__line--delta";
+    deltaLine.style.left = `${clamp(deltaMid, 8, 92)}%`;
+    bar.appendChild(deltaLine);
 
     const forecastLabel = document.createElement("div");
     forecastLabel.className = "forecast-bar__label forecast-bar__label--forecast";
-    forecastLabel.style.left = `${clamp(markerPct, 4, 96)}%`;
-    forecastLabel.textContent = `Forecast: ${forecast.toFixed(digits)} ${unit}`;
+    forecastLabel.style.left = `${markerPct}%`;
+    forecastLabel.textContent = `Child forecasted: ${forecast.toFixed(digits)} ${unit}`;
     bar.appendChild(forecastLabel);
+
+    const forecastLine = document.createElement("div");
+    forecastLine.className = "forecast-bar__line forecast-bar__line--forecast";
+    forecastLine.style.left = `${markerPct}%`;
+    bar.appendChild(forecastLine);
+
+    if (childValue !== null && childValue !== undefined && !Number.isNaN(childValue)) {
+      const childWidthPct = Math.min(50, (Math.abs(childDelta) / span) * 50);
+      const childMarkerPct = 50 + (childDelta >= 0 ? childWidthPct : -childWidthPct);
+
+      const childMarker = document.createElement("div");
+      childMarker.className = "forecast-bar__marker forecast-bar__marker--child";
+      childMarker.style.left = `${clamp(childMarkerPct, 4, 96)}%`;
+      bar.appendChild(childMarker);
+
+      const childLabel = document.createElement("div");
+      childLabel.className = "forecast-bar__label forecast-bar__label--child";
+      childLabel.style.left = `${clamp(childMarkerPct, 4, 96)}%`;
+      childLabel.textContent = `Child currently: ${childValue.toFixed(digits)} ${unit}`;
+      bar.appendChild(childLabel);
+    }
 
     wrapper.appendChild(bar);
 

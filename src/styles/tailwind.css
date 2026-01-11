@@ -1475,6 +1475,18 @@
   @apply mt-2;
 }
 
+.forecast-bar-wrap--inline {
+  @apply mt-0 w-full pb-8;
+}
+
+.forecast-bar-wrap--inline .forecast-bar {
+  @apply mt-1;
+}
+
+.card-measurement.details-hidden .forecast-bar-wrap--inline {
+  @apply pb-16;
+}
+
 .forecast-bar {
   @apply relative h-3 bg-slate-100 rounded-full;
 }
@@ -1497,24 +1509,64 @@
 }
 
 .forecast-bar__marker--avg {
-  @apply bg-slate-600;
+  @apply bg-blue-600;
+}
+
+.forecast-bar__marker--child {
+  @apply bg-amber-500;
 }
 
 .forecast-bar__marker--forecast {
-  @apply bg-teal-700;
+  @apply bg-purple-600;
 }
 
 .forecast-bar__label {
   @apply absolute text-[10px] text-slate-600 whitespace-nowrap;
   transform: translateX(-50%);
+  z-index: 2;
 }
 
 .forecast-bar__label--avg {
-  @apply -top-5;
+  @apply top-4 text-blue-600;
+}
+
+.forecast-bar__label--delta {
+  @apply top-9 text-emerald-600;
+}
+
+.forecast-bar__label--delta-neg {
+  @apply text-rose-600;
+}
+
+.forecast-bar__label--child {
+  @apply -top-5 text-amber-600;
 }
 
 .forecast-bar__label--forecast {
-  @apply top-4 text-teal-700;
+  @apply top-14 text-purple-600;
+}
+
+.forecast-bar__line {
+  @apply absolute w-px bg-slate-200;
+  height: 12px;
+  top: 20px;
+  z-index: 1;
+}
+
+.forecast-bar__line--delta {
+  @apply bg-emerald-300;
+  top: 26px;
+  height: 12px;
+}
+
+.forecast-bar__line--delta-neg {
+  @apply bg-rose-300;
+}
+
+.forecast-bar__line--forecast {
+  @apply bg-purple-300;
+  top: 38px;
+  height: 14px;
 }
 
 .factor-tooltip {
