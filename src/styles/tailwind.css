@@ -496,71 +496,51 @@
     gap: clamp(1.5rem, 3vw, 2.5rem);
   }
 
-  .results-tabs {
+  .sporty-tabs {
     width: 100%;
-    max-width: min(96rem, 92vw);
-    margin-inline: auto;
-    margin-block: clamp(1.5rem, 4vw, 3rem);
-    border-radius: var(--radius-xl);
-    border: 1px solid var(--color-border);
-    background: var(--color-surface);
-    box-shadow: var(--shadow-card);
-    overflow: hidden;
-  }
-
-  .results-tabs__bar {
-    display: flex;
-    align-items: flex-end;
-    gap: 0.35rem;
-    padding: 0.5rem 0.75rem 0;
-    background: var(--color-surface-muted);
     border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+    background: var(--color-surface);
   }
 
-  .results-tabs__tab {
+  .sporty-tabs__inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding: 0 1rem;
+  }
+
+  .sporty-tabs__tab {
     appearance: none;
     border: 1px solid transparent;
     border-bottom: none;
     background: transparent;
-    color: var(--color-text-soft);
+    padding: 1rem 1rem;
     font-family: var(--font-sans);
     font-weight: 700;
     font-size: 0.95rem;
-    padding: 0.65rem 1rem;
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
+    color: var(--color-text-soft);
     cursor: pointer;
-    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+    border-top-left-radius: var(--radius-lg);
+    border-top-right-radius: var(--radius-lg);
+    transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
   }
 
-  .results-tabs__tab:hover {
+  .sporty-tabs__tab:hover {
     color: var(--color-text);
+    background: rgba(148, 163, 184, 0.12);
   }
 
-  .results-tabs__tab:focus-visible {
+  .sporty-tabs__tab:focus-visible {
     outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
   }
 
-  .results-tabs__tab[aria-selected='true'] {
-    background: var(--color-surface);
-    color: var(--color-text);
+  .sporty-tabs__tab[aria-selected='true'],
+  .sporty-tabs__tab.active {
+    color: var(--color-brand-800);
+    background: rgba(148, 163, 184, 0.12);
     border-color: rgba(148, 163, 184, 0.35);
     margin-bottom: -1px;
-  }
-
-  .results-tabs__panel {
-    padding: clamp(1.25rem, 2.3vw, 1.75rem);
-  }
-
-  .results-tabs .results-shell,
-  .results-tabs .anchored {
-    max-width: none;
-    margin-inline: 0;
-  }
-
-  .results-tabs .results-container {
-    padding: 0;
   }
 
   .results-container {

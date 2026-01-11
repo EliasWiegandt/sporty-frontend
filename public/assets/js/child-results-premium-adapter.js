@@ -22,7 +22,7 @@
   const payload = {
     reason:
       premium.reason ||
-      'Based on your child’s forecasted adult build and premium inputs.',
+      'Based on the child’s forecasted adult build and premium inputs.',
     matches: premium.matches,
   };
 
@@ -30,4 +30,3 @@
     sessionStorage.setItem('sporty:lastPremiumResult', JSON.stringify(payload));
   } catch (_) {}
 })();
-

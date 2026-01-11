@@ -16,6 +16,9 @@
     return knownTabs.has(tab) ? tab : null;
   };
 
+  const findButtonForTab = (tab) =>
+    buttons.find((button) => button.getAttribute('data-tab-button') === tab) || null;
+
   const detectDefaultTab = () => {
     const fromQuery = normalizeTab(params.get('tab'));
     if (fromQuery) return fromQuery;
@@ -34,14 +37,16 @@
 
   const setActiveTab = (tab) => {
     const nextTab = normalizeTab(tab) || 'forecast';
-
     buttons.forEach((button) => {
       const isActive = button.getAttribute('data-tab-button') === nextTab;
       button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      button.classList.toggle('active', isActive);
     });
 
     panels.forEach((panel) => {
-      panel.hidden = panel.getAttribute('data-tab-panel') !== nextTab;
+      const isActive = panel.getAttribute('data-tab-panel') === nextTab;
+      panel.hidden = !isActive;
+      panel.classList.toggle('hidden', !isActive);
     });
 
     sessionStorage.setItem('sporty:childResultsTab', nextTab);

@@ -106,6 +106,8 @@
 
     entries.forEach((key) => {
       const measurement = measurements[key];
+      const unit = key === "weight_kg" ? "kg" : "cm";
+      const digits = digitsForMeasurement(key);
       const card = document.createElement("article");
       card.className = "card-measurement";
 
@@ -118,9 +120,10 @@
       header.appendChild(title);
 
       const forecastTag = document.createElement("span");
-      forecastTag.textContent = measurement.forecast_value
-        ? `${Number(measurement.forecast_value).toFixed(1)} cm forecast`
-        : "Insufficient data";
+      forecastTag.textContent =
+        measurement.forecast_value !== null && measurement.forecast_value !== undefined
+          ? `${Number(measurement.forecast_value).toFixed(digits)} ${unit} forecast`
+          : "Insufficient data";
       forecastTag.className = "chip-soft";
       header.appendChild(forecastTag);
 
@@ -128,13 +131,15 @@
 
       const context = document.createElement("p");
       context.className = "text-muted text-sm";
-      const adultMean = measurement.adult_mean
-        ? `${Number(measurement.adult_mean).toFixed(1)} cm mean`
-        : "—";
-      const adultStd = measurement.adult_std_dev
-        ? `${Number(measurement.adult_std_dev).toFixed(1)} cm σ`
-        : "—";
-      context.textContent = `Adult cohort: ${adultMean}, ${adultStd}. Weighted C-score: ${
+      const adultMean =
+        measurement.adult_mean !== null && measurement.adult_mean !== undefined
+          ? `${Number(measurement.adult_mean).toFixed(digits)} ${unit} mean`
+          : "—";
+      const adultStd =
+        measurement.adult_std_dev !== null && measurement.adult_std_dev !== undefined
+          ? `${Number(measurement.adult_std_dev).toFixed(digits)} ${unit} σ`
+          : "—";
+      context.textContent = `Adult cohort: ${adultMean}, ${adultStd}. Weighted z-score: ${
         measurement.weighted_z_score !== null &&
         measurement.weighted_z_score !== undefined
           ? Number(measurement.weighted_z_score).toFixed(3)
@@ -150,7 +155,7 @@
           <tr>
             <th class="px-2 py-2 text-left">Source</th>
             <th class="px-2 py-2 text-right">Value</th>
-            <th class="px-2 py-2 text-right">C-score</th>
+            <th class="px-2 py-2 text-right">Z-score</th>
             <th class="px-2 py-2 text-right">Weight</th>
             <th class="px-2 py-2 text-right">Contribution</th>
           </tr>
@@ -172,12 +177,12 @@
 
         const valueCell = document.createElement("td");
         valueCell.className = "px-2 py-2 text-right";
-        valueCell.textContent = formatOptionalNumber(src.value);
+        valueCell.textContent = formatOptionalNumber(src.value, digits);
         tr.appendChild(valueCell);
 
         const scoreCell = document.createElement("td");
         scoreCell.className = "px-2 py-2 text-right";
-        scoreCell.textContent = formatOptionalNumber(src.c_score, 3);
+        scoreCell.textContent = formatOptionalNumber(src.z_score, 3);
         tr.appendChild(scoreCell);
 
         const weightCell = document.createElement("td");
@@ -187,7 +192,7 @@
 
         const contributionCell = document.createElement("td");
         contributionCell.className = "px-2 py-2 text-right";
-        contributionCell.textContent = formatOptionalNumber(src.contribution_units);
+        contributionCell.textContent = formatOptionalNumber(src.contribution_units, 2);
         tr.appendChild(contributionCell);
 
         tbody.appendChild(tr);
@@ -221,5 +226,22 @@
     const numeric = Number(value);
     if (Number.isNaN(numeric)) return "0%";
     return `${numeric.toFixed(1)}%`;
+  }
+
+  function digitsForMeasurement(key) {
+    const step = {
+      height_cm: 1,
+      arm_span_cm: 1,
+      leg_inseam_cm: 1,
+      weight_kg: 0.5,
+      shoulder_width_cm: 0.5,
+      pelvic_bone_width_cm: 0.5,
+      torso_length_cm: 0.5,
+      hand_length_cm: 0.5,
+      foot_length_cm: 0.5,
+      ankle_circumference_cm: 0.5,
+      wrist_circumference_cm: 0.5,
+    }[key];
+    return step && step < 1 ? 1 : 0;
   }
 })();

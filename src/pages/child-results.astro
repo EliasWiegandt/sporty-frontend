@@ -5,33 +5,49 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   title="Sporty — Child Forecast Results"
   description="Review the projected adult measurements for your child and see how each source contributed."
 >
-  <main class="results-tabs" data-child-results-tabs-root>
-    <nav class="results-tabs__bar" role="tablist" aria-label="Child results views">
-      <button
-        type="button"
-        class="results-tabs__tab"
-        role="tab"
-        aria-selected="false"
-        data-tab-button="matches"
-      >
-        Matches
-      </button>
-      <button
-        type="button"
-        class="results-tabs__tab"
-        role="tab"
-        aria-selected="true"
-        data-tab-button="forecast"
-      >
-        Forecasted body
-      </button>
+  <main
+    class="mx-auto my-[clamp(1.5rem,4vw,3rem)] w-full max-w-[min(96rem,92vw)] overflow-hidden rounded-[var(--radius-4xl)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-section)]"
+    data-child-results-tabs-root
+  >
+    <nav class="sporty-tabs" role="tablist" aria-label="Child results views">
+      <div class="sporty-tabs__inner">
+        <button
+          type="button"
+          class="sporty-tabs__tab"
+          id="child-results-tab-matches"
+          role="tab"
+          aria-selected="true"
+          aria-controls="child-results-panel-matches"
+          data-tab-button="matches"
+        >
+          Matches
+        </button>
+        <button
+          type="button"
+          class="sporty-tabs__tab"
+          id="child-results-tab-forecast"
+          role="tab"
+          aria-selected="false"
+          aria-controls="child-results-panel-forecast"
+          data-tab-button="forecast"
+        >
+          Forecasted body
+        </button>
+      </div>
     </nav>
 
-    <section class="results-tabs__panel" data-tab-panel="matches" hidden>
-      <div class="results-shell" data-premium-root>
+    <section
+      id="child-results-panel-matches"
+      class="p-[clamp(1.25rem,2.3vw,1.75rem)]"
+      role="tabpanel"
+      tabindex="0"
+      aria-labelledby="child-results-tab-matches"
+      data-tab-panel="matches"
+    >
+      <div class="results-shell" data-premium-root data-subject-label="Child">
         <header class="result-header anchored" data-premium-hero>
-          <h1 class="section-title">Your Premium Matches</h1>
-          <p class="cta-inline" data-reason>Based on your measurements and premium inputs.</p>
+          <h1 class="section-title">Child’s Premium Matches</h1>
+          <p class="cta-inline" data-reason>Based on the child’s forecasted adult build and premium inputs.</p>
         </header>
 
         <div class="results-container" data-results-container></div>
@@ -47,7 +63,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </div>
     </section>
 
-    <section class="results-tabs__panel" data-tab-panel="forecast">
+    <section
+      id="child-results-panel-forecast"
+      class="p-[clamp(1.25rem,2.3vw,1.75rem)] hidden"
+      role="tabpanel"
+      tabindex="0"
+      aria-labelledby="child-results-tab-forecast"
+      data-tab-panel="forecast"
+    >
       <div class="grid gap-8" data-child-forecast-root>
         <header class="summary-card" data-summary hidden>
           <div>

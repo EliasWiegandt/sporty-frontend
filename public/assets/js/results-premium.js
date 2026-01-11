@@ -6,6 +6,8 @@
   const reasonEl = hero ? hero.querySelector('[data-reason]') : null;
   const container = root.querySelector('[data-results-container]');
   const emptyState = root.querySelector('[data-empty-state]');
+  const subjectLabel = (root.getAttribute('data-subject-label') || 'You').trim() || 'You';
+  const possessiveLabel = subjectLabel.toLowerCase() === 'you' ? 'Your' : `${subjectLabel}’s`;
   const componentPalette = {
     body: '#0f766e',
     preferences: '#f97316',
@@ -1078,7 +1080,9 @@
     } else {
       const values = document.createElement('div');
       values.className = 'text-xs text-slate-500 mb-1';
-      let valueHtml = `You: <span class="font-bold">${escapeHtml(factor.user_value)}</span>`;
+      let valueHtml = `${escapeHtml(subjectLabel)}: <span class="font-bold">${escapeHtml(
+        factor.user_value
+      )}</span>`;
       if (factor.cohort_mean) {
         valueHtml += ` - Ideal: <span class="font-bold">${escapeHtml(factor.cohort_mean)}</span>`;
       }
@@ -1115,7 +1119,7 @@
       priorityContainer.className = 'text-xs text-slate-500 flex items-center gap-1';
 
       const priorityLabel = document.createElement('span');
-      priorityLabel.textContent = 'Your priority:';
+      priorityLabel.textContent = `${possessiveLabel} priority:`;
       priorityContainer.appendChild(priorityLabel);
 
       const badge = document.createElement('span');
