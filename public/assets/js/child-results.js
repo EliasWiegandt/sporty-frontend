@@ -8,6 +8,20 @@
   const resultsEl = root.querySelector("[data-forecast-results]");
   const emptyStateEl = root.querySelector("[data-empty-state]");
 
+  const MEASUREMENT_ORDER = [
+    "height_cm",
+    "arm_span_cm",
+    "leg_inseam_cm",
+    "shoulder_width_cm",
+    "pelvic_bone_width_cm",
+    "torso_length_cm",
+    "hand_length_cm",
+    "foot_length_cm",
+    "ankle_circumference_cm",
+    "wrist_circumference_cm",
+    "weight_kg",
+  ];
+
   const rawResult = sessionStorage.getItem("sporty:lastChildForecast");
   if (!rawResult) {
     showEmpty();
@@ -56,10 +70,14 @@
       ? res.weight_scenario.replace(/_/g, " ")
       : "child only";
 
-    summaryCopyEl.textContent = `Projected adult metrics using the ${scenario} weighting scenario. Child age: ${childAge}.`;
+    summaryCopyEl.textContent = `Projected adult metrics using the ${scenario} weighting scenario.`;
 
     summaryMetaEl.innerHTML = "";
     const entries = [
+      {
+        label: "Child age",
+        value: childAge,
+      },
       {
         label: "Child cohort",
         value: res.child_age_group?.label || "—",
@@ -69,17 +87,14 @@
         value: res.adult_age_group?.label || "25-35 years",
       },
       {
+        label: "Weighting scenario",
+        value: scenario,
+      },
+      {
         label: "Ethnicity",
         value: payload?.ethnicity || "General population",
       },
     ];
-
-    if (payload?.guardian_user_id) {
-      entries.push({
-        label: "Guardian user id",
-        value: payload.guardian_user_id,
-      });
-    }
 
     entries.forEach((entry) => {
       const dt = document.createElement("dt");
@@ -95,8 +110,8 @@
     if (!resultsEl) return;
 
     const measurements = res.results || {};
-    const entries = Object.keys(measurements);
-    if (!entries.length) {
+    const hasAny = measurements && Object.keys(measurements).length > 0;
+    if (!hasAny) {
       showEmpty();
       return;
     }
@@ -104,103 +119,175 @@
     resultsEl.innerHTML = "";
     resultsEl.hidden = false;
 
-    entries.forEach((key) => {
+    const section = document.createElement("section");
+    section.className = "grid gap-4";
+
+    const header = document.createElement("header");
+    header.className = "space-y-1";
+
+    const title = document.createElement("h3");
+    title.className = "card-title";
+    title.textContent = "Forecasted measurements";
+    header.appendChild(title);
+
+    section.appendChild(header);
+
+    const column = document.createElement("div");
+    column.className = "grid gap-4";
+
+    MEASUREMENT_ORDER.forEach((key) => {
       const measurement = measurements[key];
-      const unit = key === "weight_kg" ? "kg" : "cm";
-      const digits = digitsForMeasurement(key);
-      const card = document.createElement("article");
-      card.className = "card-measurement";
+      if (!measurement) return;
+      column.appendChild(buildMeasurementCard(key, measurement));
+    });
 
-      const header = document.createElement("div");
-      header.className = "flex flex-wrap items-center justify-between gap-3";
+    section.appendChild(column);
+    resultsEl.appendChild(section);
+  }
 
-      const title = document.createElement("h3");
-      title.textContent = formatMeasurementLabel(key);
-      title.className = "card-title";
-      header.appendChild(title);
+  function buildMeasurementCard(key, measurement) {
+    const unit = key === "weight_kg" ? "kg" : "cm";
+    const digits = digitsForMeasurement(key);
+    const forecast =
+      measurement.forecast_value !== null && measurement.forecast_value !== undefined
+        ? Number(measurement.forecast_value)
+        : null;
+    const mean =
+      measurement.adult_mean !== null && measurement.adult_mean !== undefined
+        ? Number(measurement.adult_mean)
+        : null;
+    const std =
+      measurement.adult_std_dev !== null && measurement.adult_std_dev !== undefined
+        ? Number(measurement.adult_std_dev)
+        : null;
 
-      const forecastTag = document.createElement("span");
-      forecastTag.textContent =
-        measurement.forecast_value !== null && measurement.forecast_value !== undefined
-          ? `${Number(measurement.forecast_value).toFixed(digits)} ${unit} forecast`
-          : "Insufficient data";
-      forecastTag.className = "chip-soft";
-      header.appendChild(forecastTag);
+    const card = document.createElement("article");
+    card.className = "card-measurement";
 
-      card.appendChild(header);
+    const header = document.createElement("div");
+    header.className = "flex items-start justify-between gap-3";
 
-      const context = document.createElement("p");
-      context.className = "text-muted text-sm";
-      const adultMean =
-        measurement.adult_mean !== null && measurement.adult_mean !== undefined
-          ? `${Number(measurement.adult_mean).toFixed(digits)} ${unit} mean`
-          : "—";
-      const adultStd =
-        measurement.adult_std_dev !== null && measurement.adult_std_dev !== undefined
-          ? `${Number(measurement.adult_std_dev).toFixed(digits)} ${unit} σ`
-          : "—";
-      context.textContent = `Adult cohort: ${adultMean}, ${adultStd}. Weighted z-score: ${
-        measurement.weighted_z_score !== null &&
-        measurement.weighted_z_score !== undefined
-          ? Number(measurement.weighted_z_score).toFixed(3)
-          : "—"
-      }.`;
-      card.appendChild(context);
+    const left = document.createElement("div");
+    left.className = "space-y-1";
 
-      const table = document.createElement("table");
-      table.className = "contrib-table text-sm";
+    const title = document.createElement("h4");
+    title.className = "card-title";
+    title.textContent = formatMeasurementLabel(key);
+    left.appendChild(title);
 
-      table.innerHTML = `
-        <thead class="text-xs uppercase tracking-[0.05em] text-[var(--gray-6)]">
-          <tr>
-            <th class="px-2 py-2 text-left">Source</th>
-            <th class="px-2 py-2 text-right">Value</th>
-            <th class="px-2 py-2 text-right">Z-score</th>
-            <th class="px-2 py-2 text-right">Weight</th>
-            <th class="px-2 py-2 text-right">Contribution</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      `;
+    header.appendChild(left);
 
-      const tbody = table.querySelector("tbody");
-      (measurement.sources || []).forEach((src, rowIndex) => {
-        const tr = document.createElement("tr");
-        if (rowIndex % 2 === 1) {
-          tr.classList.add("bg-[rgba(148,163,184,0.1)]");
-        }
+    const detailsToggle = document.createElement("button");
+    detailsToggle.type = "button";
+    detailsToggle.className = "btn-ghost btn-sm";
+    detailsToggle.textContent = "Hide details";
+    header.appendChild(detailsToggle);
 
-        const sourceCell = document.createElement("td");
-        sourceCell.className = "px-2 py-2";
-        sourceCell.textContent = formatSourceLabel(src.source);
-        tr.appendChild(sourceCell);
+    card.appendChild(header);
 
-        const valueCell = document.createElement("td");
-        valueCell.className = "px-2 py-2 text-right";
-        valueCell.textContent = formatOptionalNumber(src.value, digits);
-        tr.appendChild(valueCell);
+    const childSource = (measurement.sources || []).find((src) => src.source === "child");
+    const childValue =
+      childSource && childSource.value !== null && childSource.value !== undefined
+        ? Number(childSource.value)
+        : null;
+    const summaryLine = document.createElement("p");
+    summaryLine.className = "text-muted text-sm";
+    const childText =
+      childValue === null || Number.isNaN(childValue)
+        ? "—"
+        : `${childValue.toFixed(digits)} ${unit}`;
+    const forecastText =
+      forecast === null || Number.isNaN(forecast)
+        ? "—"
+        : `${forecast.toFixed(digits)} ${unit}`;
+    summaryLine.textContent = `Child's current value: ${childText} · Child's forecasted value: ${forecastText}`;
+    card.appendChild(summaryLine);
 
-        const scoreCell = document.createElement("td");
-        scoreCell.className = "px-2 py-2 text-right";
-        scoreCell.textContent = formatOptionalNumber(src.z_score, 3);
-        tr.appendChild(scoreCell);
+    const deltaBar = buildForecastDeltaBar({
+      mean,
+      forecast,
+      std,
+      unit,
+      digits,
+    });
+    if (deltaBar) {
+      card.appendChild(deltaBar);
+    }
 
-        const weightCell = document.createElement("td");
-        weightCell.className = "px-2 py-2 text-right";
-        weightCell.textContent = formatOptionalNumber(src.applied_weight, 2);
-        tr.appendChild(weightCell);
+    const details = document.createElement("div");
+    details.hidden = false;
+    details.className = "mt-4 grid gap-3";
 
-        const contributionCell = document.createElement("td");
-        contributionCell.className = "px-2 py-2 text-right";
-        contributionCell.textContent = formatOptionalNumber(src.contribution_units, 2);
-        tr.appendChild(contributionCell);
+    const contributions = Array.isArray(measurement.sources)
+      ? measurement.sources
+      : [];
+    const contributionList = document.createElement("ul");
+    contributionList.className = "grid gap-2";
 
-        tbody.appendChild(tr);
+    if (!contributions.length) {
+      const empty = document.createElement("p");
+      empty.className = "text-sm text-muted";
+      empty.textContent = "Contribution breakdown unavailable for this measurement.";
+      details.appendChild(empty);
+    } else {
+      const orderedSources = ["child", "mother", "father"];
+      const maxAbs = Math.max(
+        ...contributions.map((src) => Math.abs(Number(src.contribution_units) || 0))
+      );
+      const safeMax = maxAbs > 0 ? maxAbs : 1;
+
+      orderedSources.forEach((sourceKey) => {
+        const src = contributions.find((entry) => entry.source === sourceKey);
+        if (!src) return;
+
+        const row = document.createElement("li");
+        row.className = "factor-row";
+
+        const leftCol = document.createElement("div");
+        leftCol.className = "factor-col-left";
+
+        const label = document.createElement("div");
+        label.className = "font-medium text-slate-900";
+        label.textContent = formatSourceLabel(src.source);
+        leftCol.appendChild(label);
+
+
+        const rightCol = document.createElement("div");
+        rightCol.className = "factor-col-right";
+
+        const barContainer = document.createElement("div");
+        barContainer.className = "factor-bar-container";
+
+        const barFill = document.createElement("div");
+        const contributionValue = Number(src.contribution_units) || 0;
+        const widthPct = Math.min(100, Math.round((Math.abs(contributionValue) / safeMax) * 100));
+        barFill.className =
+          contributionValue < 0 ? "factor-bar-fill factor-bar-fill--negative" : "factor-bar-fill";
+        barFill.style.width = `${widthPct}%`;
+        barContainer.appendChild(barFill);
+
+        const valueLabel = document.createElement("span");
+        valueLabel.className = "text-xs font-semibold text-slate-700 w-16 text-right";
+        valueLabel.textContent = formatSignedNumber(contributionValue, digits, unit);
+
+        rightCol.appendChild(barContainer);
+        rightCol.appendChild(valueLabel);
+
+        row.appendChild(leftCol);
+        row.appendChild(rightCol);
+        contributionList.appendChild(row);
       });
 
-      card.appendChild(table);
-      resultsEl.appendChild(card);
+      details.appendChild(contributionList);
+    }
+    card.appendChild(details);
+
+    detailsToggle.addEventListener("click", () => {
+      details.hidden = !details.hidden;
+      detailsToggle.textContent = details.hidden ? "Details" : "Hide details";
     });
+
+    return card;
   }
 
   function formatMeasurementLabel(key) {
@@ -221,11 +308,13 @@
     return Number(value).toFixed(digits);
   }
 
-  function formatPercent(value) {
-    if (value === null || value === undefined) return "0%";
+  function formatSignedNumber(value, digits, unit) {
+    if (value === null || value === undefined || Number.isNaN(value)) {
+      return "—";
+    }
     const numeric = Number(value);
-    if (Number.isNaN(numeric)) return "0%";
-    return `${numeric.toFixed(1)}%`;
+    const sign = numeric > 0 ? "+" : numeric < 0 ? "-" : "";
+    return `${sign}${Math.abs(numeric).toFixed(digits)} ${unit}`;
   }
 
   function digitsForMeasurement(key) {
@@ -243,5 +332,70 @@
       wrist_circumference_cm: 0.5,
     }[key];
     return step && step < 1 ? 1 : 0;
+  }
+
+  function buildForecastDeltaBar({ mean, forecast, std, unit, digits }) {
+    if (mean === null || mean === undefined) return null;
+    if (forecast === null || forecast === undefined) return null;
+    if (Number.isNaN(mean) || Number.isNaN(forecast)) return null;
+
+    const delta = forecast - mean;
+    const span = Math.max(Math.abs(delta), (std || 0) * 3, 1);
+    const widthPct = Math.min(50, (Math.abs(delta) / span) * 50);
+    const markerPct = 50 + (delta >= 0 ? widthPct : -widthPct);
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "forecast-bar-wrap";
+
+    const bar = document.createElement("div");
+    bar.className = "forecast-bar";
+
+    const mid = document.createElement("div");
+    mid.className = "forecast-bar__mid";
+    bar.appendChild(mid);
+
+    const deltaBar = document.createElement("div");
+    deltaBar.className =
+      delta < 0 ? "forecast-bar__delta forecast-bar__delta--neg" : "forecast-bar__delta";
+    if (delta >= 0) {
+      deltaBar.style.left = "50%";
+      deltaBar.style.width = `${widthPct}%`;
+    } else {
+      deltaBar.style.right = "50%";
+      deltaBar.style.width = `${widthPct}%`;
+    }
+    bar.appendChild(deltaBar);
+
+    const avgMarker = document.createElement("div");
+    avgMarker.className = "forecast-bar__marker forecast-bar__marker--avg";
+    avgMarker.style.left = "50%";
+    bar.appendChild(avgMarker);
+
+    const forecastMarker = document.createElement("div");
+    forecastMarker.className = "forecast-bar__marker forecast-bar__marker--forecast";
+    forecastMarker.style.left = `${clamp(markerPct, 4, 96)}%`;
+    bar.appendChild(forecastMarker);
+
+    const avgLabel = document.createElement("div");
+    avgLabel.className = "forecast-bar__label forecast-bar__label--avg";
+    avgLabel.style.left = "50%";
+    avgLabel.textContent = `Average: ${mean.toFixed(digits)} ${unit}`;
+    bar.appendChild(avgLabel);
+
+    const forecastLabel = document.createElement("div");
+    forecastLabel.className = "forecast-bar__label forecast-bar__label--forecast";
+    forecastLabel.style.left = `${clamp(markerPct, 4, 96)}%`;
+    forecastLabel.textContent = `Forecast: ${forecast.toFixed(digits)} ${unit}`;
+    bar.appendChild(forecastLabel);
+
+    wrapper.appendChild(bar);
+
+    return wrapper;
+  }
+
+  function clamp(value, min, max) {
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
   }
 })();

@@ -336,6 +336,36 @@
     font-size: var(--type-lead-size);
   }
 
+  .kv-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 1.25rem;
+    row-gap: 0.5rem;
+    width: 100%;
+    margin: 0;
+  }
+
+  .kv-list dt,
+  .kv-list dd {
+    margin: 0;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  }
+
+  .kv-list dt {
+    color: var(--color-text-soft);
+    font-size: var(--type-small-size);
+    font-weight: 600;
+  }
+
+  .kv-list dd {
+    color: var(--color-text);
+    font-size: var(--type-small-size);
+    font-weight: 700;
+    text-align: right;
+    white-space: nowrap;
+  }
+
   /* Hero */
   .hero-shell {
     display: flex;
@@ -1435,6 +1465,56 @@
 
 .factor-bar-fill {
   @apply h-full bg-teal-600 rounded-full transition-all duration-500 ease-out;
+}
+
+.factor-bar-fill--negative {
+  @apply bg-rose-500;
+}
+
+.forecast-bar-wrap {
+  @apply mt-2;
+}
+
+.forecast-bar {
+  @apply relative h-3 bg-slate-100 rounded-full;
+}
+
+.forecast-bar__mid {
+  @apply absolute top-0 bottom-0 w-px bg-slate-300;
+  left: 50%;
+}
+
+.forecast-bar__delta {
+  @apply absolute top-0 bottom-0 bg-teal-500 rounded-full;
+}
+
+.forecast-bar__delta--neg {
+  @apply bg-rose-500;
+}
+
+.forecast-bar__marker {
+  @apply absolute top-1/2 w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full;
+}
+
+.forecast-bar__marker--avg {
+  @apply bg-slate-600;
+}
+
+.forecast-bar__marker--forecast {
+  @apply bg-teal-700;
+}
+
+.forecast-bar__label {
+  @apply absolute text-[10px] text-slate-600 whitespace-nowrap;
+  transform: translateX(-50%);
+}
+
+.forecast-bar__label--avg {
+  @apply -top-5;
+}
+
+.forecast-bar__label--forecast {
+  @apply top-4 text-teal-700;
 }
 
 .factor-tooltip {
