@@ -134,8 +134,8 @@ import {
     */}
 
     <section class="section-shell scroll-mt-28" id="tiers">
-      <h2 class="section-title">Pick the depth you need</h2>
-      <p class="lead-copy">Start for free, upgrade for more insights on both adults and children.</p>
+      <h2 class="section-title">Pick the analysis you want</h2>
+      <p class="lead-copy">Try a quick analysis right away. Or sign up and unlock deeper insights.</p>
       <div class="pricing-grid">
         {offerings.map((plan) => (
           <article class="card-shell plan-card">
@@ -150,22 +150,25 @@ import {
                 <li>{feature}</li>
               ))}
             </ul>
-              <div class="btn-row">
+            <div class="btn-row">
+              {plan.cta.kind ? (
+                <button
+                  type="button"
+                  class={`btn-pill ${plan.cta.theme === 'primary' ? 'btn-pill-primary' : 'btn-pill-secondary'}`}
+                  data-tier-cta
+                  data-tier-kind={plan.cta.kind}
+                >
+                  {plan.cta.label}
+                </button>
+              ) : (
                 <a
                   href={plan.cta.href}
                   class={`btn-pill ${plan.cta.theme === 'primary' ? 'btn-pill-primary' : 'btn-pill-secondary'}`}
                 >
                   {plan.cta.label}
                 </a>
-                {plan.secondaryCta && (
-                  <a
-                    href={plan.secondaryCta.href}
-                    class={`btn-pill ${plan.secondaryCta.theme === 'primary' ? 'btn-pill-primary' : 'btn-pill-secondary'}`}
-                  >
-                    {plan.secondaryCta.label}
-                  </a>
-                )}
-              </div>
+              )}
+            </div>
           </article>
         ))}
       </div>

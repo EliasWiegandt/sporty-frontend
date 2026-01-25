@@ -23,6 +23,13 @@
     readyResolve: null,
   };
 
+  const tierState = {
+    buttons: [],
+    credits: { adult: null, child: null },
+    userId: null,
+    controller: null,
+  };
+
   const ready = new Promise((resolve) => {
     state.readyResolve = resolve;
   });
@@ -74,6 +81,7 @@
 
   async function init() {
     setupAuthUI();
+    setupTierCtas();
     createConsentModal();
     if (!SUPABASE_JS || !SUPABASE_URL || !SUPABASE_KEY) {
       console.warn('[Sporty] Supabase configuration missing; auth disabled.');
@@ -182,6 +190,8 @@
         event.preventDefault();
         const mode = button.dataset.authMode === 'signup' ? 'signup' : 'signin';
         setAuthMode(mode, { preserveStatus: true });
+        const resetRow = state.authOverlay?.querySelector('[data-auth-reset-row]');
+        if (resetRow) resetRow.classList.add('hidden');
         openAuthOverlay();
       });
     });
@@ -193,6 +203,141 @@
         await signOut();
       });
     });
+  }
+
+  function setupTierCtas() {
+    tierState.buttons = Array.from(document.querySelectorAll('[data-tier-cta]'));
+    if (!tierState.buttons.length) return;
+    updateTierCtas(snapshot());
+    api.onAuthChange((snap) => updateTierCtas(snap));
+  }
+
+  function updateTierCtas(snap) {
+    if (!tierState.buttons.length) return;
+    const user = snap && snap.user ? snap.user : null;
+
+    if (!user) {
+      tierState.userId = null;
+      tierState.credits = { adult: null, child: null };
+      tierState.buttons.forEach((btn) => {
+        btn.disabled = false;
+        btn.setAttribute('aria-disabled', 'false');
+        btn.textContent = 'Sign up and try for free';
+        btn.onclick = (event) => {
+          event.preventDefault();
+          setAuthMode('signup', { preserveStatus: true });
+          openAuthOverlay();
+        };
+      });
+      return;
+    }
+
+    if (tierState.userId !== user.id) {
+      tierState.userId = user.id;
+      const snapshot = readTierCreditSnapshot();
+      if (snapshot) {
+        tierState.credits = snapshot;
+      } else {
+        tierState.credits = { adult: null, child: null };
+      }
+      loadTierCredits(user.id);
+    }
+
+    applyTierCtaState();
+  }
+
+  function applyTierCtaState() {
+    const adultCredits = tierState.credits.adult;
+    const childCredits = tierState.credits.child;
+    tierState.buttons.forEach((btn) => {
+      const kind = btn.dataset.tierKind === 'child' ? 'child' : 'adult';
+      const creditCount = kind === 'adult' ? adultCredits : childCredits;
+
+      if (adultCredits === null || childCredits === null) {
+        btn.disabled = true;
+        btn.setAttribute('aria-disabled', 'true');
+        btn.textContent = 'Checking credits...';
+        return;
+      }
+
+      const hasCredits = Number(creditCount) > 0;
+      btn.disabled = false;
+      btn.setAttribute('aria-disabled', 'false');
+      if (hasCredits) {
+        btn.textContent = 'Try now';
+        btn.onclick = (event) => {
+          event.preventDefault();
+          if (kind === 'child') {
+            window.location.assign('/child-intake');
+          } else {
+            window.location.assign('/intake-premium');
+          }
+        };
+      } else {
+        btn.textContent = 'Buy more credits';
+        btn.onclick = (event) => {
+          event.preventDefault();
+          window.location.assign('/premium');
+        };
+      }
+    });
+  }
+
+  function readTierCreditSnapshot() {
+    try {
+      const raw = sessionStorage.getItem('sporty:lastCreditSnapshot');
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return {
+        adult: normalizeCreditCount(parsed.adult),
+        child: normalizeCreditCount(parsed.child),
+      };
+    } catch (error) {
+      console.warn('[Sporty] Failed to parse credit snapshot', error);
+      return null;
+    }
+  }
+
+  async function loadTierCredits(userId) {
+    if (!userId) return;
+    if (tierState.controller) {
+      tierState.controller.abort();
+      tierState.controller = null;
+    }
+    tierState.credits = { adult: null, child: null };
+    applyTierCtaState();
+    const controller = new AbortController();
+    tierState.controller = controller;
+    try {
+      const resp = await fetch(`/api/credits?user_id=${encodeURIComponent(userId)}`, {
+        signal: controller.signal,
+      });
+      if (!resp.ok) {
+        throw new Error(`Failed to load credits: ${resp.status}`);
+      }
+      const payload = await resp.json();
+      tierState.credits = {
+        adult: normalizeCreditCount(payload.adult_credits),
+        child: normalizeCreditCount(payload.child_credits),
+      };
+      applyTierCtaState();
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      console.error('[Sporty] Failed to load credits for tiers', error);
+      tierState.credits = { adult: 0, child: 0 };
+      applyTierCtaState();
+    } finally {
+      if (tierState.controller === controller) {
+        tierState.controller = null;
+      }
+    }
+  }
+
+  function normalizeCreditCount(value) {
+    if (value === null || value === undefined) return 0;
+    const numeric = Number(value);
+    if (Number.isNaN(numeric) || !Number.isFinite(numeric)) return 0;
+    return Math.max(0, Math.trunc(numeric));
   }
 
   function setAuthMode(mode, { preserveStatus = false } = {}) {
@@ -207,6 +352,7 @@
     const passwordInput = overlay.querySelector('input[name="password"]');
     const consentRow = overlay.querySelector('[data-signup-consent-row]');
     const consentInput = overlay.querySelector('[data-signup-consent]');
+    const resetRow = overlay.querySelector('[data-auth-reset-row]');
 
     if (state.authMode === 'signin') {
       if (title) title.textContent = 'Log in';
@@ -218,6 +364,7 @@
         consentRow.classList.add('hidden');
         if (consentInput) consentInput.checked = false;
       }
+      if (resetRow) resetRow.classList.add('hidden');
     } else {
       if (title) title.textContent = 'Create account';
       if (submit) submit.textContent = 'Sign up';
@@ -225,6 +372,7 @@
       if (switchText) switchText.textContent = 'Already have an account?';
       if (passwordInput) passwordInput.setAttribute('autocomplete', 'new-password');
       if (consentRow) consentRow.classList.remove('hidden');
+      if (resetRow) resetRow.classList.add('hidden');
     }
 
     if (!preserveStatus) {
@@ -325,7 +473,23 @@
           email,
           password,
         });
-        if (error) throw error;
+        if (error) {
+          if (isExistingAccountError(error)) {
+            const loginResult = await tryLoginAfterSignup(email, password);
+            if (loginResult === 'logged_in') {
+              updateAuthStatus('Welcome back! You are logged in.', 'info');
+              setTimeout(() => closeAuthOverlay(), 400);
+              return;
+            }
+            updateAuthStatus(
+              'This email is already registered. The password did not match. Use “Reset password” below.',
+              'error'
+            );
+            showResetPasswordAction(email);
+            return;
+          }
+          throw error;
+        }
         if (data.user) {
           await handleSignupConsent(data.user, data.session, consentChecked);
           updateAuthStatus('Account created. Check your inbox to verify your email, then log in.', 'info');
@@ -336,6 +500,48 @@
       }
     } catch (error) {
       updateAuthStatus(error.message || 'Authentication failed.', 'error');
+    }
+  }
+
+  function isExistingAccountError(error) {
+    if (!error) return false;
+    const message = String(error.message || '').toLowerCase();
+    return message.includes('already') || message.includes('registered') || message.includes('exists');
+  }
+
+  async function tryLoginAfterSignup(email, password) {
+    try {
+      const { error } = await state.client.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) return 'invalid';
+      return 'logged_in';
+    } catch (_) {
+      return 'invalid';
+    }
+  }
+
+  function showResetPasswordAction(email) {
+    if (!state.authOverlay) return;
+    const resetRow = state.authOverlay.querySelector('[data-auth-reset-row]');
+    const resetBtn = state.authOverlay.querySelector('[data-auth-reset]');
+    if (!resetRow || !resetBtn) return;
+    resetRow.classList.remove('hidden');
+    resetBtn.onclick = async (event) => {
+      event.preventDefault();
+      await handlePasswordReset(email);
+    };
+  }
+
+  async function handlePasswordReset(email) {
+    if (!state.client) return;
+    try {
+      const { error } = await state.client.auth.resetPasswordForEmail(email);
+      if (error) throw error;
+      updateAuthStatus('Password reset email sent. Check your inbox.', 'info');
+    } catch (error) {
+      updateAuthStatus(error.message || 'Failed to send reset email.', 'error');
     }
   }
 

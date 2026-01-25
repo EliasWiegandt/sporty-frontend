@@ -66,67 +66,52 @@ export const testimonials = [
 
 export const offerings = [
   {
-    ribbon: "Included",
-    title: "Free Analysis of Adult",
-    price: "$0",
+    ribbon: "No log-in required",
+    title: "Quick Analysis",
+    price: "Unlimited free analyses",
     summary:
-      "Unlimited biomechanics-backed matches any time you want another perspective.",
+      "Quickly find sports that fit your body using our biomechanics engine.",
     features: [
-      "Run analysis based on body composition and past sports.",
-      "Review component summaries and explanations of matches.",
-      "Sign up for free account to save runs to your dashboard.",
+      "Run analysis based on your body composition and past sports.",
+      "Detailed explanation of factors for your sports-matches.",
+      "Sign up for a free account to save inputs and results.",
     ],
     cta: {
       href: "/intake",
       label: "Try free analysis",
       theme: "primary",
     },
-    secondaryCta: {
-      href: "/intake-premium",
-      label: "Start premium intake",
-      theme: "secondary",
-    },
   },
   {
-    ribbon: "Purchase",
-    title: "Premium Analysis of Adult",
-    price: "$5",
-    summary: "Gain deeper insights and tailored recommendations.",
+    ribbon: "No credit card required",
+    title: "Premium Analysis",
+    price: "10 free analyses with signup",
+    summary: "Deeper insights await.",
     features: [
-      "Add goals to see sports that fit your ambitions.",
-      "Add preferences to filter irrelevent results.",
-      "Add injuries you want to avoid aggravating or prevent developing.",
+      "Include traits like metabolic tendency, temperature tolerance and dominant side.",
+      "Include goals to see sports that fit your ambitions.",
+      "Include injuries you want to avoid aggravating or prevent developing.",
     ],
     cta: {
-      href: "/intake?premium=true",
-      label: "Buy now",
-      theme: "secondary",
-    },
-    secondaryCta: {
-      href: "/pricing",
-      label: "See pricing",
+      label: "Sign up / log in and try",
       theme: "primary",
+      kind: "adult",
     },
   },
   {
-    ribbon: "Purchase",
-    title: "Premium Analysis of Child",
-    price: "$5",
+    ribbon: "No credit card required",
+    title: "Child Forecast and Analysis",
+    price: "5  free analyses with signup",
     summary: "Forecast a child's growth and match it's future body to sports.",
     features: [
       "Forecast your child's body metrics using child + parent measurements.",
       "Take child's preferences, goals, injuries, and past sports into account.",
-      "Get full premium analysis of your child's sport matches.",
+      "Detailed breakdown of growth forecast and sport matches.",
     ],
     cta: {
-      href: "/child-intake",
-      label: "Buy now",
-      theme: "secondary",
-    },
-    secondaryCta: {
-      href: "/dashboard",
-      label: "Visit dashboard",
-      theme: "secondary",
+      label: "Sign up / log in and try",
+      theme: "primary",
+      kind: "child",
     },
   },
 ] as const;
@@ -161,7 +146,7 @@ export const faqItems = [
   {
     title: "How do premium credits work?",
     content:
-      "<p>Premium adult analyses and child packages each cost a single $5 credit. Purchase credits through Stripe Checkout from Pricing or the dashboard, then apply them during intake.</p>",
+      "<p>New accounts start with a signup bonus of 10 adult premium analyses and 5 child analyses (no card required). After that, premium adult analyses and child packages each cost a single $5 credit purchased through Stripe Checkout from Pricing or the dashboard.</p>",
   },
   {
     title: "What makes the premium analysis different?",
