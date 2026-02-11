@@ -2,6 +2,7 @@ import type { FunctionalComponent } from 'preact';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { measurementFields } from '../../data/measurementFields';
 import MeasurementField from '../intake/MeasurementField';
+import InlineInfoTip from '../intake/InlineInfoTip';
 import PastSportsStep from '../intake/steps/PastSportsStep';
 import TraitsStep from '../intake/steps/TraitsStep';
 import PremiumBlock, { type PremiumSectionKey } from '../intake/PremiumBlock';
@@ -559,8 +560,14 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
             return (
               <section key={group.key} className="space-y-3">
                 <div className="space-y-1">
-                  <h3 className="type-lead text-slate-700">{group.title}</h3>
-                  <p className="text-sm text-slate-500">{group.description}</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="type-lead text-slate-700">{group.title}</h3>
+                    <InlineInfoTip
+                      id={`${idPrefix}-${group.key}-tip`}
+                      label={group.title}
+                      steps={[group.description]}
+                    />
+                  </div>
                 </div>
                 <fieldset className="grid gap-6 md:grid-cols-2">
                   {groupFields.map((field: any) => (
@@ -568,6 +575,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
                       key={`${idPrefix}-${field.id}`}
                       {...field}
                       id={`${idPrefix}-${field.id}`}
+                      showInstructionTooltip
                       value={values[field.id] ?? ''}
                       onChange={(val) => onChange({ ...values, [field.id]: val })}
                     />
@@ -763,15 +771,27 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
               <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
                 <input type="checkbox" checked={includeMother} onChange={(e) => setIncludeMother(Boolean((e.target as HTMLInputElement).checked))} />
                 <div>
-                  <div className="text-sm font-semibold text-slate-800">Include mother measurements</div>
-                  <div className="text-xs text-slate-500">All fields required when enabled.</div>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                    Include mother measurements
+                    <InlineInfoTip
+                      id="child-mother-toggle-tip"
+                      label="Include mother measurements"
+                      steps={['All mother fields become required when this toggle is enabled.']}
+                    />
+                  </div>
                 </div>
               </label>
               <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
                 <input type="checkbox" checked={includeFather} onChange={(e) => setIncludeFather(Boolean((e.target as HTMLInputElement).checked))} />
                 <div>
-                  <div className="text-sm font-semibold text-slate-800">Include father measurements</div>
-                  <div className="text-xs text-slate-500">All fields required when enabled.</div>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                    Include father measurements
+                    <InlineInfoTip
+                      id="child-father-toggle-tip"
+                      label="Include father measurements"
+                      steps={['All father fields become required when this toggle is enabled.']}
+                    />
+                  </div>
                 </div>
               </label>
             </div>

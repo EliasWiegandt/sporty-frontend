@@ -4,6 +4,8 @@ export type MeasurementFieldConfig = {
   unit: string;
   hint: string;
   help: string[];
+  quick_section?: 'fast_start' | 'tape_measurements';
+  quick_order?: number;
   min: number;
   max: number;
   step?: number;
@@ -11,12 +13,14 @@ export type MeasurementFieldConfig = {
   group: 'core' | 'torso' | 'extremities';
 };
 
-export const measurementFields: MeasurementFieldConfig[] = [
+export const premiumMeasurementFields: MeasurementFieldConfig[] = [
   {
     id: 'height_cm',
     label: 'Height',
     unit: 'cm',
     hint: 'Stand tall against a wall without shoes. Use a flat object on your head and mark the wall. Measure from the floor to the mark.',
+    quick_section: 'fast_start',
+    quick_order: 1,
     help: [
       'Stand tall against a wall without shoes.',
       'Use a flat object on your head and mark the wall.',
@@ -32,6 +36,8 @@ export const measurementFields: MeasurementFieldConfig[] = [
     label: 'Weight',
     unit: 'kg',
     hint: 'Use a calibrated scale on a hard surface. Weigh yourself in light clothing, no shoes.',
+    quick_section: 'fast_start',
+    quick_order: 2,
     help: [
       'Use a calibrated scale on a hard surface.',
       'Weigh yourself in light clothing, no shoes.',
@@ -46,6 +52,8 @@ export const measurementFields: MeasurementFieldConfig[] = [
     label: 'Arm span',
     unit: 'cm',
     hint: 'Extend both arms horizontally at shoulder height. Measure fingertip to fingertip across your back.',
+    quick_section: 'tape_measurements',
+    quick_order: 3,
     help: [
       'Extend both arms horizontally at shoulder height.',
       'Measure fingertip to fingertip across your back.',
@@ -60,6 +68,8 @@ export const measurementFields: MeasurementFieldConfig[] = [
     label: 'Leg inseam',
     unit: 'cm',
     hint: 'Stand straight with shoes off. Measure from the top of the inner thigh to the ankle bone.',
+    quick_section: 'tape_measurements',
+    quick_order: 6,
     help: [
       'Stand straight with shoes off.',
       'Measure from the top of the inner thigh to the ankle bone.',
@@ -74,6 +84,8 @@ export const measurementFields: MeasurementFieldConfig[] = [
     label: 'Shoulder width',
     unit: 'cm',
     hint: 'Find the outer points of each shoulder. Measure the straight line distance between them.',
+    quick_section: 'tape_measurements',
+    quick_order: 4,
     help: [
       'Find the outer points of each shoulder.',
       'Measure the straight line distance between them.',
@@ -88,6 +100,8 @@ export const measurementFields: MeasurementFieldConfig[] = [
     label: 'Pelvic bone width',
     unit: 'cm',
     hint: 'Measure the distance between the outer edges of your pelvic bones (iliac crests).',
+    quick_section: 'tape_measurements',
+    quick_order: 5,
     help: [
       'Measure the distance between the outer edges of your pelvic bones (iliac crests).',
     ],
@@ -101,6 +115,8 @@ export const measurementFields: MeasurementFieldConfig[] = [
     label: 'Torso length',
     unit: 'cm',
     hint: 'Sit upright against a wall on a flat surface. Measure from the sitting surface up to the top of your shoulder.',
+    quick_section: 'tape_measurements',
+    quick_order: 7,
     help: [
       'Sit upright against a wall on a flat surface.',
       'Measure from the sitting surface up to the top of your shoulder.',
@@ -154,6 +170,8 @@ export const measurementFields: MeasurementFieldConfig[] = [
     label: 'Wrist circumference',
     unit: 'cm',
     hint: 'Relax your arm at your side. Wrap the tape around the narrowest part of the wrist just above the bone.',
+    quick_section: 'tape_measurements',
+    quick_order: 8,
     help: [
       'Relax your arm at your side.',
       'Wrap the tape around the narrowest part of the wrist just above the bone.',
@@ -165,4 +183,17 @@ export const measurementFields: MeasurementFieldConfig[] = [
   },
 ];
 
-export default measurementFields;
+export const freeMeasurementFields: MeasurementFieldConfig[] =
+  premiumMeasurementFields.filter(
+    (field) =>
+      ![
+        'hand_length_cm',
+        'foot_length_cm',
+        'ankle_circumference_cm',
+      ].includes(field.id),
+  );
+
+// Keep this alias for callers that still expect the full adult measurement set.
+export const measurementFields = premiumMeasurementFields;
+
+export default premiumMeasurementFields;

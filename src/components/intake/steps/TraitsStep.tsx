@@ -1,5 +1,6 @@
 import type { FunctionalComponent } from 'preact';
 import RadioCards from '../controls/RadioCards';
+import InlineInfoTip from '../InlineInfoTip';
 
 const PREFILL_TRAITS: Record<string, string> = {
   muscle_fiber: 'fast_twitch_dominant',
@@ -106,10 +107,16 @@ const TraitsStep: FunctionalComponent = () => (
     <div className="space-y-6">
       {traitQuestions.map((question) => (
         <fieldset key={question.name} className="space-y-3" aria-label={question.label}>
-          <legend className="type-body font-semibold text-slate-800">{question.label}</legend>
-          {question.description && (
-            <p className="text-sm text-slate-500">{question.description}</p>
-          )}
+          <legend className="type-body flex items-center gap-2 font-semibold text-slate-800">
+            {question.label}
+            {question.description && (
+              <InlineInfoTip
+                id={`${question.name}-tip`}
+                label={question.label}
+                steps={[question.description]}
+              />
+            )}
+          </legend>
           <RadioCards
             name={question.name}
             value={undefined}
@@ -128,8 +135,14 @@ const TraitsStep: FunctionalComponent = () => (
               : 'Which leg do you naturally kick or jump off with?';
           return (
             <fieldset key={field} className="space-y-3" aria-label={label}>
-              <legend className="type-body font-semibold text-slate-800">{label}</legend>
-              <p className="text-sm text-slate-500">{description}</p>
+              <legend className="type-body flex items-center gap-2 font-semibold text-slate-800">
+                {label}
+                <InlineInfoTip
+                  id={`${field}-tip`}
+                  label={label}
+                  steps={[description]}
+                />
+              </legend>
               <RadioCards
                 name={field}
                 value={undefined}

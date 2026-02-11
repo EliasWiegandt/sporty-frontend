@@ -1,6 +1,7 @@
 import type { FunctionalComponent } from 'preact';
 import type { Sex } from '../../../data/intakeSchema';
 import RadioCards from '../controls/RadioCards';
+import InlineInfoTip from '../InlineInfoTip';
 
 type BasicsStepProps = {
   value: { birthday: string; sex: Sex | '' };
@@ -26,8 +27,14 @@ const BasicsStep: FunctionalComponent<BasicsStepProps> = ({ value, onChange }) =
       <fieldset className="space-y-6">
         <div className="grid gap-6 md:grid-cols-2">
           <label className="space-y-2" htmlFor="birthday">
-            <span className="type-body block font-semibold text-slate-800">Birthday</span>
-            <span className="block text-sm text-slate-500">Used only to infer age brackets.</span>
+            <span className="type-body flex items-center gap-2 font-semibold text-slate-800">
+              Birthday
+              <InlineInfoTip
+                id="birthday-tip"
+                label="Birthday"
+                steps={['Used only to infer age brackets for your analysis cohort.']}
+              />
+            </span>
             <input
               className="input-field"
               type="date"
@@ -39,11 +46,13 @@ const BasicsStep: FunctionalComponent<BasicsStepProps> = ({ value, onChange }) =
             />
           </label>
           <div className="space-y-2">
-            <span className="type-body block font-semibold text-slate-800" id="sex-label">
+            <span className="type-body flex items-center gap-2 font-semibold text-slate-800" id="sex-label">
               Sex
-            </span>
-            <span className="block text-sm text-slate-500">
-              Helps line you up with cohort averages.
+              <InlineInfoTip
+                id="sex-tip"
+                label="Sex"
+                steps={['Used to align your profile with the right cohort averages.']}
+              />
             </span>
             <RadioCards
               name="sex"

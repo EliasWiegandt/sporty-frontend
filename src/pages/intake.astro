@@ -1,9 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import IntakeApp from '../components/intake/IntakeApp';
-import { measurementFields } from '../data/measurementFields';
+import { freeMeasurementFields } from '../data/measurementFields';
 
-const measurementMeta = measurementFields.map((field) => ({
+const measurementMeta = freeMeasurementFields.map((field) => ({
   id: field.id,
   label: `${field.label} (${field.unit})`,
   unit: field.unit,

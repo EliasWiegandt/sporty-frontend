@@ -35,10 +35,10 @@ export type FreeIntakeData = {
   leg_inseam_cm: number;
   shoulder_width_cm: number;
   pelvic_bone_width_cm: number;
-  hand_length_cm: number;
-  foot_length_cm: number;
+  hand_length_cm?: number | null;
+  foot_length_cm?: number | null;
   torso_length_cm: number;
-  ankle_circumference_cm: number;
+  ankle_circumference_cm?: number | null;
   wrist_circumference_cm: number;
   pastSports: PastSportInput[];
 };
@@ -77,7 +77,14 @@ export type PremiumOnlyInputs = {
   injuries: InjuryInput[];
 };
 
-export type PremiumIntakeData = FreeIntakeData & PremiumOnlyInputs;
+export type PremiumIntakeData = Omit<
+  FreeIntakeData,
+  'hand_length_cm' | 'foot_length_cm' | 'ankle_circumference_cm'
+> & {
+  hand_length_cm: number;
+  foot_length_cm: number;
+  ankle_circumference_cm: number;
+} & PremiumOnlyInputs;
 
 type FreePayload = {
   birthday: string;
@@ -88,10 +95,10 @@ type FreePayload = {
   leg_inseam_cm: number;
   shoulder_width_cm: number;
   pelvic_bone_width_cm: number;
-  hand_length_cm: number;
-  foot_length_cm: number;
+  hand_length_cm: number | null;
+  foot_length_cm: number | null;
   torso_length_cm: number;
-  ankle_circumference_cm: number;
+  ankle_circumference_cm: number | null;
   wrist_circumference_cm: number;
   past_sports?: PastSportInput[];
   traits?: Record<string, string>;
@@ -150,10 +157,10 @@ export function buildFreePayload(data: FreeIntakeData): FreePayload {
     leg_inseam_cm,
     shoulder_width_cm,
     pelvic_bone_width_cm,
-    hand_length_cm,
-    foot_length_cm,
+    hand_length_cm: hand_length_cm ?? null,
+    foot_length_cm: foot_length_cm ?? null,
     torso_length_cm,
-    ankle_circumference_cm,
+    ankle_circumference_cm: ankle_circumference_cm ?? null,
     wrist_circumference_cm,
     consent_preview: true,
   };
@@ -191,19 +198,19 @@ export function buildPremiumPayload(
 
   const payload: PremiumPayload = {
     user_id: userId,
-    birthday: base.birthday,
-    sex: base.sex,
-    height_cm: base.height_cm,
-    weight_kg: base.weight_kg,
-    arm_span_cm: base.arm_span_cm,
-    leg_inseam_cm: base.leg_inseam_cm,
-    shoulder_width_cm: base.shoulder_width_cm,
-    pelvic_bone_width_cm: base.pelvic_bone_width_cm,
-    hand_length_cm: base.hand_length_cm,
-    foot_length_cm: base.foot_length_cm,
-    torso_length_cm: base.torso_length_cm,
-    ankle_circumference_cm: base.ankle_circumference_cm,
-    wrist_circumference_cm: base.wrist_circumference_cm,
+    birthday: data.birthday,
+    sex: data.sex || 'prefer_not_to_say',
+    height_cm: data.height_cm,
+    weight_kg: data.weight_kg,
+    arm_span_cm: data.arm_span_cm,
+    leg_inseam_cm: data.leg_inseam_cm,
+    shoulder_width_cm: data.shoulder_width_cm,
+    pelvic_bone_width_cm: data.pelvic_bone_width_cm,
+    hand_length_cm: data.hand_length_cm,
+    foot_length_cm: data.foot_length_cm,
+    torso_length_cm: data.torso_length_cm,
+    ankle_circumference_cm: data.ankle_circumference_cm,
+    wrist_circumference_cm: data.wrist_circumference_cm,
     past_sports: base.past_sports,
     premium: {
       apply_credit: true,
@@ -219,4 +226,3 @@ export function buildPremiumPayload(
 
   return payload;
 }
-

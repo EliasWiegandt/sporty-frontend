@@ -1,11 +1,14 @@
 import type { FunctionalComponent } from "preact";
-import { useState, useEffect, useCallback, useRef } from "preact/hooks";
+import { useState, useEffect, useCallback, useMemo, useRef } from "preact/hooks";
 import BasicsStep from "./steps/BasicsStep";
 import MeasurementsStep from "./steps/MeasurementsStep";
 import PastSportsStep from "./steps/PastSportsStep";
 import TraitsStep from "./steps/TraitsStep";
 import PremiumBlock, { type PremiumSectionKey } from "./PremiumBlock";
-import { measurementFields } from "../../data/measurementFields";
+import {
+  freeMeasurementFields,
+  premiumMeasurementFields,
+} from "../../data/measurementFields";
 import {
   createPremiumController,
   type PremiumController,
@@ -96,13 +99,11 @@ const buildStepDefinitions = (mode: IntakeMode): StepDefinition[] => {
   }));
 };
 
-const measurementKeys = measurementFields.map((field) => field.id) as Array<
-  Exclude<keyof FreeIntakeData, "birthday" | "sex" | "pastSports">
->;
+type MeasurementFormValues = Record<string, number | null>;
 
-const buildEmptyMeasurements = (): Record<string, number | null> => {
+const buildEmptyMeasurements = (keys: string[]): MeasurementFormValues => {
   const output: Record<string, number | null> = {};
-  measurementKeys.forEach((id) => {
+  keys.forEach((id) => {
     output[id] = null;
   });
   return output;
@@ -141,6 +142,25 @@ type IntakeAppProps = {
 };
 
 const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
+  const activeMeasurementFields = useMemo(
+    () =>
+      mode === "premium"
+        ? premiumMeasurementFields
+        : [...freeMeasurementFields].sort(
+            (a, b) =>
+              (a.quick_order ?? Number.MAX_SAFE_INTEGER) -
+              (b.quick_order ?? Number.MAX_SAFE_INTEGER)
+          ),
+    [mode]
+  );
+  const measurementKeys = useMemo(
+    () => activeMeasurementFields.map((field) => field.id),
+    [activeMeasurementFields]
+  );
+  const measurementFieldById = useMemo(
+    () => new Map(activeMeasurementFields.map((field) => [field.id, field])),
+    [activeMeasurementFields]
+  );
   const stepDefinitions = buildStepDefinitions(mode);
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -155,13 +175,26 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
   );
   const [measurements, setMeasurements] = useState<
     Record<string, number | null>
-  >(() => buildEmptyMeasurements());
+  >(() => buildEmptyMeasurements(measurementKeys));
   const [consentGiven, setConsentGiven] = useState(false);
   const consentIntentRef = useRef(false);
   const [consentSaving, setConsentSaving] = useState(false);
 
   // Premium controller (kept as is for now since it handles external UI blocks)
 const premiumControllerRef = useRef<PremiumController | null>(null);
+
+  useEffect(() => {
+    setMeasurements((prev) => {
+      const next = buildEmptyMeasurements(measurementKeys);
+      measurementKeys.forEach((id) => {
+        const existingValue = prev[id];
+        if (existingValue !== undefined) {
+          next[id] = existingValue;
+        }
+      });
+      return next;
+    });
+  }, [measurementKeys]);
 
   const premiumSectionIndexMap = new Map<PremiumSectionKey, number>();
   if (mode === "premium") {
@@ -416,35 +449,12 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
     restoreDraft();
   }, [restoreDraft]);
 
-  const hasAnyInput = useCallback(() => {
-    if (basics.birthday || basics.sex) return true;
-    if (pastSports.length) return true;
-    for (const id of measurementKeys) {
-      const value = measurements[id];
-      if (value !== null && value !== undefined && value !== ("" as any)) {
-        return true;
-      }
-    }
-    return false;
-  }, [basics.birthday, basics.sex, pastSports.length, measurements]);
-
   const serverPrefillAppliedRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!sportySnapshot.user?.id) return;
     if (serverPrefillAppliedRef.current) return;
-    if (hasAnyInput()) return;
-
-    // If we have a local draft, prefer that over server prefill.
-    if (supportsLocalStorage()) {
-      try {
-        const raw = window.localStorage.getItem(STORAGE_KEY);
-        if (raw) return;
-      } catch {
-        // ignore
-      }
-    }
 
     const sportyApp = (window as any).SportyApp;
     const client = sportyApp?.getClient?.();
@@ -456,7 +466,7 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       try {
         const userId = sportySnapshot.user!.id;
 
-        const [{ data: profile }, { data: measurement }] = await Promise.all([
+        const [{ data: profile }, { data: measurement }, { data: pastSportsRows }] = await Promise.all([
           client.from("profiles").select("birthdate,sex").eq("id", userId).maybeSingle(),
           client
             .from("measurements")
@@ -466,6 +476,12 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
             .order("measured_at", { ascending: false })
             .limit(1)
             .maybeSingle(),
+          client
+            .from("past_sports")
+            .select("id,sport_subcategory_id,years_played,age_started_years,intensity,liked,had_flair,achieved_skill")
+            .eq("subject_type", "adult")
+            .eq("subject_user_id", userId)
+            .order("created_at", { ascending: false }),
         ]);
 
         if (profile) {
@@ -488,11 +504,63 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
             return next;
           });
         }
+
+        if (Array.isArray(pastSportsRows) && pastSportsRows.length) {
+          const subcategoryIds = Array.from(
+            new Set(
+              pastSportsRows
+                .map((row: any) => row?.sport_subcategory_id)
+                .filter((value: any) => Boolean(value))
+            )
+          );
+          const labelById = new Map<string, string>();
+          if (subcategoryIds.length) {
+            const { data: categories } = await client
+              .from("sports_subcategories")
+              .select("id,name,slug,category")
+              .in("id", subcategoryIds);
+            (categories || []).forEach((row: any) => {
+              const fallback = row?.category?.sport?.name || row?.slug || "Sport";
+              const label =
+                typeof row?.name === "string" && row.name.trim() ? row.name.trim() : fallback;
+              labelById.set(String(row.id), label);
+            });
+          }
+
+          const entries = pastSportsRows.map((row: any) => ({
+            id: String(row.id),
+            sport_subcategory_id: row.sport_subcategory_id || null,
+            sport_label: row.sport_subcategory_id
+              ? labelById.get(String(row.sport_subcategory_id)) || ""
+              : "",
+            years_played:
+              row.years_played === null || row.years_played === undefined
+                ? null
+                : Number(row.years_played),
+            age_started_years:
+              row.age_started_years === null || row.age_started_years === undefined
+                ? null
+                : Number(row.age_started_years),
+            intensity: row.intensity || null,
+            liked:
+              row.liked === null || row.liked === undefined ? null : Boolean(row.liked),
+            had_flair:
+              row.had_flair === null || row.had_flair === undefined
+                ? null
+                : Boolean(row.had_flair),
+            achieved_skill:
+              row.achieved_skill === null || row.achieved_skill === undefined
+                ? null
+                : Boolean(row.achieved_skill),
+          }));
+
+          setPastSports((prev) => (prev.length ? prev : entries));
+        }
       } catch (error) {
-        console.warn("[Intake] Unable to prefill from saved measurements", error);
+        console.warn("[Intake] Unable to prefill from saved profile/measurements/past sports", error);
       }
     })();
-  }, [sportySnapshot.user?.id, hasAnyInput]);
+  }, [sportySnapshot.user?.id]);
 
   const validateBasics = useCallback((): StepValidationResult<
     Pick<FreeIntakeData, "birthday" | "sex">
@@ -517,15 +585,11 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
     };
   }, [basics]);
 
-  const validateMeasurements = useCallback((): StepValidationResult<
-    Pick<FreeIntakeData, (typeof measurementKeys)[number]>
-  > => {
-    const data: Partial<
-      Pick<FreeIntakeData, (typeof measurementKeys)[number]>
-    > = {};
+  const validateMeasurements = useCallback((): StepValidationResult<Record<string, number>> => {
+    const data: Record<string, number> = {};
 
     for (const id of measurementKeys) {
-      const field = measurementFields.find((entry) => entry.id === id);
+      const field = measurementFieldById.get(id);
       const label = field?.label || id;
       const value = measurements[id];
 
@@ -564,8 +628,8 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       data[id] = numVal;
     }
 
-    return { ok: true, data: data as any };
-  }, [measurements]);
+    return { ok: true, data };
+  }, [measurementFieldById, measurementKeys, measurements]);
 
   const setSubmitBusy = useCallback(
     (isBusy: boolean) => {
@@ -656,10 +720,23 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       const cleanedPastSports = pastSports.map(
         ({ id, sport_label, ...rest }) => rest
       );
+      const readMeasurement = (id: string): number | undefined =>
+        measurementResult.data[id];
 
       const freeIntakeData: FreeIntakeData = {
         ...basicsResult.data,
-        ...measurementResult.data,
+        height_cm: readMeasurement("height_cm")!,
+        weight_kg: readMeasurement("weight_kg")!,
+        arm_span_cm: readMeasurement("arm_span_cm")!,
+        leg_inseam_cm: readMeasurement("leg_inseam_cm")!,
+        shoulder_width_cm: readMeasurement("shoulder_width_cm")!,
+        pelvic_bone_width_cm: readMeasurement("pelvic_bone_width_cm")!,
+        torso_length_cm: readMeasurement("torso_length_cm")!,
+        wrist_circumference_cm: readMeasurement("wrist_circumference_cm")!,
+        hand_length_cm: mode === "premium" ? readMeasurement("hand_length_cm")! : null,
+        foot_length_cm: mode === "premium" ? readMeasurement("foot_length_cm")! : null,
+        ankle_circumference_cm:
+          mode === "premium" ? readMeasurement("ankle_circumference_cm")! : null,
         pastSports: cleanedPastSports,
       };
 
@@ -669,6 +746,9 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
 
       const premiumIntakeData: PremiumIntakeData = {
         ...freeIntakeData,
+        hand_length_cm: readMeasurement("hand_length_cm")!,
+        foot_length_cm: readMeasurement("foot_length_cm")!,
+        ankle_circumference_cm: readMeasurement("ankle_circumference_cm")!,
         traits: traitAnswers,
         preferences: premiumData?.preferences || [],
         goals: premiumData?.goals || [],
@@ -1058,6 +1138,8 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
               case "measurements":
                 return (
                   <MeasurementsStep
+                    mode={mode}
+                    fields={activeMeasurementFields}
                     values={measurements}
                     onChange={(patch) =>
                       setMeasurements((prev) => ({ ...prev, ...patch }))

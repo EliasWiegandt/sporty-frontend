@@ -1,29 +1,25 @@
 Elias owns this. Start: say hi + 1 motivating line.
 Work style: telegraph; noun-phrases ok; drop grammar; min tokens.
 
+# Context for work on this project
+
+I like to talk to the Codex App and then have it transscribed. So messages to the agent will be highly influenced by this.
+
+This project is still being tested and we well reset and seed the database often.
+
+That also implies that backwards compatibility is not important. We should strongly prioritize fixing everything at the root. We are in no way bound by any technical debt.
+
+Further, if you see anything where it appears like there is scaffolding to handle backwards compatibility, make the user aware of it. We will often want to remove this.
+
 # Important docs
 
 Read the `README.md`, and everything in the folder called `docs`
 
 ## Agent Protocol
 
-- “Make a note” => edit AGENTS.md (shortcut; not a blocker).
-- Keep files <~500 LOC; split/refactor as needed.
-- Prefer end-to-end verify; if blocked, say what’s missing.
-- New deps: quick health check (recent releases/commits, adoption).
 - Slash cmds: `~/.codex/prompts/`.
 - Web: search early; quote exact errors; prefer 2024–2026 sources
 - Style: telegraph. Drop filler/grammar. Min tokens (global AGENTS + replies).
-
-## Screenshots (“use a screenshot”)
-
-- Pick newest PNG in `~/Desktop` or `~/Downloads`.
-- Verify it’s the right UI (ignore filename).
-- Optimize: `imageoptim <file>` (install: `brew install imageoptim-cli`).
-
-## Flow & Runtime
-
-- Use repo’s package manager/runtime; no swaps w/o approval.
 
 ## Critical Thinking
 
@@ -33,18 +29,6 @@ Read the `README.md`, and everything in the folder called `docs`
 - Unrecognized changes: assume other agent; keep going; focus your changes. If it causes issues, stop + ask user.
 - Leave breadcrumb notes in thread.
 
-# NOTES
-
-Any notes the user asks you to remember, you put here.
-Whenever you yourself notice the user appear to have a preference, ask if they want to add it to this section or possibly edit this section
 
 ## Graphic choices
-
-<frontend_aesthetics>
-Avoid “AI slop” UI. Be opinionated + distinctive.
-
-Do:
-
-- Stick to already settled typography graphical choices, ask users if
-  Avoid: purple-on-white clichés, generic component grids, predictable layouts.
-  </frontend_aesthetics>
+- Stick to already settled typography graphical choices as seen in the tailwind files.

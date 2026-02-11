@@ -6,13 +6,18 @@
   // Configuration
   const storageBase = resolveStorageBase();
 
-  function init() {
+  init().catch((error) => {
+    console.error("[Sporty] Failed to init free results page", error);
+    showEmptyState();
+  });
+
+  async function init() {
     if (window.sportyResultsInitialized) {
       return;
     }
     window.sportyResultsInitialized = true;
 
-    const data = readSessionResult();
+    const data = await loadResultData();
     if (!data || !data.matches || data.matches.length === 0) {
       showEmptyState();
       return;
@@ -43,6 +48,41 @@
     }
 
     renderMatches(distinctMatches);
+  }
+
+  async function loadResultData() {
+    const fromSession = readSessionResult();
+    if (fromSession) return fromSession;
+    return await fetchResultById();
+  }
+
+  async function fetchResultById() {
+    try {
+      const params = new URLSearchParams(window.location.search || "");
+      const id = params.get("id");
+      if (!id) return null;
+
+      const sportyApp = window.SportyApp || window.sportyApp;
+      const client = sportyApp && sportyApp.getClient ? sportyApp.getClient() : null;
+      if (!client) return null;
+
+      const { data, error } = await client
+        .from("recommendations")
+        .select("result_payload,summary")
+        .eq("id", id)
+        .single();
+      if (error) throw error;
+
+      if (data && data.result_payload) return data.result_payload;
+      if (data && data.summary) {
+        if (typeof data.summary === "object") return data.summary;
+        return JSON.parse(data.summary);
+      }
+      return null;
+    } catch (error) {
+      console.error("[Sporty] Failed to fetch free analysis by id", error);
+      return null;
+    }
   }
 
   function readSessionResult() {

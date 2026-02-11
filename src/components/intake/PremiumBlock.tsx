@@ -1,4 +1,5 @@
 import type { FunctionalComponent } from 'preact';
+import InlineInfoTip from './InlineInfoTip';
 
 export type PremiumSectionKey = 'preferences' | 'goals' | 'injuries';
 
@@ -50,8 +51,14 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
       >
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h3 className="type-lead text-slate-800">{sectionMeta.preferences.title}</h3>
-            <p className="text-sm text-slate-500">{sectionMeta.preferences.description}</p>
+            <div className="flex items-center gap-2">
+              <h3 className="type-lead text-slate-800">{sectionMeta.preferences.title}</h3>
+              <InlineInfoTip
+                id="premium-preferences-tip"
+                label={sectionMeta.preferences.title}
+                steps={[sectionMeta.preferences.description]}
+              />
+            </div>
           </div>
           <span className="text-xs uppercase tracking-wide text-slate-400" data-count>
             0 / 20
@@ -113,8 +120,14 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
       >
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h3 className="type-lead text-slate-800">{sectionMeta.goals.title}</h3>
-            <p className="text-sm text-slate-500">{sectionMeta.goals.description}</p>
+            <div className="flex items-center gap-2">
+              <h3 className="type-lead text-slate-800">{sectionMeta.goals.title}</h3>
+              <InlineInfoTip
+                id="premium-goals-tip"
+                label={sectionMeta.goals.title}
+                steps={[sectionMeta.goals.description]}
+              />
+            </div>
           </div>
           <span className="text-xs uppercase tracking-wide text-slate-400" data-count>
             0 / 20
@@ -176,8 +189,14 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
       >
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h3 className="type-lead text-slate-800">{sectionMeta.injuries.title}</h3>
-            <p className="text-sm text-slate-500">{sectionMeta.injuries.description}</p>
+            <div className="flex items-center gap-2">
+              <h3 className="type-lead text-slate-800">{sectionMeta.injuries.title}</h3>
+              <InlineInfoTip
+                id="premium-injuries-tip"
+                label={sectionMeta.injuries.title}
+                steps={[sectionMeta.injuries.description]}
+              />
+            </div>
           </div>
           <span className="text-xs uppercase tracking-wide text-slate-400" data-count>
             0 / 20

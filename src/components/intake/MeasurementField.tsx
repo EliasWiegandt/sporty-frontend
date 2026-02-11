@@ -4,6 +4,7 @@ import type { MeasurementFieldConfig } from '../../data/measurementFields';
 
 type Props = MeasurementFieldConfig & {
   value: number | string;
+  showInstructionTooltip?: boolean;
   onChange: (value: number | null) => void;
 };
 
@@ -12,14 +13,24 @@ const MeasurementField: FunctionalComponent<Props> = ({
   label,
   unit,
   hint,
+  help,
   min,
   max,
   step = 1,
   required = true,
   value,
+  showInstructionTooltip = false,
   onChange,
 }) => {
-  const hintId = hint ? `${id}-hint` : undefined;
+  const showInlineHint = Boolean(hint) && !showInstructionTooltip;
+  const hintId = showInlineHint ? `${id}-hint` : undefined;
+  const tooltipId = `${id}-tooltip`;
+  const tooltipSteps =
+    Array.isArray(help) && help.length
+      ? help
+      : hint
+        ? [hint]
+        : [];
 
   const handleChange = (raw: string | number) => {
     if (raw === '' || raw === null || raw === undefined) {
@@ -34,10 +45,32 @@ const MeasurementField: FunctionalComponent<Props> = ({
     <div className="rounded-3xl border border-slate-200/80 bg-white px-4 py-5 shadow-sm space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
-          <label className="type-body font-semibold text-slate-800" htmlFor={id}>
-            {label} ({unit})
-          </label>
-          {hint && (
+          <div className="flex items-center gap-2">
+            <label className="type-body font-semibold text-slate-800" htmlFor={id}>
+              {label} ({unit})
+            </label>
+            {showInstructionTooltip && tooltipSteps.length > 0 && (
+              <span className="info-tip-wrap">
+                <button
+                  type="button"
+                  className="info-tip-trigger"
+                  aria-label={`How to measure ${label.toLowerCase()}`}
+                  aria-describedby={tooltipId}
+                >
+                  i
+                </button>
+                <span id={tooltipId} role="tooltip" className="info-tip-content">
+                  <span className="info-tip-title">How to measure</span>
+                  <ul className="info-tip-list">
+                    {tooltipSteps.map((stepText) => (
+                      <li key={stepText}>{stepText}</li>
+                    ))}
+                  </ul>
+                </span>
+              </span>
+            )}
+          </div>
+          {showInlineHint && (
             <p id={hintId} className="text-sm text-slate-500">
               {hint}
             </p>
@@ -72,4 +105,3 @@ const MeasurementField: FunctionalComponent<Props> = ({
 };
 
 export default MeasurementField;
-
