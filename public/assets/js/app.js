@@ -222,123 +222,29 @@
       tierState.buttons.forEach((btn) => {
         btn.disabled = false;
         btn.setAttribute('aria-disabled', 'false');
-        btn.textContent = 'Sign up and try for free';
+        btn.textContent = 'Sign up / log in and try';
         btn.onclick = (event) => {
           event.preventDefault();
-          setAuthMode('signup', { preserveStatus: true });
+          setAuthMode('signin', { preserveStatus: true });
           openAuthOverlay();
         };
       });
       return;
     }
 
-    if (tierState.userId !== user.id) {
-      tierState.userId = user.id;
-      const snapshot = readTierCreditSnapshot();
-      if (snapshot) {
-        tierState.credits = snapshot;
-      } else {
-        tierState.credits = { adult: null, child: null };
-      }
-      loadTierCredits(user.id);
-    }
-
-    applyTierCtaState();
-  }
-
-  function applyTierCtaState() {
-    const adultCredits = tierState.credits.adult;
-    const childCredits = tierState.credits.child;
+    tierState.userId = user.id;
     tierState.buttons.forEach((btn) => {
       const kind = btn.dataset.tierKind === 'child' ? 'child' : 'adult';
-      const creditCount = kind === 'adult' ? adultCredits : childCredits;
-
-      if (adultCredits === null || childCredits === null) {
-        btn.disabled = true;
-        btn.setAttribute('aria-disabled', 'true');
-        btn.textContent = 'Checking credits...';
-        return;
-      }
-
-      const hasCredits = Number(creditCount) > 0;
       btn.disabled = false;
       btn.setAttribute('aria-disabled', 'false');
-      if (hasCredits) {
-        btn.textContent = 'Try now';
-        btn.onclick = (event) => {
-          event.preventDefault();
-          if (kind === 'child') {
-            window.location.assign('/child-intake');
-          } else {
-            window.location.assign('/intake-premium');
-          }
-        };
-      } else {
-        btn.textContent = 'Buy more credits';
-        btn.onclick = (event) => {
-          event.preventDefault();
-          window.location.assign('/premium');
-        };
-      }
+      btn.textContent = kind === 'child' ? 'Try Child Forecast and Analysis' : 'Try Premium Analysis';
+      btn.onclick = (event) => {
+        event.preventDefault();
+        window.location.assign('/dashboard');
+      };
     });
   }
 
-  function readTierCreditSnapshot() {
-    try {
-      const raw = sessionStorage.getItem('sporty:lastCreditSnapshot');
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      return {
-        adult: normalizeCreditCount(parsed.adult),
-        child: normalizeCreditCount(parsed.child),
-      };
-    } catch (error) {
-      console.warn('[Sporty] Failed to parse credit snapshot', error);
-      return null;
-    }
-  }
-
-  async function loadTierCredits(userId) {
-    if (!userId) return;
-    if (tierState.controller) {
-      tierState.controller.abort();
-      tierState.controller = null;
-    }
-    tierState.credits = { adult: null, child: null };
-    applyTierCtaState();
-    const controller = new AbortController();
-    tierState.controller = controller;
-    try {
-      const resp = await fetch(`/api/credits?user_id=${encodeURIComponent(userId)}`, {
-        signal: controller.signal,
-      });
-      if (!resp.ok) {
-        throw new Error(`Failed to load credits: ${resp.status}`);
-      }
-      const payload = await resp.json();
-      tierState.credits = {
-        adult: normalizeCreditCount(payload.adult_credits),
-        child: normalizeCreditCount(payload.child_credits),
-      };
-      applyTierCtaState();
-    } catch (error) {
-      if (controller.signal.aborted) return;
-      console.error('[Sporty] Failed to load credits for tiers', error);
-      tierState.credits = { adult: 0, child: 0 };
-      applyTierCtaState();
-    } finally {
-      if (tierState.controller === controller) {
-        tierState.controller = null;
-      }
-    }
-  }
-
-  function normalizeCreditCount(value) {
-    if (value === null || value === undefined) return 0;
-    const numeric = Number(value);
-    if (Number.isNaN(numeric) || !Number.isFinite(numeric)) return 0;
-    return Math.max(0, Math.trunc(numeric));
-  }
 
   function setAuthMode(mode, { preserveStatus = false } = {}) {
     state.authMode = mode === 'signup' ? 'signup' : 'signin';

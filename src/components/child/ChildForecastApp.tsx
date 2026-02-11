@@ -668,6 +668,11 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
             <p className="text-slate-600">
               Pick a registered child (or open this page from the dashboard). We’ll prefill from the latest saved measurements when available.
             </p>
+            <div>
+              <a href="/dashboard" className="btn-pill btn-pill-secondary btn-sm">
+                Go to dashboard and register a new child
+              </a>
+            </div>
           </header>
 
           <div className="grid gap-4 md:grid-cols-2">
