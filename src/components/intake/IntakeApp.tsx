@@ -9,6 +9,12 @@ import {
   freeMeasurementFields,
   premiumMeasurementFields,
 } from "../../data/measurementFields";
+import { formatBoundaryValue, type MeasurementSystem } from "../../lib/units";
+import {
+  persistMeasurementSystemForUser,
+  persistMeasurementSystemLocal,
+  resolveMeasurementSystemOnClient,
+} from "../../lib/measurementSystem";
 import {
   createPremiumController,
   type PremiumController,
@@ -179,6 +185,8 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
   const [consentGiven, setConsentGiven] = useState(false);
   const consentIntentRef = useRef(false);
   const [consentSaving, setConsentSaving] = useState(false);
+  const [measurementSystem, setMeasurementSystem] =
+    useState<MeasurementSystem>("metric");
 
   // Premium controller (kept as is for now since it handles external UI blocks)
 const premiumControllerRef = useRef<PremiumController | null>(null);
@@ -195,6 +203,16 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       return next;
     });
   }, [measurementKeys]);
+
+  useEffect(() => {
+    const resolved = resolveMeasurementSystemOnClient();
+    setMeasurementSystem(resolved);
+    if (import.meta.env.DEV) {
+      console.debug("[Intake] Measurement system resolved on mount", {
+        resolved,
+      });
+    }
+  }, []);
 
   const premiumSectionIndexMap = new Map<PremiumSectionKey, number>();
   if (mode === "premium") {
@@ -467,7 +485,11 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
         const userId = sportySnapshot.user!.id;
 
         const [{ data: profile }, { data: measurement }, { data: pastSportsRows }] = await Promise.all([
-          client.from("profiles").select("birthdate,sex").eq("id", userId).maybeSingle(),
+          client
+            .from("profiles")
+            .select("birthdate,sex,preferred_measurement_system")
+            .eq("id", userId)
+            .maybeSingle(),
           client
             .from("measurements")
             .select("*")
@@ -489,6 +511,11 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
             birthday: prev.birthday || profile.birthdate || "",
             sex: (prev.sex || (profile.sex as Sex) || "") as Sex | "",
           }));
+          const preferredSystem = resolveMeasurementSystemOnClient(
+            profile.preferred_measurement_system
+          );
+          setMeasurementSystem(preferredSystem);
+          persistMeasurementSystemLocal(preferredSystem);
         }
 
         if (measurement) {
@@ -613,7 +640,11 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       if (typeof field?.min === "number" && numVal < field.min) {
         return {
           ok: false,
-          message: `${label} must be at least ${field.min}.`,
+          message: `${label} must be at least ${formatBoundaryValue(
+            id,
+            field.min,
+            measurementSystem
+          )}.`,
           elementId: id,
         };
       }
@@ -621,7 +652,11 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       if (typeof field?.max === "number" && numVal > field.max) {
         return {
           ok: false,
-          message: `${label} must be at most ${field.max}.`,
+          message: `${label} must be at most ${formatBoundaryValue(
+            id,
+            field.max,
+            measurementSystem
+          )}.`,
           elementId: id,
         };
       }
@@ -629,7 +664,27 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
     }
 
     return { ok: true, data };
-  }, [measurementFieldById, measurementKeys, measurements]);
+  }, [measurementFieldById, measurementKeys, measurements, measurementSystem]);
+
+  const handleMeasurementSystemChange = useCallback(
+    async (nextSystem: MeasurementSystem) => {
+      setMeasurementSystem(nextSystem);
+      persistMeasurementSystemLocal(nextSystem);
+
+      const sportyApp =
+        typeof window !== "undefined" ? (window as any).SportyApp : null;
+      const client = sportyApp?.getClient?.();
+      const user = sportyApp?.getUser?.();
+      if (!client || !user?.id) return;
+
+      try {
+        await persistMeasurementSystemForUser(client, user.id, nextSystem);
+      } catch (error) {
+        console.warn("[Intake] Unable to persist measurement system", error);
+      }
+    },
+    []
+  );
 
   const setSubmitBusy = useCallback(
     (isBusy: boolean) => {
@@ -1141,6 +1196,8 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
                     mode={mode}
                     fields={activeMeasurementFields}
                     values={measurements}
+                    measurementSystem={measurementSystem}
+                    onMeasurementSystemChange={handleMeasurementSystemChange}
                     onChange={(patch) =>
                       setMeasurements((prev) => ({ ...prev, ...patch }))
                     }

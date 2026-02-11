@@ -125,6 +125,32 @@ const historyPlaceholders = [
           
           <div class="status-area mt-2" data-profile-consent-status></div>
 
+          <div class="flex items-center justify-between py-4 border-t border-slate-100 mt-4" data-measurement-system-zone>
+            <div class="max-w-xl">
+              <h3 class="font-medium text-slate-900">Measurement units</h3>
+              <p class="text-sm text-slate-500 mt-1">
+                Set your default unit system across Sporty intake and results.
+              </p>
+            </div>
+            <div class="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1" role="group" aria-label="Measurement system">
+              <button
+                class="btn-pill btn-pill-secondary btn-pill-xs"
+                type="button"
+                data-measurement-system-option="metric"
+              >
+                Metric
+              </button>
+              <button
+                class="btn-pill btn-pill-secondary btn-pill-xs"
+                type="button"
+                data-measurement-system-option="imperial"
+              >
+                Imperial
+              </button>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 mt-2" data-measurement-system-status hidden></p>
+
           <div class="flex items-center justify-between py-4 border-t border-slate-100 mt-4">
             <div class="max-w-xl">
               <h3 class="font-medium text-slate-900">Family</h3>

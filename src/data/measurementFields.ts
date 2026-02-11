@@ -1,7 +1,7 @@
 export type MeasurementFieldConfig = {
   id: string;
   label: string;
-  unit: string;
+  unit: 'cm' | 'kg';
   hint: string;
   help: string[];
   quick_section?: 'fast_start' | 'tape_measurements';
@@ -193,7 +193,6 @@ export const freeMeasurementFields: MeasurementFieldConfig[] =
       ].includes(field.id),
   );
 
-// Keep this alias for callers that still expect the full adult measurement set.
-export const measurementFields = premiumMeasurementFields;
+export const allMeasurementFields = premiumMeasurementFields;
 
 export default premiumMeasurementFields;

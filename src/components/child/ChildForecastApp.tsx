@@ -1,6 +1,6 @@
 import type { FunctionalComponent } from 'preact';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { measurementFields } from '../../data/measurementFields';
+import { allMeasurementFields } from '../../data/measurementFields';
 import MeasurementField from '../intake/MeasurementField';
 import InlineInfoTip from '../intake/InlineInfoTip';
 import PastSportsStep from '../intake/steps/PastSportsStep';
@@ -8,6 +8,12 @@ import TraitsStep from '../intake/steps/TraitsStep';
 import PremiumBlock, { type PremiumSectionKey } from '../intake/PremiumBlock';
 import { createPremiumController, type PremiumController } from '../intake/premiumController';
 import type { PastSportsEntry } from '../intake/IntakeApp';
+import { formatBoundaryValue, type MeasurementSystem } from '../../lib/units';
+import {
+  persistMeasurementSystemForUser,
+  persistMeasurementSystemLocal,
+  resolveMeasurementSystemOnClient,
+} from '../../lib/measurementSystem';
 
 type Sex = 'female' | 'male' | 'other' | 'prefer_not_to_say' | 'prefer_not';
 
@@ -79,7 +85,7 @@ const CHILD_FIELD_OVERRIDES: Partial<Record<string, Partial<{ min: number; max: 
   wrist_circumference_cm: { min: 8 },
 };
 
-const buildEmptyMeasurements = (fields = measurementFields): MeasurementValues => {
+const buildEmptyMeasurements = (fields = allMeasurementFields): MeasurementValues => {
   const output: MeasurementValues = {};
   fields.forEach((field) => {
     output[field.id] = null;
@@ -122,6 +128,8 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
   const [includeFather, setIncludeFather] = useState(false);
   const [motherMeasurements, setMotherMeasurements] = useState<MeasurementValues>(() => buildEmptyMeasurements());
   const [fatherMeasurements, setFatherMeasurements] = useState<MeasurementValues>(() => buildEmptyMeasurements());
+  const [measurementSystem, setMeasurementSystem] =
+    useState<MeasurementSystem>('metric');
 
   const [pastSports, setPastSports] = useState<PastSportsEntry[]>([]);
 
@@ -137,7 +145,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
   const premiumControllerRef = useRef<PremiumController | null>(null);
 
   const childFields = useMemo(() => {
-    return measurementFields.map((field) => {
+    return allMeasurementFields.map((field) => {
       const override = CHILD_FIELD_OVERRIDES[field.id] || {};
       return { ...field, ...override };
     });
@@ -171,6 +179,25 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
     });
     return answers;
   }, []);
+
+  const handleMeasurementSystemChange = useCallback(
+    async (nextSystem: MeasurementSystem) => {
+      setMeasurementSystem(nextSystem);
+      persistMeasurementSystemLocal(nextSystem);
+
+      const sportyApp = sportyAppRef.current;
+      const client = sportyApp?.getClient?.();
+      const user = sportyApp?.getUser?.();
+      if (!client || !user?.id) return;
+
+      try {
+        await persistMeasurementSystemForUser(client, user.id, nextSystem);
+      } catch (error) {
+        console.warn('[ChildIntake] Unable to persist measurement system', error);
+      }
+    },
+    []
+  );
 
   const fetchChildOptions = useCallback(async (client: any, userId: string) => {
     const { data: guards, error: gErr } = await client
@@ -253,7 +280,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
     if (!row) return;
     setter((prev) => {
       const next = { ...prev };
-      measurementFields.forEach((field) => {
+      allMeasurementFields.forEach((field) => {
         const raw = row[field.id];
         if (raw === null || raw === undefined) return;
         const num = Number(raw);
@@ -316,6 +343,16 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
       .catch((err) => console.error('[ChildIntake] Failed to update premium controller', err));
   }, [snapshot.user?.id, snapshot.hasConsent]);
 
+  useEffect(() => {
+    const resolved = resolveMeasurementSystemOnClient();
+    setMeasurementSystem(resolved);
+    if (import.meta.env.DEV) {
+      console.debug('[ChildIntake] Measurement system resolved on mount', {
+        resolved,
+      });
+    }
+  }, []);
+
   // On login: load children list and preselect by query param (or auto-select single).
   useEffect(() => {
     const user = snapshot.user;
@@ -325,6 +362,15 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
 
     (async () => {
       try {
+        const { data: profile } = await client
+          .from('profiles')
+          .select('preferred_measurement_system')
+          .eq('id', user.id)
+          .maybeSingle();
+        const preferredSystem = resolveMeasurementSystemOnClient(profile?.preferred_measurement_system);
+        setMeasurementSystem(preferredSystem);
+        persistMeasurementSystemLocal(preferredSystem);
+
         const kids = await fetchChildOptions(client, user.id);
         setAvailableChildren(kids);
         const urlId = new URL(window.location.href).searchParams.get('child_id');
@@ -386,7 +432,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
     })();
   }, [applyMeasurementRow, childId, loadChild, loadLatestAdultMeasurement, loadLatestChildMeasurement, loadMyBiologicalRole, loadSharedParentMeasurements, setStatus, snapshot.user]);
 
-  const validateAllMeasurements = useCallback((values: MeasurementValues, fields = measurementFields) => {
+  const validateAllMeasurements = useCallback((values: MeasurementValues, fields = allMeasurementFields) => {
     for (const field of fields) {
       const raw = values[field.id];
       if (raw === null || raw === undefined) {
@@ -397,14 +443,22 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
         return { ok: false as const, message: `${field.label} must be a number.`, fieldId: field.id };
       }
       if (typeof field.min === 'number' && num < field.min) {
-        return { ok: false as const, message: `${field.label} must be at least ${field.min}.`, fieldId: field.id };
+        return {
+          ok: false as const,
+          message: `${field.label} must be at least ${formatBoundaryValue(field.id, field.min, measurementSystem)}.`,
+          fieldId: field.id,
+        };
       }
       if (typeof field.max === 'number' && num > field.max) {
-        return { ok: false as const, message: `${field.label} must be at most ${field.max}.`, fieldId: field.id };
+        return {
+          ok: false as const,
+          message: `${field.label} must be at most ${formatBoundaryValue(field.id, field.max, measurementSystem)}.`,
+          fieldId: field.id,
+        };
       }
     }
     return { ok: true as const };
-  }, []);
+  }, [measurementSystem]);
 
   const submit = useCallback(async () => {
     const sportyApp = sportyAppRef.current;
@@ -432,7 +486,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
     }
 
     if (includeMother) {
-      const momValidation = validateAllMeasurements(motherMeasurements, measurementFields);
+      const momValidation = validateAllMeasurements(motherMeasurements, allMeasurementFields);
       if (!momValidation.ok) {
         setStatus(`Mother: ${momValidation.message}`, 'error');
         focusField(`mother-${(momValidation as any).fieldId || ''}`);
@@ -440,7 +494,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
       }
     }
     if (includeFather) {
-      const dadValidation = validateAllMeasurements(fatherMeasurements, measurementFields);
+      const dadValidation = validateAllMeasurements(fatherMeasurements, allMeasurementFields);
       if (!dadValidation.ok) {
         setStatus(`Father: ${dadValidation.message}`, 'error');
         focusField(`father-${(dadValidation as any).fieldId || ''}`);
@@ -575,6 +629,8 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
                       key={`${idPrefix}-${field.id}`}
                       {...field}
                       id={`${idPrefix}-${field.id}`}
+                      canonicalId={field.id}
+                      measurementSystem={measurementSystem}
                       showInstructionTooltip
                       value={values[field.id] ?? ''}
                       onChange={(val) => onChange({ ...values, [field.id]: val })}
@@ -587,7 +643,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
         </div>
       );
     },
-    []
+    [measurementSystem]
   );
 
   const headerTitle = STEP_DEFINITIONS[stepIndex]?.title || '';
@@ -615,7 +671,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
       }
     } else if (currentStep === 'parents') {
       if (includeMother) {
-        const res = validateAllMeasurements(motherMeasurements, measurementFields);
+        const res = validateAllMeasurements(motherMeasurements, allMeasurementFields);
         if (!res.ok) {
           setStatus(`Mother: ${res.message}`, 'error');
           focusField(`mother-${(res as any).fieldId || ''}`);
@@ -623,7 +679,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
         }
       }
       if (includeFather) {
-        const res = validateAllMeasurements(fatherMeasurements, measurementFields);
+        const res = validateAllMeasurements(fatherMeasurements, allMeasurementFields);
         if (!res.ok) {
           setStatus(`Father: ${res.message}`, 'error');
           focusField(`father-${(res as any).fieldId || ''}`);
@@ -753,6 +809,24 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
             <p className="text-slate-600">
               Every field is required. These measurements anchor the forecast and downstream sport analysis.
             </p>
+            <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1">
+              <button
+                type="button"
+                className={`px-3 py-1.5 text-sm rounded-full transition ${measurementSystem === 'metric' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                onClick={() => handleMeasurementSystemChange('metric')}
+                aria-pressed={measurementSystem === 'metric'}
+              >
+                Metric (cm/kg)
+              </button>
+              <button
+                type="button"
+                className={`px-3 py-1.5 text-sm rounded-full transition ${measurementSystem === 'imperial' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                onClick={() => handleMeasurementSystemChange('imperial')}
+                aria-pressed={measurementSystem === 'imperial'}
+              >
+                Imperial (ft/in, lb)
+              </button>
+            </div>
           </header>
           {renderMeasurementGroups(childFields as any[], childMeasurements, setChildMeasurements, 'child')}
         </div>
@@ -766,6 +840,24 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
               <p className="text-slate-600">
                 Parents can share their latest measurements with all guardians. If you enable a parent section here, all fields become required.
               </p>
+              <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1">
+                <button
+                  type="button"
+                  className={`px-3 py-1.5 text-sm rounded-full transition ${measurementSystem === 'metric' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                  onClick={() => handleMeasurementSystemChange('metric')}
+                  aria-pressed={measurementSystem === 'metric'}
+                >
+                  Metric (cm/kg)
+                </button>
+                <button
+                  type="button"
+                  className={`px-3 py-1.5 text-sm rounded-full transition ${measurementSystem === 'imperial' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                  onClick={() => handleMeasurementSystemChange('imperial')}
+                  aria-pressed={measurementSystem === 'imperial'}
+                >
+                  Imperial (ft/in, lb)
+                </button>
+              </div>
             </header>
             <div className="grid gap-3 md:grid-cols-2">
               <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
@@ -803,7 +895,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
                 <h3 className="type-title text-slate-900">Mother measurements</h3>
                 <p className="text-slate-600">All fields required when this section is enabled.</p>
               </header>
-              {renderMeasurementGroups(measurementFields as any[], motherMeasurements, setMotherMeasurements, 'mother')}
+              {renderMeasurementGroups(allMeasurementFields as any[], motherMeasurements, setMotherMeasurements, 'mother')}
             </div>
           )}
 
@@ -813,7 +905,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
                 <h3 className="type-title text-slate-900">Father measurements</h3>
                 <p className="text-slate-600">All fields required when this section is enabled.</p>
               </header>
-              {renderMeasurementGroups(measurementFields as any[], fatherMeasurements, setFatherMeasurements, 'father')}
+              {renderMeasurementGroups(allMeasurementFields as any[], fatherMeasurements, setFatherMeasurements, 'father')}
             </div>
           )}
         </div>

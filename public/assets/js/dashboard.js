@@ -20,6 +20,8 @@
   const consentToggle = root.querySelector('[data-consent-toggle]');
   const toggleHelp = root.querySelector('[data-profile-toggle-help]');
   const signoutBtn = root.querySelector('[data-auth-signout]');
+  const measurementSystemButtons = root.querySelectorAll('[data-measurement-system-option]');
+  const measurementSystemStatus = root.querySelector('[data-measurement-system-status]');
 
   const familyZone = root.querySelector('[data-family-zone]');
   const familyList = root.querySelector('[data-family-list]');
@@ -45,6 +47,99 @@
   let familyChildrenCache = [];
   let lastUserId = null;
   let lastUserEmail = null;
+  let measurementSystem = 'metric';
+  let measurementSystemRequestId = 0;
+  const MEASUREMENT_SYSTEM_STORAGE_KEY = 'sporty:measurement-system:v1';
+
+  function isMeasurementSystem(value) {
+    return value === 'metric' || value === 'imperial';
+  }
+
+  function readStoredMeasurementSystem() {
+    try {
+      const fromSession = sessionStorage.getItem(MEASUREMENT_SYSTEM_STORAGE_KEY);
+      if (isMeasurementSystem(fromSession)) return fromSession;
+      const fromLocal = localStorage.getItem(MEASUREMENT_SYSTEM_STORAGE_KEY);
+      if (isMeasurementSystem(fromLocal)) return fromLocal;
+    } catch (error) {
+      console.warn('[Dashboard] Unable to read measurement system from storage', error);
+    }
+    return null;
+  }
+
+  function localeDefaultMeasurementSystem() {
+    const locale = navigator.language || '';
+    const parts = locale.split('-');
+    const region = parts.length > 1 ? parts[parts.length - 1].toUpperCase() : '';
+    return region === 'US' ? 'imperial' : 'metric';
+  }
+
+  function resolveMeasurementSystem(preferredFromProfile) {
+    if (isMeasurementSystem(preferredFromProfile)) return preferredFromProfile;
+    const stored = readStoredMeasurementSystem();
+    if (stored) return stored;
+    return localeDefaultMeasurementSystem();
+  }
+
+  function persistMeasurementSystemLocal(nextSystem) {
+    try {
+      sessionStorage.setItem(MEASUREMENT_SYSTEM_STORAGE_KEY, nextSystem);
+      localStorage.setItem(MEASUREMENT_SYSTEM_STORAGE_KEY, nextSystem);
+    } catch (error) {
+      console.warn('[Dashboard] Unable to persist measurement system locally', error);
+    }
+  }
+
+  function setMeasurementSystemStatus(message, tone) {
+    if (!measurementSystemStatus) return;
+    measurementSystemStatus.hidden = !message;
+    if (!message) return;
+    measurementSystemStatus.className =
+      tone === 'error' ? 'text-xs text-red-600 mt-2' : 'text-xs text-slate-500 mt-2';
+    measurementSystemStatus.textContent = message;
+  }
+
+  function renderMeasurementSystemToggle() {
+    measurementSystemButtons.forEach((btn) => {
+      const option = btn.dataset.measurementSystemOption;
+      const active = option === measurementSystem;
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      if (active) {
+        btn.classList.add('btn-pill-primary');
+        btn.classList.remove('btn-pill-secondary');
+      } else {
+        btn.classList.add('btn-pill-secondary');
+        btn.classList.remove('btn-pill-primary');
+      }
+    });
+  }
+
+  function setMeasurementSystem(nextSystem) {
+    measurementSystem = isMeasurementSystem(nextSystem) ? nextSystem : 'metric';
+    persistMeasurementSystemLocal(measurementSystem);
+    renderMeasurementSystemToggle();
+  }
+
+  async function hydrateMeasurementSystem(userId) {
+    const requestId = ++measurementSystemRequestId;
+    let preferred = null;
+    const client = sportyApp?.getClient ? sportyApp.getClient() : null;
+    if (client && userId) {
+      try {
+        const { data, error } = await client
+          .from('profiles')
+          .select('preferred_measurement_system')
+          .eq('id', userId)
+          .maybeSingle();
+        if (!error) preferred = data && data.preferred_measurement_system;
+      } catch (error) {
+        console.warn('[Dashboard] Unable to hydrate measurement system from profile', error);
+      }
+    }
+    if (requestId !== measurementSystemRequestId) return;
+    setMeasurementSystem(resolveMeasurementSystem(preferred));
+    setMeasurementSystemStatus('', 'info');
+  }
 
   function readCreditSnapshot() {
     try {
@@ -99,6 +194,38 @@
     });
   }
 
+  measurementSystemButtons.forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const option = btn.dataset.measurementSystemOption;
+      if (!isMeasurementSystem(option)) return;
+      setMeasurementSystem(option);
+      setMeasurementSystemStatus('Saving preference…', 'info');
+
+      const client = sportyApp?.getClient ? sportyApp.getClient() : null;
+      const user = sportyApp?.getUser ? sportyApp.getUser() : null;
+      if (!client || !user || !user.id) {
+        setMeasurementSystemStatus('Saved in this browser.', 'info');
+        return;
+      }
+
+      try {
+        const { error } = await client
+          .from('profiles')
+          .update({ preferred_measurement_system: option })
+          .eq('id', user.id);
+        if (error) throw error;
+        setMeasurementSystemStatus('Saved for your account.', 'info');
+      } catch (error) {
+        console.error('[Dashboard] Failed to save measurement system preference', error);
+        setMeasurementSystemStatus('Unable to save to profile. Kept locally.', 'error');
+      }
+    });
+  });
+
+  // Hydrate immediately so toggle isn't blank before auth snapshot settles.
+  setMeasurementSystem(resolveMeasurementSystem(null));
+  renderMeasurementSystemToggle();
+
   function handleSnapshot(snapshot) {
     const signedIn = Boolean(snapshot && snapshot.user);
     if (signedOutBlock) signedOutBlock.hidden = signedIn;
@@ -124,6 +251,7 @@
       if (consentStatusEl) consentStatusEl.textContent = '';
       if (consentToggle) consentToggle.checked = false;
       if (toggleHelp) toggleHelp.textContent = '';
+      setMeasurementSystemStatus('', 'info');
       return;
     }
 
@@ -152,6 +280,7 @@
     loadHistory(snapshot.user.id);
     loadInviteInbox(snapshot.user);
     loadFamily(snapshot.user.id);
+    hydrateMeasurementSystem(snapshot.user.id);
     renderLocker([]);
   }
 

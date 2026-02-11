@@ -2,11 +2,14 @@ import type { FunctionalComponent } from 'preact';
 import type { MeasurementFieldConfig } from '../../../data/measurementFields';
 import MeasurementField from '../MeasurementField';
 import InlineInfoTip from '../InlineInfoTip';
+import type { MeasurementSystem } from '../../../lib/units';
 
 type MeasurementsStepProps = {
   mode: 'free' | 'premium';
   fields: MeasurementFieldConfig[];
   values: Record<string, number | null>;
+  measurementSystem: MeasurementSystem;
+  onMeasurementSystemChange: (next: MeasurementSystem) => void;
   onChange: (patch: Record<string, number | null>) => void;
 };
 
@@ -52,6 +55,8 @@ const MeasurementsStep: FunctionalComponent<MeasurementsStepProps> = ({
   mode,
   fields,
   values,
+  measurementSystem,
+  onMeasurementSystemChange,
   onChange,
 }) => {
   return (
@@ -63,6 +68,24 @@ const MeasurementsStep: FunctionalComponent<MeasurementsStepProps> = ({
             ? 'Quick analysis uses a reduced measurement set for faster completion.'
             : 'Every field below helps benchmark your limbs, torso, and girth so the matching engine can find the right sports for your body.'}
         </p>
+        <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1">
+          <button
+            type="button"
+            className={`px-3 py-1.5 text-sm rounded-full transition ${measurementSystem === 'metric' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+            onClick={() => onMeasurementSystemChange('metric')}
+            aria-pressed={measurementSystem === 'metric'}
+          >
+            Metric (cm/kg)
+          </button>
+          <button
+            type="button"
+            className={`px-3 py-1.5 text-sm rounded-full transition ${measurementSystem === 'imperial' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+            onClick={() => onMeasurementSystemChange('imperial')}
+            aria-pressed={measurementSystem === 'imperial'}
+          >
+            Imperial (ft/in, lb)
+          </button>
+        </div>
       </header>
       {mode === 'free' ? (
         <div className="space-y-6">
@@ -83,6 +106,7 @@ const MeasurementsStep: FunctionalComponent<MeasurementsStepProps> = ({
                       key={field.id}
                       {...field}
                       hint={field.hint}
+                      measurementSystem={measurementSystem}
                       showInstructionTooltip
                       value={values[field.id] ?? ''}
                       onChange={(val) => onChange({ [field.id]: val })}
@@ -119,6 +143,7 @@ const MeasurementsStep: FunctionalComponent<MeasurementsStepProps> = ({
                     <MeasurementField
                       key={field.id}
                       {...field}
+                      measurementSystem={measurementSystem}
                       showInstructionTooltip
                       value={values[field.id] ?? ''}
                       onChange={(val) => onChange({ [field.id]: val })}
