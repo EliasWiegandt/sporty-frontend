@@ -483,7 +483,7 @@
       await state.client.auth.signOut();
     } catch (error) {
       console.error('[Sporty] Sign-out failed', error);
-      // Fallback: clear local session even if the network call failed
+      // Try local session cleanup even if the network sign-out call failed
       try {
         await state.client.auth.signOut({ scope: 'local' });
       } catch (e) {

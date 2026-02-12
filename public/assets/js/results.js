@@ -544,7 +544,7 @@
 
     const label = document.createElement("span");
     label.className = "font-medium text-slate-900";
-    // Use subcategory slug or fallback to label/id, format nicely
+    // Prefer subcategory slug, otherwise format label/id.
     const name =
       sport.sport_subcategory_slug ||
       sport.sport_label ||

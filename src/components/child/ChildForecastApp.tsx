@@ -64,16 +64,6 @@ const STEP_DEFINITIONS: StepDefinition[] = [
 
 const PREMIUM_SECTION_KEYS: PremiumSectionKey[] = ['preferences', 'goals', 'injuries'];
 
-const TRAIT_FIELDS = [
-  'muscle_fiber',
-  'metabolic_tendency',
-  'joint_laxity',
-  'foot_arch',
-  'temperature_tolerance',
-  'handedness',
-  'footedness',
-] as const;
-
 const CHILD_FIELD_OVERRIDES: Partial<Record<string, Partial<{ min: number; max: number }>>> = {
   height_cm: { min: 60 },
   weight_kg: { min: 10 },
@@ -134,6 +124,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
     useState<MeasurementSystem>('metric');
 
   const [pastSports, setPastSports] = useState<PastSportsEntry[]>([]);
+  const [traits, setTraits] = useState<Record<string, string>>({});
 
   const currentStep: StepKey = STEP_KEYS[Math.max(0, Math.min(STEP_KEYS.length - 1, stepIndex))];
   const isFirstStep = stepIndex === 0;
@@ -167,19 +158,6 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
       el.focus();
     }
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, []);
-
-  const collectTraitAnswers = useCallback((): Record<string, string> => {
-    const form = document.getElementById('child-intake-form') as HTMLFormElement | null;
-    const answers: Record<string, string> = {};
-    if (!form) return answers;
-    TRAIT_FIELDS.forEach((fieldName) => {
-      const input = form.querySelector<HTMLInputElement>(`input[name="${fieldName}"]:checked`);
-      if (input && input.value) {
-        answers[fieldName] = input.value;
-      }
-    });
-    return answers;
   }, []);
 
   const handleMeasurementSystemChange = useCallback(
@@ -523,7 +501,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
       ethnicity: ethnicity || null,
       adult_age_group: adultAgeGroup,
       measurements: { ...childMeasurements },
-      traits: collectTraitAnswers(),
+      traits: { ...traits },
     };
     if (includeMother) {
       payload.mother = { display_name: 'Mother', measurements: { ...motherMeasurements } };
@@ -589,13 +567,13 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
     childFields,
     childId,
     childMeasurements,
-    collectTraitAnswers,
     ethnicity,
     fatherMeasurements,
     includeFather,
     includeMother,
     motherMeasurements,
     pastSports,
+    traits,
     sex,
     setStatus,
     focusField,
@@ -923,7 +901,10 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
       </div>
 
       <div hidden={currentStep !== 'traits'}>
-        <TraitsStep />
+        <TraitsStep
+          value={traits}
+          onChange={(patch) => setTraits((prev) => ({ ...prev, ...patch }))}
+        />
       </div>
 
       <div hidden={!showPremiumBlock}>

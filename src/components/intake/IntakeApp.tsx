@@ -186,6 +186,7 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
   const [measurements, setMeasurements] = useState<
     Record<string, number | null>
   >(() => buildEmptyMeasurements(measurementKeys));
+  const [traits, setTraits] = useState<TraitAnswers>({});
   const [consentGiven, setConsentGiven] = useState(false);
   const consentIntentRef = useRef(false);
   const [consentSaving, setConsentSaving] = useState(false);
@@ -314,31 +315,16 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       basics: { ...basics },
       measurements: { ...measurements },
       pastSports: pastSports.map(({ id, ...rest }) => rest),
-      traits: {}, // Traits logic would need similar update if used
+      traits: { ...traits },
     };
-
-    // Collect traits from DOM for now (legacy behavior kept for traits step)
-    const form = document.getElementById(
-      "intake-form"
-    ) as HTMLFormElement | null;
-    if (form) {
-      TRAIT_FIELDS.forEach((fieldName) => {
-        const input = form.querySelector<HTMLInputElement>(
-          `input[name="${fieldName}"]:checked`
-        );
-        if (input && input.value) {
-          // @ts-ignore
-          draft.traits[fieldName] = input.value;
-        }
-      });
-    }
 
     const hasBasics = Boolean(draft.basics.birthday || draft.basics.sex);
     const hasMeasurements = Object.keys(draft.measurements).length > 0;
     const hasPast = draft.pastSports.length > 0;
+    const hasTraits = Object.keys(draft.traits || {}).length > 0;
 
     try {
-      if (hasBasics || hasMeasurements || hasPast) {
+      if (hasBasics || hasMeasurements || hasPast || hasTraits) {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
       } else {
         window.localStorage.removeItem(STORAGE_KEY);
@@ -346,14 +332,14 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
     } catch {
       // ignore storage errors
     }
-  }, [basics, measurements, pastSports]);
+  }, [basics, measurements, pastSports, traits]);
 
   // Autosave on change
   useEffect(() => {
     if (!isRestoringRef.current) {
       saveDraft();
     }
-  }, [basics, measurements, pastSports, saveDraft]);
+  }, [basics, measurements, pastSports, traits, saveDraft]);
 
   const restoreDraft = useCallback(() => {
     if (!supportsLocalStorage()) return null;
@@ -394,36 +380,16 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
         );
         setPastSports(restoredPastSports);
       }
-      // Legacy field support
-      const legacyFields = parsed?.fields;
-      if (legacyFields && typeof legacyFields === "object") {
-        const newBasics = {
-          birthday: legacyFields.birthday || "",
-          sex: legacyFields.sex || "",
-        };
-        setBasics(newBasics);
-        const newMeasurements: Record<string, number> = {};
-        measurementKeys.forEach((id) => {
-          if (Object.prototype.hasOwnProperty.call(legacyFields, id)) {
-            newMeasurements[id] = legacyFields[id];
-          }
-        });
-        setMeasurements(newMeasurements);
-      }
-
-      // Restore traits to DOM (legacy)
-      const form = document.getElementById("intake-form");
       const traitsDraft = parsed?.traits;
-      if (form && traitsDraft && typeof traitsDraft === "object") {
-        Object.entries(traitsDraft).forEach(([fieldName, value]) => {
-          if (!value) return;
-          const input = form.querySelector<HTMLInputElement>(
-            `input[name="${fieldName}"][value="${value}"]`
-          );
-          if (input) {
-            input.checked = true;
+      if (traitsDraft && typeof traitsDraft === "object") {
+        const restoredTraits: TraitAnswers = {};
+        TRAIT_FIELDS.forEach((fieldName) => {
+          const value = traitsDraft[fieldName];
+          if (typeof value === "string" && value.trim()) {
+            restoredTraits[fieldName as keyof TraitAnswers] = value;
           }
         });
+        setTraits((prev) => ({ ...prev, ...restoredTraits }));
       }
 
       const stepValue =
@@ -682,21 +648,6 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
     [submitLabel]
   );
 
-  const collectTraitAnswers = useCallback((): TraitAnswers => {
-    const form = document.getElementById("intake-form");
-    const answers: TraitAnswers = {};
-    if (!form) return answers;
-    TRAIT_FIELDS.forEach((fieldName) => {
-      const input = form.querySelector<HTMLInputElement>(
-        `input[name="${fieldName}"]:checked`
-      );
-      if (input && input.value) {
-        answers[fieldName as keyof TraitAnswers] = input.value;
-      }
-    });
-    return answers;
-  }, []);
-
   const handleSubmit = useCallback(
     async (event?: Event) => {
       if (event) event.preventDefault();
@@ -780,9 +731,7 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
         pastSports: cleanedPastSports,
       };
 
-      const traitAnswers: TraitAnswers = wantsPremium
-        ? collectTraitAnswers()
-        : {};
+      const traitAnswers: TraitAnswers = wantsPremium ? { ...traits } : {};
 
       const premiumIntakeData: PremiumIntakeData = {
         ...freeIntakeData,
@@ -948,7 +897,6 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       }
     },
     [
-      collectTraitAnswers,
       focusField,
       mode,
       setSubmitBusy,
@@ -959,6 +907,7 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       pastSports,
       basics,
       measurements,
+      traits,
     ]
   );
 
@@ -969,6 +918,7 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       locked: document.querySelector("[data-premium-locked]"),
       lockedMessage: document.querySelector("[data-premium-locked-message]"),
       summary: document.querySelector("[data-premium-summary]"),
+      prefillForTesting: Boolean(import.meta.env.DEV),
       getClient: () =>
         typeof window !== "undefined"
           ? (window as any).SportyApp?.getClient?.() ?? null
@@ -1191,7 +1141,14 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
                   />
                 );
               case "traits":
-                return <TraitsStep />;
+                return (
+                  <TraitsStep
+                    value={traits}
+                    onChange={(patch) =>
+                      setTraits((prev) => ({ ...prev, ...patch }))
+                    }
+                  />
+                );
               case "pastSports":
                 return (
                   <PastSportsStep

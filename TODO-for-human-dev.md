@@ -5,13 +5,11 @@
 improve graphics on child forecast chart
 
 The sports and subcategories should be in the order from the taxonomy yaml
+- Switch from "free analysis" to "Quick analysis"
+- Delete user functionality
+- pages for showcasing the different sports in sporty + the data we have on them
+- generate alt-text for images of sports
 
-- Radio button sex
-- rename "importance for success" to something shorter
-- Add revoke consent stuff - and removal of data
-- Add anonymous data table, also for non-logged in users
-- Go through tables and see how they are used
-- ensure everything goes into "measurements" table
 
 # Do the big review
 
@@ -20,5 +18,6 @@ The sports and subcategories should be in the order from the taxonomy yaml
 # For later
 
 - Adjust website so we only sell in the US and in EU
-- generate alt-text for images of sports
+- And we also need to fix a mobile version
+
 - Decide on how we handle non-identifiability. Maybe remove birthdays?

@@ -50,7 +50,7 @@ export type TraitAnswers = {
   foot_arch?: string;
   temperature_tolerance?: string;
   handedness?: string;
-  sport_side?: string;
+  footedness?: string;
 };
 
 export type PreferenceInput = {

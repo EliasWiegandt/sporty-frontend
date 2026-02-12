@@ -424,6 +424,20 @@
         <span class="match-card__score">${scorePercent}% Match</span>
       </div>
     `;
+    const cautionLevel = getInjuryCautionLevel(match);
+    if (cautionLevel) {
+      const badge = document.createElement('span');
+      if (cautionLevel === 'high') {
+        badge.className =
+          'text-[10px] px-2 py-1 rounded font-semibold uppercase tracking-wider bg-rose-100 text-rose-700';
+        badge.textContent = 'High Injury Risk';
+      } else {
+        badge.className =
+          'text-[10px] px-2 py-1 rounded font-semibold uppercase tracking-wider bg-amber-100 text-amber-700';
+        badge.textContent = 'Injury Caution';
+      }
+      header.appendChild(badge);
+    }
     card.appendChild(header);
 
     const cardMedia = match.media?.card || spec.media?.card || null;
@@ -874,7 +888,9 @@
         value: entry.risk,
         tone: 'risk',
         reasoning: entry.risk_reasoning,
-        contribution: entry.risk_match_contribution ?? 0,
+        contribution:
+          (entry.risk_match_contribution ?? 0) +
+          (entry.risk_penalty_match_contribution ?? 0),
         short: 'Risk',
       },
       {
@@ -929,13 +945,15 @@
 
     const barFill = document.createElement('div');
     barFill.className = 'factor-bar-fill';
-    const widthPct = Math.min(100, Math.round(Number(contribution || 0) * 400));
+    const numericValue = Number(contribution || 0);
+    const widthPct = Math.min(100, Math.round(Math.abs(numericValue) * 400));
     barFill.style.width = `${widthPct}% `;
+    barFill.style.background = numericValue < 0 ? 'linear-gradient(90deg, #fb7185, #e11d48)' : '';
     barContainer.appendChild(barFill);
 
     const pctLabel = document.createElement('span');
-    pctLabel.className = 'text-xs font-bold text-slate-700 w-8 text-right';
-    pctLabel.textContent = `${Math.round(Number(contribution || 0) * 100)}% `;
+    pctLabel.className = `text-xs font-bold w-10 text-right ${numericValue < 0 ? 'text-rose-700' : 'text-slate-700'}`;
+    pctLabel.textContent = `${Math.round(numericValue * 100)}% `;
 
     barRow.appendChild(barContainer);
     barRow.appendChild(pctLabel);
@@ -957,14 +975,16 @@
 
     const barFill = document.createElement('div');
     barFill.className = 'factor-bar-fill';
-    const widthPct = Math.min(100, Math.round(Number(value || 0) * 400));
+    const numericValue = Number(value || 0);
+    const widthPct = Math.min(100, Math.round(Math.abs(numericValue) * 400));
     barFill.style.width = `${widthPct}% `;
+    barFill.style.background = numericValue < 0 ? 'linear-gradient(90deg, #fb7185, #e11d48)' : '';
     barContainer.appendChild(barFill);
     barRow.appendChild(barContainer);
 
     const pctLabel = document.createElement('span');
-    pctLabel.className = 'text-[11px] font-bold text-slate-700 w-8 text-right';
-    pctLabel.textContent = `${Math.round(Number(value || 0) * 100)}% `;
+    pctLabel.className = `text-[11px] font-bold w-10 text-right ${numericValue < 0 ? 'text-rose-700' : 'text-slate-700'}`;
+    pctLabel.textContent = `${Math.round(numericValue * 100)}% `;
     barRow.appendChild(pctLabel);
 
     return barRow;
@@ -1194,13 +1214,15 @@
 
     const barFill = document.createElement('div');
     barFill.className = 'factor-bar-fill';
-    const widthPct = Math.min(100, Math.round(factor.match_contribution * 400));
+    const contribution = Number(factor.match_contribution || 0);
+    const widthPct = Math.min(100, Math.round(Math.abs(contribution) * 400));
     barFill.style.width = `${widthPct}% `;
+    barFill.style.background = contribution < 0 ? 'linear-gradient(90deg, #fb7185, #e11d48)' : '';
     barContainer.appendChild(barFill);
 
     const pctLabel = document.createElement('span');
-    pctLabel.className = 'text-xs font-bold text-slate-700 w-8 text-right';
-    pctLabel.textContent = `${Math.round(factor.match_contribution * 100)}% `;
+    pctLabel.className = `text-xs font-bold w-10 text-right ${contribution < 0 ? 'text-rose-700' : 'text-slate-700'}`;
+    pctLabel.textContent = `${Math.round(contribution * 100)}% `;
 
     barRow.appendChild(barContainer);
     barRow.appendChild(pctLabel);
@@ -1288,6 +1310,18 @@
     li.appendChild(rightCol);
 
     return li;
+  }
+
+  function getInjuryCautionLevel(match) {
+    const entries = match?.score_breakdown?.details?.injuries || [];
+    if (!Array.isArray(entries) || !entries.length) return null;
+    if (entries.some((entry) => String(entry?.risk || '').toLowerCase() === 'high')) {
+      return 'high';
+    }
+    if (entries.some((entry) => String(entry?.risk || '').toLowerCase() === 'medium')) {
+      return 'medium';
+    }
+    return null;
   }
 
   function renderPremiumMeasurements(matches) {

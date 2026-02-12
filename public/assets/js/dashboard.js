@@ -992,30 +992,6 @@
   }
 
   async function loadCredits(userId) {
-    if (!sportyApp.getClient()) return;
-    const controller = new AbortController();
-    creditsController = controller;
-    try {
-      const client = sportyApp.getClient();
-      const { data, error } = await client
-        .rpc('get_credit_totals')
-        .eq('user_id', userId)
-        .single();
-      if (controller.signal.aborted) return;
-      if (error) throw error;
-      const adult = normalizeCreditCount(data?.adult);
-      const child = normalizeCreditCount(data?.child);
-      setCredits(String(adult), String(child));
-      updateRunButtons(adult, child);
-    } catch (error) {
-      if (controller.signal.aborted) return;
-      console.error('[Dashboard] Failed to load credits', error);
-      setCredits('0', '0');
-      updateRunButtons(0, 0);
-    }
-  }
-
-  async function loadCredits(userId) {
     if (!userId) {
       setCredits('-', '-');
       return;
@@ -1028,18 +1004,17 @@
     creditsController = new AbortController();
 
     try {
-      const resp = await fetch(`/api/credits?user_id=${encodeURIComponent(userId)}`, {
+      const response = await fetch(`/api/credits?user_id=${encodeURIComponent(userId)}`, {
+        method: 'GET',
         headers: { Accept: 'application/json' },
         signal: creditsController.signal,
       });
-
-      if (!resp.ok) {
-        throw new Error(`Failed to load credits: ${resp.status}`);
+      if (!response.ok) {
+        throw new Error(`Failed to load credits (${response.status})`);
       }
-
-      const payload = await resp.json();
-      const adult = normalizeCreditCount(payload.adult_credits);
-      const child = normalizeCreditCount(payload.child_credits);
+      const data = await response.json();
+      const adult = normalizeCreditCount(data?.adult_credits ?? data?.adult);
+      const child = normalizeCreditCount(data?.child_credits ?? data?.child);
       setCredits(String(adult), String(child));
       updateRunButtons(adult, child);
       const previousChildCredits = latestChildCredits;

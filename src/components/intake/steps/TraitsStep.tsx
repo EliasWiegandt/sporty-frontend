@@ -1,6 +1,7 @@
 import type { FunctionalComponent } from 'preact';
 import RadioCards from '../controls/RadioCards';
 import InlineInfoTip from '../InlineInfoTip';
+import type { TraitAnswers } from '../../../data/intakeSchema';
 
 const PREFILL_TRAITS: Record<string, string> = {
   muscle_fiber: 'fast_twitch_dominant',
@@ -94,7 +95,12 @@ const sideOptions: TraitOption[] = [
   { label: 'Don’t know', value: "don't know" },
 ];
 
-const TraitsStep: FunctionalComponent = () => (
+type TraitsStepProps = {
+  value: TraitAnswers;
+  onChange: (patch: Partial<TraitAnswers>) => void;
+};
+
+const TraitsStep: FunctionalComponent<TraitsStepProps> = ({ value, onChange }) => (
   <div className="card-shell space-y-6" data-step="traits">
     <header className="space-y-2">
       <h2 className="type-title text-slate-900">Physiological traits</h2>
@@ -119,9 +125,14 @@ const TraitsStep: FunctionalComponent = () => (
           </legend>
           <RadioCards
             name={question.name}
-            value={undefined}
+            value={value[question.name as keyof TraitAnswers] ?? undefined}
             defaultValue={PREFILL_TRAITS[question.name]}
             options={question.options}
+            onChange={(nextValue) =>
+              onChange({
+                [question.name]: nextValue,
+              } as Partial<TraitAnswers>)
+            }
           />
         </fieldset>
       ))}
@@ -145,10 +156,15 @@ const TraitsStep: FunctionalComponent = () => (
               </legend>
               <RadioCards
                 name={field}
-                value={undefined}
+                value={value[field as keyof TraitAnswers] ?? undefined}
                 defaultValue={PREFILL_TRAITS[field]}
                 options={sideOptions}
                 columns="grid-cols-1"
+                onChange={(nextValue) =>
+                  onChange({
+                    [field]: nextValue,
+                  } as Partial<TraitAnswers>)
+                }
               />
             </fieldset>
           );
