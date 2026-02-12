@@ -1,5 +1,6 @@
 import type { FunctionalComponent } from 'preact';
 import type { Sex } from '../../../data/intakeSchema';
+import { SEX_OPTIONS } from '../../../data/sexOptions';
 import RadioCards from '../controls/RadioCards';
 import InlineInfoTip from '../InlineInfoTip';
 
@@ -7,13 +8,6 @@ type BasicsStepProps = {
   value: { birthday: string; sex: Sex | '' };
   onChange: (patch: Partial<{ birthday: string; sex: Sex | '' }>) => void;
 };
-
-const SEX_OPTIONS: { value: Sex; label: string }[] = [
-  { value: 'female', label: 'Female' },
-  { value: 'male', label: 'Male' },
-  { value: 'other', label: 'Other' },
-  { value: 'prefer_not_to_say', label: 'Prefer not to say' },
-];
 
 const BasicsStep: FunctionalComponent<BasicsStepProps> = ({ value, onChange }) => {
   return (
@@ -59,7 +53,8 @@ const BasicsStep: FunctionalComponent<BasicsStepProps> = ({ value, onChange }) =
               value={value.sex}
               options={SEX_OPTIONS}
               onChange={(val) => onChange({ sex: val as Sex })}
-              columns="grid-cols-2 md:grid-cols-2"
+              columns="grid-cols-1"
+              variant="row"
             />
           </div>
         </div>

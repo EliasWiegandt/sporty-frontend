@@ -390,7 +390,7 @@
         "text-xs text-slate-500 flex items-center gap-1";
 
       const importanceLabel = document.createElement("span");
-      importanceLabel.textContent = "Importance for succes:";
+      importanceLabel.textContent = "Success impact:";
       importanceContainer.appendChild(importanceLabel);
 
       const badge = document.createElement("span");

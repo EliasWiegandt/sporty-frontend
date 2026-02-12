@@ -8,14 +8,15 @@ import TraitsStep from '../intake/steps/TraitsStep';
 import PremiumBlock, { type PremiumSectionKey } from '../intake/PremiumBlock';
 import { createPremiumController, type PremiumController } from '../intake/premiumController';
 import type { PastSportsEntry } from '../intake/IntakeApp';
+import RadioCards from '../intake/controls/RadioCards';
+import type { Sex } from '../../data/intakeSchema';
+import { SEX_OPTIONS } from '../../data/sexOptions';
 import { formatBoundaryValue, type MeasurementSystem } from '../../lib/units';
 import {
   persistMeasurementSystemForUser,
   persistMeasurementSystemLocal,
   resolveMeasurementSystemOnClient,
 } from '../../lib/measurementSystem';
-
-type Sex = 'female' | 'male' | 'other' | 'prefer_not_to_say' | 'prefer_not';
 
 type SportySnapshot = {
   user: { id: string; email?: string | null } | null;
@@ -96,8 +97,7 @@ const buildEmptyMeasurements = (fields = allMeasurementFields): MeasurementValue
 const normalizeSex = (value: string): Sex => {
   const v = (value || '').toLowerCase();
   if (v === 'female' || v === 'male' || v === 'other') return v as Sex;
-  if (v === 'prefer_not') return 'prefer_not';
-  return 'prefer_not';
+  return 'prefer_not_to_say';
 };
 
 const formatChildTitle = (child: ChildRow | null) => {
@@ -771,15 +771,17 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
               <div className="text-sm font-semibold text-slate-800">Birthdate</div>
               <input className="input-base" type="date" value={birthdate} onChange={(e) => setBirthdate((e.target as HTMLInputElement).value)} required />
             </label>
-            <label className="space-y-2">
+            <div className="space-y-2">
               <div className="text-sm font-semibold text-slate-800">Sex</div>
-              <select className="input-base" value={sex} onChange={(e) => setSex((e.target as HTMLSelectElement).value as Sex)} required>
-                <option value="female">Female</option>
-                <option value="male">Male</option>
-                <option value="other">Other</option>
-                <option value="prefer_not">Prefer not to say</option>
-              </select>
-            </label>
+              <RadioCards
+                name="child-sex"
+                value={sex}
+                options={SEX_OPTIONS}
+                onChange={(val) => setSex(val as Sex)}
+                columns="grid-cols-1"
+                variant="row"
+              />
+            </div>
             <label className="space-y-2">
               <div className="text-sm font-semibold text-slate-800">Ethnicity (optional)</div>
               <select className="input-base" value={ethnicity} onChange={(e) => setEthnicity((e.target as HTMLSelectElement).value)}>

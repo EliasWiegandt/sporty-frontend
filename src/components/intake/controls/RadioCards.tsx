@@ -13,6 +13,7 @@ type RadioCardsProps = {
   options: Option[];
   onChange?: (value: string) => void;
   columns?: string; // tailwind grid cols utility, e.g., 'md:grid-cols-3'
+  variant?: 'card' | 'row';
 };
 
 /**
@@ -25,7 +26,13 @@ const RadioCards: FunctionalComponent<RadioCardsProps> = ({
   options,
   onChange,
   columns = 'md:grid-cols-3',
+  variant = 'card',
 }) => {
+  const optionClassName =
+    variant === 'row'
+      ? 'rounded-xl border bg-white px-4 py-3 text-left transition border-slate-200 hover:border-slate-400 focus-within:ring-2 focus-within:ring-slate-900 peer-checked:border-teal-600 peer-checked:bg-teal-50/40 peer-checked:ring-1 peer-checked:ring-teal-200'
+      : 'rounded-2xl border bg-white p-4 text-left transition focus-within:ring-2 focus-within:ring-slate-900 border-slate-200 hover:border-slate-900 peer-checked:border-teal-500 peer-checked:shadow-sm peer-checked:ring-1 peer-checked:ring-teal-200';
+
   return (
     <div className={`grid gap-3 ${columns}`} role="radiogroup" aria-label={name}>
       {options.map((option) => {
@@ -42,7 +49,7 @@ const RadioCards: FunctionalComponent<RadioCardsProps> = ({
               {...(checked !== undefined ? { checked } : { defaultChecked })}
               onChange={() => onChange?.(option.value)}
             />
-            <div className={`rounded-2xl border bg-white p-4 text-left transition focus-within:ring-2 focus-within:ring-slate-900 border-slate-200 hover:border-slate-900 peer-checked:border-teal-500 peer-checked:shadow-sm peer-checked:ring-1 peer-checked:ring-teal-200`}>
+            <div className={optionClassName}>
               <span className="font-semibold text-slate-800">{option.label}</span>
               {option.detail && <p className="text-sm text-slate-500">{option.detail}</p>}
             </div>
