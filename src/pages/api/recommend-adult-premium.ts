@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { verifySupabaseToken } from './_auth';
 
 const JSON_HEADERS = {
   'Content-Type': 'application/json',
@@ -37,6 +38,25 @@ export const POST: APIRoute = async ({ request, locals }) => {
     );
   }
 
+  const user = await verifySupabaseToken(request, env);
+  if (!user) {
+    return new Response(
+      JSON.stringify({
+        detail: {
+          code: 'CONSENT_REQUIRED',
+          message: 'Sign in and grant consent before running analysis.',
+        },
+      }),
+      {
+        status: 403,
+        headers: {
+          ...JSON_HEADERS,
+          'X-Request-Id': reqId,
+        },
+      }
+    );
+  }
+
   const upstreamUrl = new URL('/v1/recommend-adult-premium', backendUrl);
   const body = await request.text();
 
@@ -47,6 +67,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         'Content-Type': 'application/json',
         'X-API-Key': apiKey,
         'X-Request-Id': reqId,
+        'X-User-ID': user.id,
       },
       body,
       signal: AbortSignal.timeout(10_000),

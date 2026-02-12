@@ -31,6 +31,10 @@ import type {
 type SportySnapshot = {
   user: { id: string } | null;
   hasConsent: boolean;
+  session?: { access_token?: string } | null;
+  purgeStatus?: string | null;
+  purgeRequestedAt?: string | null;
+  purgeCompletedAt?: string | null;
 };
 
 export type PastSportsEntry = PastSportInput & {
@@ -262,39 +266,20 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
     setConsentSaving(true);
     try {
       const sportyApp = typeof window !== "undefined" ? (window as any).SportyApp : null;
-      const client = sportyApp?.getClient?.();
       const user = sportyApp?.getUser?.();
 
-      if (!client || !user) {
+      if (!user) {
         throw new Error("Not authenticated");
       }
 
-      // Check if consent already exists
-      const { data: existing } = await client
-        .from('consents')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('consent_type', 'data_retention')
-        .is('revoked_at', null)
-        .maybeSingle();
-
-      if (!existing) {
-        // Record consent
-        if (typeof sportyApp.recordConsent === 'function') {
-          await sportyApp.recordConsent(user.id);
-        } else {
-          // Fallback
-          const payload = {
-            user_id: user.id,
-            consent_type: 'data_retention',
-            version: 'adult-data-retention-v1',
-          };
-          const { error } = await client.from('consents').insert(payload);
-          if (error) throw error;
-        }
+      if (typeof sportyApp.grantConsent === "function") {
+        await sportyApp.grantConsent();
+      } else if (typeof sportyApp.recordConsent === "function") {
+        await sportyApp.recordConsent(user.id);
+      } else {
+        throw new Error("Consent grant API unavailable");
       }
 
-      // Refresh consent state
       await sportyApp?.refreshConsent?.();
       const hasConsent =
         typeof sportyApp?.hasConsent === "function"
@@ -866,8 +851,10 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
           "Content-Type": "application/json",
           "X-Session-ID": sessionId
         };
-        if (userId) {
-          headers["X-User-ID"] = userId;
+        const accessToken =
+          sportyApp?.getSession?.()?.access_token || sportySnapshot.session?.access_token;
+        if (accessToken) {
+          headers["Authorization"] = `Bearer ${accessToken}`;
         }
 
         const requestBody = JSON.stringify(payload);

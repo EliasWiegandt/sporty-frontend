@@ -21,6 +21,8 @@ import {
 type SportySnapshot = {
   user: { id: string; email?: string | null } | null;
   hasConsent?: boolean;
+  session?: { access_token?: string } | null;
+  purgeStatus?: string | null;
 };
 
 type ChildRow = {
@@ -545,7 +547,14 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
     try {
       const response = await fetch('/api/forecast-child', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: (() => {
+          const token =
+            sportyAppRef.current?.getSession?.()?.access_token ||
+            snapshot.session?.access_token;
+          const h: Record<string, string> = { 'Content-Type': 'application/json' };
+          if (token) h.Authorization = `Bearer ${token}`;
+          return h;
+        })(),
         body: JSON.stringify(payload),
       });
       const text = await response.text();

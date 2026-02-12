@@ -261,7 +261,7 @@
     }
     lastUserId = snapshot.user.id;
     lastUserEmail = snapshot.user.email || null;
-    updateConsentStatus(snapshot.hasConsent);
+    updateConsentStatus(snapshot);
     // Only update toggle if the state actually changed to prevent flicker
     if (consentToggle && consentToggle.checked !== Boolean(snapshot.hasConsent)) {
       consentToggle.checked = Boolean(snapshot.hasConsent);
@@ -863,15 +863,26 @@
   function updateToggleHelp(hasConsent) {
     if (!toggleHelp) return;
     toggleHelp.textContent = hasConsent
-      ? 'Sporty will remember new free matches. Turn this off to stop storing data.'
-      : 'Turn this on to let Sporty remember your future free matches.';
+      ? 'Sporty stores your identifiable analysis data for history and personalization.'
+      : 'Turning this off revokes consent and starts deletion of saved identifiable data. Anonymous insights may still be used to improve recommendations.';
   }
 
-  function updateConsentStatus(hasConsent) {
+  function updateConsentStatus(snapshot) {
+    const hasConsent = Boolean(snapshot && snapshot.hasConsent);
+    const purgeStatus = snapshot && snapshot.purgeStatus ? String(snapshot.purgeStatus) : null;
     if (!consentStatusEl) return;
     if (hasConsent) {
       consentStatusEl.className = 'text-sm text-teal-700 bg-teal-50 px-3 py-2 rounded-md border border-teal-100';
       consentStatusEl.textContent = 'You have granted Sporty data-retention consent.';
+    } else if (purgeStatus === 'pending' || purgeStatus === 'running') {
+      consentStatusEl.className = 'text-sm text-rose-700 bg-rose-50 px-3 py-2 rounded-md border border-rose-100';
+      consentStatusEl.textContent = 'Consent revoked. Data deletion is in progress.';
+    } else if (purgeStatus === 'failed') {
+      consentStatusEl.className = 'text-sm text-red-700 bg-red-50 px-3 py-2 rounded-md border border-red-100';
+      consentStatusEl.textContent = 'Consent revoked, but deletion failed. Please retry or contact support.';
+    } else if (purgeStatus === 'done') {
+      consentStatusEl.className = 'text-sm text-slate-700 bg-slate-100 px-3 py-2 rounded-md border border-slate-200';
+      consentStatusEl.textContent = 'Consent revoked and identifiable data deleted.';
     } else {
       consentStatusEl.className = 'text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-md border border-amber-100';
       consentStatusEl.textContent = 'You have not granted data-retention consent.';
@@ -883,47 +894,24 @@
     if (!target) return;
 
     if (target.checked) {
-      // Grant consent directly without modal
-      if (!sportyApp.getClient() || !sportyApp.getUser()) {
+      if (!sportyApp.getUser()) {
         target.checked = false;
         return;
       }
 
       target.disabled = true;
       try {
-        const client = sportyApp.getClient();
-        const user = sportyApp.getUser();
-
-        // Check if consent already exists
-        const { data: existing } = await client
-          .from('consents')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('consent_type', 'data_retention')
-          .is('revoked_at', null)
-          .maybeSingle();
-
-        if (!existing) {
-          // Record consent using app API to ensure pending flags are cleared
-          if (typeof sportyApp.recordConsent === 'function') {
-            await sportyApp.recordConsent(user.id);
-          } else {
-            // Fallback for older app.js versions (shouldn't happen if reloaded)
-            const payload = {
-              user_id: user.id,
-              consent_type: 'data_retention',
-              version: 'adult-data-retention-v1',
-            };
-            const { error } = await client.from('consents').insert(payload);
-            if (error) throw error;
-          }
+        if (typeof sportyApp.grantConsent === 'function') {
+          await sportyApp.grantConsent();
+        } else if (typeof sportyApp.recordConsent === 'function') {
+          const user = sportyApp.getUser();
+          await sportyApp.recordConsent(user.id);
         }
 
-        // Refresh consent state
         await sportyApp.refreshConsent();
-
         updateToggleHelp(true);
-        updateConsentStatus(true);
+        const snap = sportyApp.hasConsent ? { hasConsent: sportyApp.hasConsent() } : { hasConsent: true };
+        updateConsentStatus(snap);
       } catch (error) {
         console.error('[Dashboard] Failed to grant consent', error);
         target.checked = false;
@@ -938,8 +926,13 @@
       target.disabled = true;
       try {
         await sportyApp.revokeConsent();
+        await sportyApp.refreshConsent();
         updateToggleHelp(false);
-        updateConsentStatus(false);
+        const status = typeof sportyApp.getConsentStatus === 'function' ? await sportyApp.getConsentStatus() : null;
+        updateConsentStatus({
+          hasConsent: false,
+          purgeStatus: status?.purge_status || null,
+        });
       } catch (error) {
         console.error(error);
         target.checked = true; // Revert toggle if revoke fails

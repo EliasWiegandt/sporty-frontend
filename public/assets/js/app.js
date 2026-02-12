@@ -14,6 +14,9 @@
     session: null,
     user: null,
     hasConsent: false,
+    purgeStatus: null,
+    purgeRequestedAt: null,
+    purgeCompletedAt: null,
     listeners: new Set(),
     consentResolvers: [],
     consentModal: null,
@@ -38,6 +41,7 @@
     ready,
     getClient: () => state.client,
     getUser: () => state.user,
+    getSession: () => state.session,
     hasConsent: () => state.hasConsent,
     onAuthChange: (callback) => {
       if (typeof callback !== 'function') return () => { };
@@ -54,6 +58,8 @@
       saveRecommendation(formPayload, resultPayload, extras),
     fetchRecommendations: (limit) => fetchRecommendations(limit),
     refreshConsent: () => loadConsent(),
+    getConsentStatus: () => fetchConsentStatus(),
+    grantConsent: () => grantConsent(),
     fetchConsents: () => fetchConsents(),
     revokeConsent: () => revokeConsent(),
     recordConsent: (userId) => recordConsentForUser(userId),
@@ -76,6 +82,9 @@
       session: state.session,
       user: state.user,
       hasConsent: state.hasConsent,
+      purgeStatus: state.purgeStatus,
+      purgeRequestedAt: state.purgeRequestedAt,
+      purgeCompletedAt: state.purgeCompletedAt,
     };
   }
 
@@ -358,11 +367,6 @@
       return;
     }
 
-    if (state.authMode === 'signup' && !consentChecked) {
-      updateAuthStatus('Please agree to data retention before creating an account.', 'error');
-      return;
-    }
-
     updateAuthStatus('Working…');
 
     try {
@@ -520,29 +524,72 @@
       return;
     }
 
-    console.log('[Sporty] loadConsent: Checking consent for user:', state.user.id);
     try {
-      let active = await getActiveConsent(state.user.id);
-      console.log('[Sporty] loadConsent: getActiveConsent returned:', active);
-      if (!active) {
+      const status = await fetchConsentStatus();
+      state.hasConsent = Boolean(status && status.has_consent);
+      state.purgeStatus = status?.purge_status || null;
+      state.purgeRequestedAt = status?.purge_requested_at || null;
+      state.purgeCompletedAt = status?.purge_completed_at || null;
+      if (!state.hasConsent) {
         const applied = await maybeApplyPendingConsent();
-        console.log('[Sporty] loadConsent: maybeApplyPendingConsent returned:', applied);
         if (applied) {
-          active = await getActiveConsent(state.user.id);
-          console.log('[Sporty] loadConsent: After applying pending, getActiveConsent returned:', active);
+          const refreshed = await fetchConsentStatus();
+          state.hasConsent = Boolean(refreshed && refreshed.has_consent);
+          state.purgeStatus = refreshed?.purge_status || null;
+          state.purgeRequestedAt = refreshed?.purge_requested_at || null;
+          state.purgeCompletedAt = refreshed?.purge_completed_at || null;
         }
       }
-
-      state.hasConsent = Boolean(active);
-      console.log('[Sporty] loadConsent: Final hasConsent =', state.hasConsent);
       if (!state.hasConsent) {
         resolveConsentPromises(false);
       }
-
       notifyListeners();
     } catch (error) {
       console.error('[Sporty] Failed to load consent', error);
     }
+  }
+
+  async function authFetch(path, options = {}) {
+    const token = state.session && state.session.access_token ? state.session.access_token : null;
+    if (!token) {
+      throw new Error('Missing auth token');
+    }
+    const headers = {
+      ...(options.headers || {}),
+      Authorization: `Bearer ${token}`,
+    };
+    return fetch(path, { ...options, headers });
+  }
+
+  async function fetchConsentStatus() {
+    if (!state.user) return null;
+    const response = await authFetch('/api/consent/status', {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) {
+      throw new Error('Unable to fetch consent status');
+    }
+    return response.json();
+  }
+
+  async function grantConsent() {
+    if (!state.user) throw new Error('Not signed in');
+    const response = await authFetch('/api/consent/grant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    if (!response.ok) {
+      throw new Error('Unable to grant consent');
+    }
+    const payload = await response.json();
+    state.hasConsent = Boolean(payload && payload.has_consent);
+    state.purgeStatus = payload?.purge_status || null;
+    state.purgeRequestedAt = payload?.purge_requested_at || null;
+    state.purgeCompletedAt = payload?.purge_completed_at || null;
+    notifyListeners();
+    return payload;
   }
 
   function ensureConsent() {
@@ -626,38 +673,8 @@
   }
 
   async function recordConsentForUser(userId) {
-    if (!state.client || !userId) throw new Error('Missing user for consent');
-
-    // 1. Check if we already have active consent
-    const existing = await getActiveConsent(userId);
-    if (existing) {
-      console.log('[Sporty] recordConsent: Consent already active, skipping insert.');
-      removePendingConsent(userId);
-      return true;
-    }
-
-    // 2. Insert new consent
-    // Note: If a race condition occurs and a row was just inserted, the unique index 
-    // (user_id, consent_type) where revoked_at is null will cause an error.
-    // We catch that and assume success (idempotent).
-    const payload = {
-      user_id: userId,
-      consent_type: CONSENT_TYPE,
-      version: CONSENT_VERSION,
-    };
-
-    const { error } = await state.client.from('consents').insert(payload);
-
-    if (error) {
-      // 23505 is unique_violation code in Postgres
-      if (error.code === '23505') {
-        console.log('[Sporty] recordConsent: Race condition caught, consent already active.');
-        removePendingConsent(userId);
-        return true;
-      }
-      throw error;
-    }
-
+    if (!userId) throw new Error('Missing user for consent');
+    await grantConsent();
     removePendingConsent(userId);
     return true;
   }
@@ -708,30 +725,10 @@
   }
 
   async function maybeApplyPendingConsent() {
-    if (!state.client || !state.user) return false;
+    if (!state.user) return false;
     const ids = getPendingConsentIds();
-    console.log('[Sporty] Checking pending consent for:', state.user.id, 'Found:', ids.has(state.user.id));
     if (!ids.has(state.user.id)) return false;
     try {
-      // Check for ANY consent record (active or revoked)
-      const { data: anyConsent } = await state.client
-        .from('consents')
-        .select('id, revoked_at')
-        .eq('user_id', state.user.id)
-        .eq('consent_type', CONSENT_TYPE)
-        .limit(1)
-        .maybeSingle();
-
-      if (anyConsent) {
-        // If we have a record, regardless of status, we should clear pending.
-        // If it's active, we're good. If it's revoked, we respect that and DO NOT re-grant.
-        console.log('[Sporty] Found existing consent record (active or revoked), clearing pending flag.');
-        removePendingConsent(state.user.id);
-        return !anyConsent.revoked_at;
-      }
-
-      // Only if NO record exists at all do we apply pending consent
-      console.log('[Sporty] Applying pending consent for new user (no DB record found).');
       await recordConsentForUser(state.user.id);
       state.hasConsent = true;
       notifyListeners();
@@ -1137,64 +1134,23 @@
     }
   }
 
-  async function getActiveConsent(userId) {
-    if (!state.client || !userId) return null;
-    const { data, error } = await state.client
-      .from('consents')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('consent_type', CONSENT_TYPE)
-      .is('revoked_at', null)
-      .maybeSingle();
-
-    if (error && error.code !== 'PGRST116') throw error;
-    return data || null;
-  }
-
   async function revokeConsent() {
-    console.log('[Sporty] revokeConsent: Starting revocation');
-    if (!state.client || !state.user) {
+    if (!state.user) {
       throw new Error('Not signed in');
     }
-
-    // With unique index, there should be at most one active consent
-    const { data: active, error: fetchError } = await state.client
-      .from('consents')
-      .select('id')
-      .eq('user_id', state.user.id)
-      .eq('consent_type', CONSENT_TYPE)
-      .is('revoked_at', null)
-      .maybeSingle();
-
-    if (fetchError) {
-      console.error('[Sporty] Failed to fetch consent for revocation', fetchError);
-      throw fetchError;
+    const response = await authFetch('/api/consent/revoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    if (!response.ok) {
+      throw new Error('Unable to revoke consent');
     }
-
-    if (!active) {
-      console.log('[Sporty] revokeConsent: No active consent found.');
-      state.hasConsent = false;
-      removePendingConsent(state.user.id);
-      notifyListeners();
-      resolveConsentPromises(false);
-      return false;
-    }
-
-    const timestamp = new Date().toISOString();
-    console.log('[Sporty] revokeConsent: Revoking consent ID:', active.id);
-
-    const { error } = await state.client
-      .from('consents')
-      .update({ revoked_at: timestamp })
-      .eq('id', active.id);
-
-    if (error) {
-      console.error('[Sporty] revokeConsent: Database update failed:', error);
-      throw error;
-    }
-
-    console.log('[Sporty] revokeConsent: Successfully revoked consent.');
-    state.hasConsent = false;
+    const payload = await response.json();
+    state.hasConsent = Boolean(payload && payload.has_consent);
+    state.purgeStatus = payload?.purge_status || 'pending';
+    state.purgeRequestedAt = payload?.purge_requested_at || null;
+    state.purgeCompletedAt = payload?.purge_completed_at || null;
     removePendingConsent(state.user.id);
     notifyListeners();
     resolveConsentPromises(false);

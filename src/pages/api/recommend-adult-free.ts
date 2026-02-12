@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { verifySupabaseToken } from './_auth';
 
 const JSON_HEADERS = {
   'Content-Type': 'application/json',
@@ -37,6 +38,25 @@ export const POST: APIRoute = async ({ request, locals }) => {
     );
   }
 
+  const user = await verifySupabaseToken(request, env);
+  if (!user) {
+    return new Response(
+      JSON.stringify({
+        detail: {
+          code: 'CONSENT_REQUIRED',
+          message: 'Sign in and grant consent before running analysis.',
+        },
+      }),
+      {
+        status: 403,
+        headers: {
+          ...JSON_HEADERS,
+          'X-Request-Id': reqId,
+        },
+      }
+    );
+  }
+
   const upstreamUrl = new URL('/v1/recommend-adult-free', backendUrl);
   const body = await request.text();
   const contentLength = body ? `${new TextEncoder().encode(body).length}` : "0";
@@ -63,7 +83,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const sessionId = request.headers.get('X-Session-ID');
-  const userId = request.headers.get('X-User-ID');
 
   const upstreamHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -72,7 +91,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     'X-Request-Id': reqId,
   };
   if (sessionId) upstreamHeaders['X-Session-ID'] = sessionId;
-  if (userId) upstreamHeaders['X-User-ID'] = userId;
+  upstreamHeaders['X-User-ID'] = user.id;
 
   try {
     const upstreamResp = await fetch(upstreamUrl.toString(), {
