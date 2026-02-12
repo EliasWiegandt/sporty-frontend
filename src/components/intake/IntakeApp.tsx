@@ -988,12 +988,6 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
     };
   }, []);
 
-  // Auto-init Preline (if used elsewhere)
-  useEffect(() => {
-    if (typeof window === "undefined") return undefined;
-    (window as any).HSStaticMethods?.autoInit?.();
-  }, []);
-
   const canNavigateTo = (targetIndex: number): boolean => {
     if (targetIndex < 0 || targetIndex >= stepDefinitions.length) return false;
     return targetIndex <= maxVisitedIndex;

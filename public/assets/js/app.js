@@ -8,6 +8,7 @@
   const CONSENT_VERSION = 'adult-data-retention-v1';
   const MODEL_VERSION = 'free-adult-v1';
   const PENDING_CONSENT_KEY = 'sporty:pending-consent';
+  const SUPABASE_AUTH_TOKEN_SUFFIX = '-auth-token';
 
   const state = {
     client: null,
@@ -121,7 +122,13 @@
       if (error) throw error;
       updateSession(data ? data.session : null);
     } catch (error) {
-      console.error('[Sporty] Unable to fetch Supabase session', error);
+      if (isRefreshBootstrapError(error)) {
+        console.warn('[Sporty] Clearing stale Supabase session token after bootstrap failure.');
+        await clearStaleAuthSession();
+        updateSession(null);
+      } else {
+        console.error('[Sporty] Unable to fetch Supabase session', error);
+      }
     }
 
     state.client.auth.onAuthStateChange((_event, session) => {
@@ -130,6 +137,55 @@
 
     notifyListeners();
     state.readyResolve();
+  }
+
+  function isRefreshBootstrapError(error) {
+    if (!error) return false;
+    const message = String(error.message || '').toLowerCase();
+    return (
+      message.includes('invalid refresh token') ||
+      message.includes('refresh token not found') ||
+      message.includes('refresh_token')
+    );
+  }
+
+  function getSupabaseProjectRef() {
+    if (!SUPABASE_URL) return null;
+    try {
+      const host = new URL(SUPABASE_URL).hostname;
+      return host.split('.')[0] || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function clearSupabaseAuthStorage() {
+    const projectRef = getSupabaseProjectRef();
+    const explicitKey = projectRef ? `sb-${projectRef}${SUPABASE_AUTH_TOKEN_SUFFIX}` : null;
+    const shouldRemoveKey = (key) => {
+      if (!key) return false;
+      if (explicitKey && key === explicitKey) return true;
+      return key.startsWith('sb-') && key.endsWith(SUPABASE_AUTH_TOKEN_SUFFIX);
+    };
+    [window.localStorage, window.sessionStorage].forEach((store) => {
+      if (!store) return;
+      const keys = [];
+      for (let i = 0; i < store.length; i += 1) {
+        const key = store.key(i);
+        if (shouldRemoveKey(key)) keys.push(key);
+      }
+      keys.forEach((key) => store.removeItem(key));
+    });
+  }
+
+  async function clearStaleAuthSession() {
+    if (!state.client) return;
+    try {
+      await state.client.auth.signOut({ scope: 'local' });
+    } catch (error) {
+      console.warn('[Sporty] Local Supabase sign-out failed during stale token cleanup', error);
+    }
+    clearSupabaseAuthStorage();
   }
 
   function updateSession(session) {

@@ -1183,7 +1183,7 @@
 
       const items = (adultData || []).map(item => ({
         id: item.id,
-        title: item.is_premium ? 'Adult Premium Analysis' : 'Adult Free Analysis',
+        title: item.is_premium ? 'Adult Premium Analysis' : 'Adult Quick Analysis',
         date: item.created_at,
         summary: item.summary || 'Analysis completed.',
         isPremium: item.is_premium,

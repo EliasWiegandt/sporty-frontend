@@ -18,7 +18,7 @@ export const valuePillars = [
     imageAlt:
       "Abstract rendering of bubbles of information with options to delete flowing into a database with a padlock right before the database.",
     title: "Privacy by design",
-    copy: "Nothing happens without your consent. Run anonymous analyses, control consent and delete your data as you see fit.",
+    copy: "Nothing is saved without consent. Revoke anytime; all analysis data tied to you will be removed.",
   },
 ] as const;
 
@@ -66,19 +66,19 @@ export const testimonials = [
 
 export const offerings = [
   {
-    ribbon: "No log-in required",
+    ribbon: "No log in required",
     title: "Quick Analysis",
     price: "Unlimited free analyses",
     summary:
       "Quickly find sports that fit your body using our biomechanics engine.",
     features: [
       "Run analysis based on your body composition and past sports.",
-      "Detailed explanation of factors for your sports-matches.",
+      "Detailed explanation of factors for your sport matches.",
       "Sign up for a free account to save inputs and results.",
     ],
     cta: {
       href: "/intake",
-      label: "Try free analysis",
+      label: "Try quick analysis",
       theme: "primary",
     },
   },
@@ -101,8 +101,8 @@ export const offerings = [
   {
     ribbon: "No credit card required",
     title: "Child Forecast and Analysis",
-    price: "5  free analyses with signup",
-    summary: "Forecast a child's growth and match it's future body to sports.",
+    price: "5 free analyses with signup",
+    summary: "Forecast a child's growth and match its future body to sports.",
     features: [
       "Forecast your child's body metrics using child + parent measurements.",
       "Take child's preferences, goals, injuries, and past sports into account.",

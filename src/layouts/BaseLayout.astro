@@ -29,14 +29,14 @@ interface Props {
 }
 
 const defaultNavLinks: NavLink[] = [
-  { href: '/#science', label: 'About' },
+  { href: '/#science', label: 'Why it works' },
   { href: '/#tiers', label: 'Pricing' },
   { href: '/science', label: 'Science' },
   { href: '/premium', label: 'Premium analyses' },
   { href: '/dashboard', label: 'Dashboard' },
 ];
 
-const defaultPrimaryAction: NavAction = { href: '/intake', label: 'Try free analysis' };
+const defaultPrimaryAction: NavAction = { href: '/intake', label: 'Try quick analysis' };
 
 const {
   title = 'Sporty',
@@ -160,38 +160,6 @@ const hasActionContent = actions.length > 0 || showAuth;
     )}
     <slot />
     <AuthModal />
-    <script>
-      (function () {
-        const globalWindow = window as unknown as Window & Record<string, unknown>;
-        const FLAG = '__sportyPrelineReady';
-        const HOOKED = '__sportyPrelineListeners';
-        const autoInit = () => {
-          const methods = globalWindow.HSStaticMethods as { autoInit?: () => void } | undefined;
-          if (methods && typeof methods.autoInit === 'function') {
-            methods.autoInit();
-          }
-        };
-        (globalWindow as any).__sportyPrelineStart = function () {
-          if ((globalWindow[FLAG] as boolean)) {
-            autoInit();
-            return;
-          }
-          globalWindow[FLAG] = true;
-          autoInit();
-          if (!(globalWindow[HOOKED] as boolean)) {
-            globalWindow[HOOKED] = true;
-            document.addEventListener('astro:page-load', autoInit);
-            document.addEventListener('astro:after-swap', autoInit);
-          }
-        };
-      })();
-    </script>
-    <script
-      is:inline
-      src="https://cdn.jsdelivr.net/npm/preline@3.2.3/dist/preline.js"
-      defer
-      onload="window.__sportyPrelineStart && window.__sportyPrelineStart();"
-    ></script>
     <slot name="scripts" />
   </body>
 </html>
