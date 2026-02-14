@@ -207,6 +207,17 @@
     border-color: var(--color-brand-800);
   }
 
+  .btn-pill-danger {
+    background-color: #b91c1c;
+    color: #fff;
+    border: 1px solid transparent;
+    box-shadow: var(--shadow-button);
+  }
+
+  .btn-pill-danger:hover {
+    background-color: #991b1b;
+  }
+
   .btn-pill:disabled,
   .btn-pill[aria-disabled="true"],
   .btn-pill-disabled {

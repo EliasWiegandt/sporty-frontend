@@ -1,4 +1,5 @@
 Elias owns this. Start: say hi + 1 motivating line.
+I am not a programmer, but I am quite experienced in data science. So a lot of programming concept will have to be explained, both back-end and front-end stuff.
 Work style: telegraph; noun-phrases ok; drop grammar; min tokens.
 
 # Context for work on this project
@@ -14,6 +15,7 @@ Further, if you see anything where it appears like there is scaffolding to handl
 # Important docs
 
 Read the `README.md`, and everything in the folder called `docs`
+Add all changes imporant for future work to the `handbook.md`
 
 ## Agent Protocol
 

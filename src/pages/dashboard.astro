@@ -125,6 +125,22 @@ const historyPlaceholders = [
           
           <div class="status-area mt-2" data-profile-consent-status></div>
 
+          <div class="py-4 border-t border-slate-100 mt-4" data-account-delete-zone>
+            <div class="max-w-xl">
+              <h3 class="font-medium text-slate-900">Delete account permanently</h3>
+              <p class="text-sm text-slate-500 mt-1">
+                Deletes your profile, measurements, recommendations, child-linked analysis data, and account access.
+                We retain a minimal pseudonymous billing ledger for legal accounting and chargeback obligations.
+              </p>
+            </div>
+            <div class="mt-3">
+              <button type="button" class="btn-pill btn-pill-secondary btn-pill-sm" data-account-delete-open>
+                Delete account
+              </button>
+            </div>
+            <div class="status-area mt-3" data-account-delete-status></div>
+          </div>
+
           <div class="flex items-center justify-between py-4 border-t border-slate-100 mt-4" data-measurement-system-zone>
             <div class="max-w-xl">
               <h3 class="font-medium text-slate-900">Measurement units</h3>
@@ -256,12 +272,53 @@ const historyPlaceholders = [
         </div>
       </form>
     </dialog>
+
+    <div class="auth-overlay" data-account-delete-overlay hidden>
+      <div class="consent-modal" role="dialog" aria-modal="true" aria-labelledby="account-delete-title">
+        <h2 id="account-delete-title">Delete account permanently?</h2>
+        <p>
+          This signs you out and cannot be undone. Type <strong>DELETE</strong> to confirm. We keep only a minimal
+          pseudonymous billing ledger where legally required.
+        </p>
+        <label class="block mt-3 text-sm text-slate-600" for="account-delete-confirm-input">
+          Type DELETE to continue
+        </label>
+        <input
+          id="account-delete-confirm-input"
+          type="text"
+          class="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+          placeholder="DELETE"
+          data-account-delete-confirm-input
+        />
+        <p class="mt-2 text-xs text-slate-500" data-account-delete-confirm-help>
+          Deleted: profile + sport analysis data. Retained: minimal billing ledger.
+        </p>
+        <div class="consent-modal__actions mt-4 flex gap-3 justify-end">
+          <button
+            type="button"
+            class="btn-pill btn-pill-secondary btn-pill-sm"
+            data-account-delete-cancel
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn-pill btn-pill-danger btn-pill-sm btn-pill-disabled"
+            data-account-delete-confirm
+            aria-disabled="true"
+            disabled
+          >
+            Delete account
+          </button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <Fragment slot="scripts">
     <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script is:inline src="/config.js" defer></script>
-    <script is:inline src="/assets/js/app.js?v=6" defer></script>
+    <script is:inline src="/assets/js/app.js?v=7" defer></script>
     <script is:inline src="/assets/js/dashboard.js" defer></script>
     <script is:inline src="/assets/js/checkout.js" defer></script>
   </Fragment>

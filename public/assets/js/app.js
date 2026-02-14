@@ -18,6 +18,9 @@
     purgeStatus: null,
     purgeRequestedAt: null,
     purgeCompletedAt: null,
+    accountDeleteStatus: null,
+    accountDeleteRequestedAt: null,
+    accountDeleteCompletedAt: null,
     listeners: new Set(),
     consentResolvers: [],
     consentModal: null,
@@ -63,6 +66,9 @@
     grantConsent: () => grantConsent(),
     fetchConsents: () => fetchConsents(),
     revokeConsent: () => revokeConsent(),
+    deleteAccount: () => deleteAccount(),
+    getAccountDeleteStatus: () => fetchAccountDeleteStatus(),
+    refreshAccountDelete: () => refreshAccountDelete(),
     recordConsent: (userId) => recordConsentForUser(userId),
   };
 
@@ -86,6 +92,9 @@
       purgeStatus: state.purgeStatus,
       purgeRequestedAt: state.purgeRequestedAt,
       purgeCompletedAt: state.purgeCompletedAt,
+      accountDeleteStatus: state.accountDeleteStatus,
+      accountDeleteRequestedAt: state.accountDeleteRequestedAt,
+      accountDeleteCompletedAt: state.accountDeleteCompletedAt,
     };
   }
 
@@ -198,6 +207,9 @@
       loadConsent();
     } else {
       state.hasConsent = false;
+      state.accountDeleteStatus = null;
+      state.accountDeleteRequestedAt = null;
+      state.accountDeleteCompletedAt = null;
       hideConsentBanner();
       resolveConsentPromises(false);
       notifyListeners();
@@ -599,6 +611,7 @@
       if (!state.hasConsent) {
         resolveConsentPromises(false);
       }
+      await refreshAccountDelete();
       notifyListeners();
     } catch (error) {
       console.error('[Sporty] Failed to load consent', error);
@@ -627,6 +640,30 @@
       throw new Error('Unable to fetch consent status');
     }
     return response.json();
+  }
+
+  async function fetchAccountDeleteStatus() {
+    if (!state.user) return null;
+    const response = await authFetch('/api/account/delete-status', {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+    if (response.status === 401) {
+      return { status: 'done' };
+    }
+    if (!response.ok) {
+      throw new Error('Unable to fetch account deletion status');
+    }
+    return response.json();
+  }
+
+  async function refreshAccountDelete() {
+    if (!state.user) return null;
+    const payload = await fetchAccountDeleteStatus();
+    state.accountDeleteStatus = payload?.status || null;
+    state.accountDeleteRequestedAt = payload?.requested_at || null;
+    state.accountDeleteCompletedAt = payload?.finished_at || null;
+    return payload;
   }
 
   async function grantConsent() {
@@ -1211,5 +1248,25 @@
     notifyListeners();
     resolveConsentPromises(false);
     return true;
+  }
+
+  async function deleteAccount() {
+    if (!state.user) {
+      throw new Error('Not signed in');
+    }
+    const response = await authFetch('/api/account/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    if (!response.ok) {
+      throw new Error('Unable to start account deletion');
+    }
+    const payload = await response.json();
+    state.accountDeleteStatus = payload?.status || 'pending';
+    state.accountDeleteRequestedAt = payload?.requested_at || null;
+    state.accountDeleteCompletedAt = payload?.finished_at || null;
+    notifyListeners();
+    return payload;
   }
 })();

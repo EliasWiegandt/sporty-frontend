@@ -19,6 +19,12 @@
   const consentStatusEl = root.querySelector('[data-profile-consent-status]');
   const consentToggle = root.querySelector('[data-consent-toggle]');
   const toggleHelp = root.querySelector('[data-profile-toggle-help]');
+  const accountDeleteStatusEl = root.querySelector('[data-account-delete-status]');
+  const accountDeleteOpenBtn = root.querySelector('[data-account-delete-open]');
+  const accountDeleteOverlay = root.querySelector('[data-account-delete-overlay]');
+  const accountDeleteConfirmInput = root.querySelector('[data-account-delete-confirm-input]');
+  const accountDeleteCancelBtn = root.querySelector('[data-account-delete-cancel]');
+  const accountDeleteConfirmBtn = root.querySelector('[data-account-delete-confirm]');
   const signoutBtn = root.querySelector('[data-auth-signout]');
   const measurementSystemButtons = root.querySelectorAll('[data-measurement-system-option]');
   const measurementSystemStatus = root.querySelector('[data-measurement-system-status]');
@@ -47,6 +53,8 @@
   let familyChildrenCache = [];
   let lastUserId = null;
   let lastUserEmail = null;
+  let accountDeletePollTimer = null;
+  let accountDeleteInFlight = false;
   let measurementSystem = 'metric';
   let measurementSystemRequestId = 0;
   const MEASUREMENT_SYSTEM_STORAGE_KEY = 'sporty:measurement-system:v1';
@@ -186,6 +194,26 @@
     consentToggle.addEventListener('change', handleToggleChange);
   }
 
+  if (accountDeleteOpenBtn) {
+    accountDeleteOpenBtn.addEventListener('click', openAccountDeleteModal);
+  }
+  if (accountDeleteCancelBtn) {
+    accountDeleteCancelBtn.addEventListener('click', closeAccountDeleteModal);
+  }
+  if (accountDeleteOverlay) {
+    accountDeleteOverlay.addEventListener('click', (event) => {
+      if (event.target === accountDeleteOverlay) {
+        closeAccountDeleteModal();
+      }
+    });
+  }
+  if (accountDeleteConfirmInput) {
+    accountDeleteConfirmInput.addEventListener('input', updateAccountDeleteConfirmState);
+  }
+  if (accountDeleteConfirmBtn) {
+    accountDeleteConfirmBtn.addEventListener('click', handleAccountDeleteConfirm);
+  }
+
   if (signoutBtn) {
     signoutBtn.addEventListener('click', () => {
       if (sportyApp && typeof sportyApp.signOut === 'function') {
@@ -231,8 +259,11 @@
     if (signedOutBlock) signedOutBlock.hidden = signedIn;
     if (signedInBlock) signedInBlock.hidden = !signedIn;
     if (consentToggle) consentToggle.disabled = !signedIn;
+    if (accountDeleteOpenBtn) accountDeleteOpenBtn.disabled = !signedIn;
 
     if (!signedIn) {
+      closeAccountDeleteModal();
+      stopAccountDeletePolling();
       if (creditsController) {
         creditsController.abort();
         creditsController = null;
@@ -249,6 +280,7 @@
 
       if (emailEl) emailEl.textContent = '';
       if (consentStatusEl) consentStatusEl.textContent = '';
+      if (accountDeleteStatusEl) accountDeleteStatusEl.textContent = '';
       if (consentToggle) consentToggle.checked = false;
       if (toggleHelp) toggleHelp.textContent = '';
       setMeasurementSystemStatus('', 'info');
@@ -262,9 +294,15 @@
     lastUserId = snapshot.user.id;
     lastUserEmail = snapshot.user.email || null;
     updateConsentStatus(snapshot);
+    updateAccountDeleteStatus(snapshot);
     // Only update toggle if the state actually changed to prevent flicker
     if (consentToggle && consentToggle.checked !== Boolean(snapshot.hasConsent)) {
       consentToggle.checked = Boolean(snapshot.hasConsent);
+    }
+    if (snapshot.accountDeleteStatus === 'pending' || snapshot.accountDeleteStatus === 'running') {
+      startAccountDeletePolling();
+    } else {
+      stopAccountDeletePolling();
     }
     updateToggleHelp(snapshot.hasConsent);
 
@@ -886,6 +924,133 @@
     } else {
       consentStatusEl.className = 'text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-md border border-amber-100';
       consentStatusEl.textContent = 'You have not granted data-retention consent.';
+    }
+  }
+
+  function updateAccountDeleteStatus(snapshot) {
+    if (!accountDeleteStatusEl) return;
+    const status = snapshot?.accountDeleteStatus ? String(snapshot.accountDeleteStatus) : null;
+
+    if (status === 'pending' || status === 'running') {
+      accountDeleteStatusEl.className = 'text-sm text-rose-700 bg-rose-50 px-3 py-2 rounded-md border border-rose-100';
+      accountDeleteStatusEl.textContent = 'Account deletion is in progress. You will be signed out when complete.';
+      return;
+    }
+    if (status === 'failed') {
+      accountDeleteStatusEl.className = 'text-sm text-red-700 bg-red-50 px-3 py-2 rounded-md border border-red-100';
+      accountDeleteStatusEl.textContent = 'Account deletion failed. Retry and contact support if it persists.';
+      return;
+    }
+    if (status === 'done') {
+      accountDeleteStatusEl.className = 'text-sm text-slate-700 bg-slate-100 px-3 py-2 rounded-md border border-slate-200';
+      accountDeleteStatusEl.textContent = 'Account deletion completed. Signing you out...';
+      return;
+    }
+
+    accountDeleteStatusEl.className = 'text-sm text-slate-600';
+    accountDeleteStatusEl.textContent = '';
+  }
+
+  function openAccountDeleteModal() {
+    if (!accountDeleteOverlay) return;
+    accountDeleteOverlay.hidden = false;
+    if (accountDeleteConfirmInput) {
+      accountDeleteConfirmInput.value = '';
+      accountDeleteConfirmInput.focus();
+    }
+    updateAccountDeleteConfirmState();
+  }
+
+  function closeAccountDeleteModal() {
+    if (!accountDeleteOverlay) return;
+    accountDeleteOverlay.hidden = true;
+    if (accountDeleteConfirmInput) accountDeleteConfirmInput.value = '';
+    updateAccountDeleteConfirmState();
+  }
+
+  function updateAccountDeleteConfirmState() {
+    if (!accountDeleteConfirmBtn) return;
+    const ok = accountDeleteConfirmInput && accountDeleteConfirmInput.value.trim() === 'DELETE';
+    const disabled = !ok || accountDeleteInFlight;
+    accountDeleteConfirmBtn.disabled = disabled;
+    accountDeleteConfirmBtn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    accountDeleteConfirmBtn.classList.toggle('btn-pill-disabled', disabled);
+  }
+
+  function stopAccountDeletePolling() {
+    if (accountDeletePollTimer) {
+      clearTimeout(accountDeletePollTimer);
+      accountDeletePollTimer = null;
+    }
+  }
+
+  function startAccountDeletePolling() {
+    if (accountDeletePollTimer) return;
+    const poll = async () => {
+      if (!sportyApp?.getUser?.()) return;
+      try {
+        const statusPayload =
+          typeof sportyApp.refreshAccountDelete === 'function'
+            ? await sportyApp.refreshAccountDelete()
+            : typeof sportyApp.getAccountDeleteStatus === 'function'
+              ? await sportyApp.getAccountDeleteStatus()
+              : null;
+        const status = statusPayload?.status || null;
+        updateAccountDeleteStatus({ accountDeleteStatus: status });
+        if (status === 'done') {
+          clearAllResultCaches();
+          await sportyApp.signOut();
+          window.location.assign('/?account_deleted=1');
+          return;
+        }
+      } catch (error) {
+        console.warn('[Dashboard] Account delete status poll failed', error);
+      }
+      accountDeletePollTimer = setTimeout(poll, 2000);
+    };
+    accountDeletePollTimer = setTimeout(poll, 800);
+  }
+
+  function clearAllResultCaches() {
+    const keys = [
+      'sporty:lastResult',
+      'sporty:lastPremiumResult',
+      'sporty:lastCreditSnapshot',
+      'sporty:intake:draft:v1',
+      'sporty:child-intake:draft:v1',
+    ];
+    try {
+      keys.forEach((key) => {
+        sessionStorage.removeItem(key);
+        localStorage.removeItem(key);
+      });
+    } catch (error) {
+      console.warn('[Dashboard] Failed to clear storage after account deletion', error);
+    }
+  }
+
+  async function handleAccountDeleteConfirm() {
+    if (!sportyApp?.deleteAccount || !accountDeleteConfirmBtn) return;
+    if (!accountDeleteConfirmInput || accountDeleteConfirmInput.value.trim() !== 'DELETE') {
+      updateAccountDeleteConfirmState();
+      return;
+    }
+    accountDeleteInFlight = true;
+    updateAccountDeleteConfirmState();
+    try {
+      await sportyApp.deleteAccount();
+      closeAccountDeleteModal();
+      updateAccountDeleteStatus({ accountDeleteStatus: 'pending' });
+      startAccountDeletePolling();
+    } catch (error) {
+      console.error('[Dashboard] Failed to request account deletion', error);
+      if (accountDeleteStatusEl) {
+        accountDeleteStatusEl.className = 'text-sm text-red-700 bg-red-50 px-3 py-2 rounded-md border border-red-100';
+        accountDeleteStatusEl.textContent = 'Unable to start account deletion. Please try again.';
+      }
+    } finally {
+      accountDeleteInFlight = false;
+      updateAccountDeleteConfirmState();
     }
   }
 
