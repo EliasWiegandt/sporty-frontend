@@ -25,6 +25,12 @@
   const accountDeleteConfirmInput = root.querySelector('[data-account-delete-confirm-input]');
   const accountDeleteCancelBtn = root.querySelector('[data-account-delete-cancel]');
   const accountDeleteConfirmBtn = root.querySelector('[data-account-delete-confirm]');
+  const dataDeleteStatusEl = root.querySelector('[data-data-delete-status]');
+  const dataDeleteOpenBtn = root.querySelector('[data-data-delete-open]');
+  const dataDeleteOverlay = root.querySelector('[data-data-delete-overlay]');
+  const dataDeleteConfirmInput = root.querySelector('[data-data-delete-confirm-input]');
+  const dataDeleteCancelBtn = root.querySelector('[data-data-delete-cancel]');
+  const dataDeleteConfirmBtn = root.querySelector('[data-data-delete-confirm]');
   const signoutBtn = root.querySelector('[data-auth-signout]');
   const measurementSystemButtons = root.querySelectorAll('[data-measurement-system-option]');
   const measurementSystemStatus = root.querySelector('[data-measurement-system-status]');
@@ -55,6 +61,9 @@
   let lastUserEmail = null;
   let accountDeletePollTimer = null;
   let accountDeleteInFlight = false;
+  let dataDeleteInFlight = false;
+  let historyItemsState = [];
+  let historyMenuOutsideBound = false;
   let measurementSystem = 'metric';
   let measurementSystemRequestId = 0;
   const MEASUREMENT_SYSTEM_STORAGE_KEY = 'sporty:measurement-system:v1';
@@ -213,6 +222,25 @@
   if (accountDeleteConfirmBtn) {
     accountDeleteConfirmBtn.addEventListener('click', handleAccountDeleteConfirm);
   }
+  if (dataDeleteOpenBtn) {
+    dataDeleteOpenBtn.addEventListener('click', openDataDeleteModal);
+  }
+  if (dataDeleteCancelBtn) {
+    dataDeleteCancelBtn.addEventListener('click', closeDataDeleteModal);
+  }
+  if (dataDeleteOverlay) {
+    dataDeleteOverlay.addEventListener('click', (event) => {
+      if (event.target === dataDeleteOverlay) {
+        closeDataDeleteModal();
+      }
+    });
+  }
+  if (dataDeleteConfirmInput) {
+    dataDeleteConfirmInput.addEventListener('input', updateDataDeleteConfirmState);
+  }
+  if (dataDeleteConfirmBtn) {
+    dataDeleteConfirmBtn.addEventListener('click', handleDataDeleteConfirm);
+  }
 
   if (signoutBtn) {
     signoutBtn.addEventListener('click', () => {
@@ -260,9 +288,11 @@
     if (signedInBlock) signedInBlock.hidden = !signedIn;
     if (consentToggle) consentToggle.disabled = !signedIn;
     if (accountDeleteOpenBtn) accountDeleteOpenBtn.disabled = !signedIn;
+    if (dataDeleteOpenBtn) dataDeleteOpenBtn.disabled = !signedIn;
 
     if (!signedIn) {
       closeAccountDeleteModal();
+      closeDataDeleteModal();
       stopAccountDeletePolling();
       if (creditsController) {
         creditsController.abort();
@@ -281,6 +311,7 @@
       if (emailEl) emailEl.textContent = '';
       if (consentStatusEl) consentStatusEl.textContent = '';
       if (accountDeleteStatusEl) accountDeleteStatusEl.textContent = '';
+      if (dataDeleteStatusEl) dataDeleteStatusEl.textContent = '';
       if (consentToggle) consentToggle.checked = false;
       if (toggleHelp) toggleHelp.textContent = '';
       setMeasurementSystemStatus('', 'info');
@@ -1054,6 +1085,77 @@
     }
   }
 
+  function updateDataDeleteStatus(message, tone = 'info') {
+    if (!dataDeleteStatusEl) return;
+    if (!message) {
+      dataDeleteStatusEl.className = 'text-sm text-slate-600';
+      dataDeleteStatusEl.textContent = '';
+      return;
+    }
+    if (tone === 'success') {
+      dataDeleteStatusEl.className = 'text-sm text-teal-700 bg-teal-50 px-3 py-2 rounded-md border border-teal-100';
+    } else if (tone === 'error') {
+      dataDeleteStatusEl.className = 'text-sm text-red-700 bg-red-50 px-3 py-2 rounded-md border border-red-100';
+    } else {
+      dataDeleteStatusEl.className = 'text-sm text-slate-700 bg-slate-100 px-3 py-2 rounded-md border border-slate-200';
+    }
+    dataDeleteStatusEl.textContent = message;
+  }
+
+  function openDataDeleteModal() {
+    if (!dataDeleteOverlay) return;
+    dataDeleteOverlay.hidden = false;
+    if (dataDeleteConfirmInput) {
+      dataDeleteConfirmInput.value = '';
+      dataDeleteConfirmInput.focus();
+    }
+    updateDataDeleteConfirmState();
+  }
+
+  function closeDataDeleteModal() {
+    if (!dataDeleteOverlay) return;
+    dataDeleteOverlay.hidden = true;
+    if (dataDeleteConfirmInput) dataDeleteConfirmInput.value = '';
+    updateDataDeleteConfirmState();
+  }
+
+  function updateDataDeleteConfirmState() {
+    if (!dataDeleteConfirmBtn) return;
+    const ok = dataDeleteConfirmInput && dataDeleteConfirmInput.value.trim() === 'DELETE DATA';
+    const disabled = !ok || dataDeleteInFlight;
+    dataDeleteConfirmBtn.disabled = disabled;
+    dataDeleteConfirmBtn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+    dataDeleteConfirmBtn.classList.toggle('btn-pill-disabled', disabled);
+  }
+
+  async function handleDataDeleteConfirm() {
+    if (!sportyApp?.deleteAllData || !dataDeleteConfirmInput || !dataDeleteConfirmBtn) return;
+    if (dataDeleteConfirmInput.value.trim() !== 'DELETE DATA') {
+      updateDataDeleteConfirmState();
+      return;
+    }
+    dataDeleteInFlight = true;
+    updateDataDeleteConfirmState();
+    updateDataDeleteStatus('Deleting saved measurements and results...', 'info');
+    try {
+      const payload = await sportyApp.deleteAllData();
+      const counts = payload?.deleted_counts || {};
+      closeDataDeleteModal();
+      historyItemsState = [];
+      renderHistory([]);
+      updateDataDeleteStatus(
+        `Deleted ${counts.measurements || 0} measurements, ${counts.recommendations || 0} recommendations, ${counts.child_forecast_runs || 0} child runs.`,
+        'success'
+      );
+    } catch (error) {
+      console.error('[Dashboard] Failed to delete all data', error);
+      updateDataDeleteStatus('Unable to delete data. Please try again.', 'error');
+    } finally {
+      dataDeleteInFlight = false;
+      updateDataDeleteConfirmState();
+    }
+  }
+
   async function handleToggleChange(event) {
     const target = event.currentTarget;
     if (!target) return;
@@ -1321,6 +1423,7 @@
   }
 
   function clearHistory() {
+    historyItemsState = [];
     if (historyGrid) historyGrid.innerHTML = '';
   }
 
@@ -1334,32 +1437,81 @@
     if (!client) return;
 
     try {
-      // Fetch adult results
+      // Keep adult history on the stable RLS-safe view and enrich item IDs for delete-item.
       const { data: adultData, error: adultError } = await client
         .from('recommendation_results')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
-
       if (adultError) throw adultError;
 
-      // TODO: Fetch child results if table exists (e.g. child_forecast_runs)
-      // For now, we'll just show adult results
+      const adultItems = (adultData || []).map((item) => {
+        const isPremium = Boolean(item.is_premium);
+        return {
+          id: item.id,
+          itemType: 'adult_run',
+          title: isPremium ? 'Adult Premium Analysis' : 'Adult Quick Analysis',
+          date: item.created_at,
+          summary: item.summary || 'Analysis completed.',
+          isPremium,
+          link: isPremium ? `/results/premium?id=${item.id}` : `/results?id=${item.id}`,
+        };
+      });
 
-      const items = (adultData || []).map(item => ({
-        id: item.id,
-        title: item.is_premium ? 'Adult Premium Analysis' : 'Adult Quick Analysis',
-        date: item.created_at,
-        summary: item.summary || 'Analysis completed.',
-        isPremium: item.is_premium,
-        link: item.is_premium ? `/results/premium?id=${item.id}` : `/results?id=${item.id}` // Assuming ID-based routing works or will work
-      }));
+      let childItems = [];
+      try {
+        const { data: childData, error: childError } = await client
+          .from('child_forecast_runs')
+          .select('id,forecasted_at,metadata')
+          .eq('guardian_user_id', userId)
+          .order('forecasted_at', { ascending: false });
+        if (childError) throw childError;
 
-      renderHistory(items);
+        childItems = (childData || []).map((item) => {
+          const metadata = item.metadata || {};
+          const premium = metadata.child_premium_analysis || {};
+          const suggested = premium.suggested_sport || 'Child forecast run';
+          return {
+            id: item.id,
+            itemType: 'child_run',
+            title: 'Child Forecast Analysis',
+            date: item.forecasted_at || item.created_at,
+            summary: `Top match: ${suggested}`,
+            isPremium: true,
+            link: '/child-results',
+          };
+        });
+      } catch (error) {
+        console.warn('[Dashboard] Child run history unavailable; continuing with adult history', error);
+      }
+
+      historyItemsState = [...adultItems, ...childItems].sort((a, b) => {
+        const left = new Date(a.date || 0).getTime();
+        const right = new Date(b.date || 0).getTime();
+        return right - left;
+      });
+      renderHistory(historyItemsState);
 
     } catch (error) {
       console.error('[Sporty] Failed to load history', error);
       historyGrid.innerHTML = '<p class="col-span-full text-center py-8 text-red-500">Unable to load history.</p>';
+    }
+  }
+
+  async function requestDeleteHistoryItem(item) {
+    if (!sportyApp?.deleteDataItem) return;
+    const previous = historyItemsState.slice();
+    historyItemsState = historyItemsState.filter((entry) => entry.id !== item.id);
+    renderHistory(historyItemsState);
+
+    try {
+      await sportyApp.deleteDataItem(item.itemType, item.id);
+      updateDataDeleteStatus('Run deleted.', 'success');
+    } catch (error) {
+      console.error('[Dashboard] Failed to delete run item', error);
+      historyItemsState = previous;
+      renderHistory(historyItemsState);
+      updateDataDeleteStatus('Unable to delete run. Please try again.', 'error');
     }
   }
 
@@ -1375,6 +1527,7 @@
     items.forEach(item => {
       const article = document.createElement('article');
       article.className = 'history-card';
+      article.dataset.historyId = item.id;
 
       const dateStr = new Date(item.date).toLocaleDateString(undefined, {
         year: 'numeric',
@@ -1396,10 +1549,70 @@
         <p class="history-card__summary">${item.summary}</p>
         <div class="history-card__actions">
           <a class="btn-pill btn-pill-primary btn-pill-sm" href="${item.link}">View details</a>
+          <div class="history-card__menu">
+            <button
+              type="button"
+              class="history-card__menu-trigger"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              data-history-menu-trigger
+            >
+              ...
+            </button>
+            <div class="history-card__menu-dropdown hidden" role="menu" data-history-menu-dropdown>
+              <button type="button" class="history-card__menu-item" role="menuitem" data-history-delete-item>
+                Delete run
+              </button>
+            </div>
+          </div>
         </div>
       `;
+      const menuTrigger = article.querySelector('[data-history-menu-trigger]');
+      const menuDropdown = article.querySelector('[data-history-menu-dropdown]');
+      const deleteItemBtn = article.querySelector('[data-history-delete-item]');
+
+      if (menuTrigger && menuDropdown && deleteItemBtn) {
+        menuTrigger.addEventListener('click', (event) => {
+          event.stopPropagation();
+          const expanded = menuTrigger.getAttribute('aria-expanded') === 'true';
+          historyGrid.querySelectorAll('[data-history-menu-dropdown]').forEach((node) => {
+            node.classList.add('hidden');
+          });
+          historyGrid.querySelectorAll('[data-history-menu-trigger]').forEach((node) => {
+            node.setAttribute('aria-expanded', 'false');
+          });
+          if (!expanded) {
+            menuDropdown.classList.remove('hidden');
+            menuTrigger.setAttribute('aria-expanded', 'true');
+          }
+        });
+
+        deleteItemBtn.addEventListener('click', (event) => {
+          event.stopPropagation();
+          const ok = window.confirm('Delete this run?');
+          if (!ok) return;
+          requestDeleteHistoryItem(item);
+        });
+      }
       historyGrid.appendChild(article);
     });
+
+    const closeMenus = () => {
+      historyGrid.querySelectorAll('[data-history-menu-dropdown]').forEach((node) => {
+        node.classList.add('hidden');
+      });
+      historyGrid.querySelectorAll('[data-history-menu-trigger]').forEach((node) => {
+        node.setAttribute('aria-expanded', 'false');
+      });
+    };
+    if (!historyMenuOutsideBound) {
+      historyMenuOutsideBound = true;
+      document.addEventListener('click', (event) => {
+        if (!historyGrid.contains(event.target)) {
+          closeMenus();
+        }
+      });
+    }
   }
 
   function escapeHtml(value) {

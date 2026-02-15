@@ -67,6 +67,8 @@
     fetchConsents: () => fetchConsents(),
     revokeConsent: () => revokeConsent(),
     deleteAccount: () => deleteAccount(),
+    deleteAllData: () => deleteAllData(),
+    deleteDataItem: (itemType, itemId) => deleteDataItem(itemType, itemId),
     getAccountDeleteStatus: () => fetchAccountDeleteStatus(),
     refreshAccountDelete: () => refreshAccountDelete(),
     recordConsent: (userId) => recordConsentForUser(userId),
@@ -864,8 +866,19 @@
   }
 
   async function saveRecommendation(formPayload, resultPayload, extras = {}) {
-    if (!state.client || !state.user || !state.hasConsent) {
+    if (!state.client || !state.user) {
       return { saved: false, reason: 'not-authorized' };
+    }
+    if (!state.hasConsent) {
+      try {
+        const status = await fetchConsentStatus();
+        state.hasConsent = Boolean(status && status.has_consent);
+      } catch (error) {
+        console.warn('[Sporty] Failed to refresh consent before save', error);
+      }
+    }
+    if (!state.hasConsent) {
+      return { saved: false, reason: 'no-consent' };
     }
 
     const pastSportsInput = Array.isArray(extras.pastSports) ? extras.pastSports : [];
@@ -890,6 +903,9 @@
       pelvic_bone_width_cm: formPayload.pelvic_bone_width_cm ?? null,
       hand_length_cm: formPayload.hand_length_cm ?? null,
       foot_length_cm: formPayload.foot_length_cm ?? null,
+      torso_length_cm: formPayload.torso_length_cm ?? null,
+      ankle_circumference_cm: formPayload.ankle_circumference_cm ?? null,
+      wrist_circumference_cm: formPayload.wrist_circumference_cm ?? null,
     };
 
     const analysisInput = extras && extras.analysisInput ? extras.analysisInput : null;
@@ -904,16 +920,28 @@
       if (measurementRes.error) throw measurementRes.error;
 
       const measurementId = measurementRes.data.id;
-
-      if (analysisInput && hasAnalysisSelections(analysisInput)) {
-        try {
-          await persistAnalysisInput(measurementId, analysisInput, measurementRecord);
-        } catch (error) {
-          console.error('[Sporty] Failed to persist premium intake details', error);
-        }
-      }
-
       if (isPremiumResult) {
+        const storage = resultPayload && resultPayload.storage ? resultPayload.storage : null;
+        const submissionId = storage && storage.submission_id ? String(storage.submission_id) : null;
+        if (submissionId) {
+          try {
+            const updateRes = await state.client
+              .from('submissions')
+              .update({ measurement_id: measurementId })
+              .eq('id', submissionId)
+              .eq('user_id', state.user.id);
+            if (updateRes && updateRes.error) throw updateRes.error;
+          } catch (error) {
+            console.error('[Sporty] Failed to link premium submission to measurement', error);
+          }
+          if (analysisInput && hasAnalysisSelections(analysisInput)) {
+            try {
+              await persistAnalysisInput(measurementId, analysisInput, measurementRecord, submissionId);
+            } catch (error) {
+              console.error('[Sporty] Failed to persist premium intake details', error);
+            }
+          }
+        }
         return { saved: true, reason: 'premium-stored-server' };
       }
 
@@ -923,6 +951,7 @@
           {
             user_id: state.user.id,
             subject_type: 'self',
+            measurement_id: measurementId,
             payload: {
               form: formPayload,
               version: MODEL_VERSION,
@@ -933,6 +962,15 @@
         .single();
 
       if (submissionRes.error) throw submissionRes.error;
+      const submissionId = submissionRes.data.id;
+
+      if (analysisInput && hasAnalysisSelections(analysisInput)) {
+        try {
+          await persistAnalysisInput(measurementId, analysisInput, measurementRecord, submissionId);
+        } catch (error) {
+          console.error('[Sporty] Failed to persist premium intake details', error);
+        }
+      }
 
       const summaryPayload = {
         suggested_sport: resultPayload.suggested_sport,
@@ -947,7 +985,7 @@
         .insert([
           {
             user_id: state.user.id,
-            submission_id: submissionRes.data.id,
+            submission_id: submissionId,
             model_version: MODEL_VERSION,
             summary: JSON.stringify(summaryPayload),
           },
@@ -996,7 +1034,7 @@
     );
   }
 
-  async function persistAnalysisInput(measurementId, selection, measurementRecord) {
+  async function persistAnalysisInput(measurementId, selection, measurementRecord, submissionId = null) {
     if (!state.client || !state.user || !measurementId) return null;
 
     const payload = {
@@ -1004,6 +1042,7 @@
       subject_user_id: measurementRecord.subject_user_id || state.user.id,
       subject_child_id: measurementRecord.subject_child_id || null,
       measurement_id: measurementId,
+      submission_id: submissionId,
       notes: selection.notes ? sanitizeText(selection.notes, 280) : null,
     };
 
@@ -1268,5 +1307,35 @@
     state.accountDeleteCompletedAt = payload?.finished_at || null;
     notifyListeners();
     return payload;
+  }
+
+  async function deleteAllData() {
+    if (!state.user) {
+      throw new Error('Not signed in');
+    }
+    const response = await authFetch('/api/data/delete-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    if (!response.ok) {
+      throw new Error('Unable to delete data');
+    }
+    return response.json();
+  }
+
+  async function deleteDataItem(itemType, itemId) {
+    if (!state.user) {
+      throw new Error('Not signed in');
+    }
+    const response = await authFetch('/api/data/delete-item', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ item_type: itemType, item_id: itemId }),
+    });
+    if (!response.ok) {
+      throw new Error('Unable to delete run');
+    }
+    return response.json();
   }
 })();

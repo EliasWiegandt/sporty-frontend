@@ -759,9 +759,8 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       const sportyApp =
         typeof window !== "undefined" ? (window as any).SportyApp : null;
 
-      // For premium flow, still use the modal-based ensureConsent
+      // For logged-in users, require consent before persisting account history.
       if (
-        wantsPremium &&
         sportyApp &&
         snapshot.user &&
         !consentAccepted &&
@@ -776,11 +775,15 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
         }
         if (!consentAccepted) {
           setStatus(
-            "To keep your data private, log out before running another match or enable storage in your profile.",
+            wantsPremium
+              ? "To keep your data private, log out before running another match or enable storage in your profile."
+              : "Analysis ran, but we did not save it. Enable storage consent in your profile to keep history.",
             "error"
           );
-          setSubmitBusy(false);
-          return;
+          if (wantsPremium) {
+            setSubmitBusy(false);
+            return;
+          }
         }
       }
 

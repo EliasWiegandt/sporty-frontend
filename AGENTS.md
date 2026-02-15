@@ -1,5 +1,5 @@
 Elias owns this. Start: say hi + 1 motivating line.
-I am not a programmer, but I am quite experienced in data science. So a lot of programming concept will have to be explained, both back-end and front-end stuff.
+I am not a programmer, but I am quite experienced in data science. So a lot of programming concept will have to be explained, both back-end and front-end stuff. When you ask questions during a planning phase, make sure to also include a small intuitive or "easy-to-understand" description of the question you need me to answer and of each of the options you present.
 Work style: telegraph; noun-phrases ok; drop grammar; min tokens.
 
 # Context for work on this project

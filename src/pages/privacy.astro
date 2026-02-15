@@ -15,17 +15,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <ul>
         <li>Inputs collected: body measurements, optional preferences, injury notes, past sports, and goals.</li>
         <li>Storage: Supabase Postgres; data is kept only after you grant consent. You can revoke consent anytime from your profile.</li>
+        <li>Data-only deletion: Dashboard → Account &amp; Data lets you delete measurements and analysis history while keeping your account.</li>
         <li>Account deletion: you can permanently delete your account from Dashboard → Account &amp; Data.</li>
         <li>Access: limited to you (and verified guardians for child data in future phases). Row-Level Security protects every table.</li>
         <li>Sharing: no data sales. Aggregated, anonymized insights may be published.</li>
-        <li>Deletion: revoke consent to erase identifiable sport data while keeping account access, or delete account to remove account access and identifiable profile data.</li>
+        <li>Deletion: choose data-only delete (keep account), consent revoke (erase identifiable sport data + disable storage), or account delete (remove account access and identifiable profile data).</li>
       </ul>
     </section>
 
     <section class="policy-callout">
       <strong>Retention matrix (launch default)</strong>
       <ul>
-        <li>Profile + analysis data (measurements, submissions, recommendations, child-linked runs): deleted when consent is revoked or account is deleted.</li>
+        <li>Profile + analysis data (measurements, submissions, recommendations, child-linked runs): deleted by data-only delete, consent revoke, or account deletion (depending on selected scope).</li>
         <li>Anonymous learning events: retained in de-identified form for model improvement.</li>
         <li>Billing ledger: minimal pseudonymous purchase/accounting fields retained for up to 10 years for legal obligations.</li>
         <li>Deletion job logs: retained up to 24 months for operational audit and incident follow-up.</li>

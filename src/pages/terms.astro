@@ -13,7 +13,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
     <section class="terms-card">
       <h2>Data</h2>
-      <p>Measurements are processed transiently unless you opt in. Account holders can revoke storage or permanently delete their account in <a href="/dashboard">Dashboard → Account &amp; Data</a>. Sporty may retain a minimal pseudonymous billing ledger where required by law.</p>
+      <p>Measurements are processed transiently unless you opt in. Account holders can delete saved measurements/results, revoke storage consent, or permanently delete their account in <a href="/dashboard">Dashboard → Account &amp; Data</a>. Sporty may retain a minimal pseudonymous billing ledger where required by law.</p>
     </section>
 
     <section class="terms-card">
@@ -25,6 +25,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   <Fragment slot="scripts">
     <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script is:inline src="/config.js" defer></script>
-    <script is:inline src="/assets/js/app.js?v=7" defer></script>
+    <script is:inline src="/assets/js/app.js?v=8" defer></script>
   </Fragment>
 </BaseLayout>

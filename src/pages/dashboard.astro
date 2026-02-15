@@ -141,6 +141,22 @@ const historyPlaceholders = [
             <div class="status-area mt-3" data-account-delete-status></div>
           </div>
 
+          <div class="py-4 border-t border-slate-100 mt-4" data-data-delete-zone>
+            <div class="max-w-xl">
+              <h3 class="font-medium text-slate-900">Delete measurements and results</h3>
+              <p class="text-sm text-slate-500 mt-1">
+                Deletes saved measurements, submissions, recommendations, premium intake inputs, and guardian-owned child run history.
+                Your account, consent settings, and billing records stay unchanged.
+              </p>
+            </div>
+            <div class="mt-3">
+              <button type="button" class="btn-pill btn-pill-secondary btn-pill-sm" data-data-delete-open>
+                Delete all measurements & results
+              </button>
+            </div>
+            <div class="status-area mt-3" data-data-delete-status></div>
+          </div>
+
           <div class="flex items-center justify-between py-4 border-t border-slate-100 mt-4" data-measurement-system-zone>
             <div class="max-w-xl">
               <h3 class="font-medium text-slate-900">Measurement units</h3>
@@ -313,12 +329,53 @@ const historyPlaceholders = [
         </div>
       </div>
     </div>
+
+    <div class="auth-overlay" data-data-delete-overlay hidden>
+      <div class="consent-modal" role="dialog" aria-modal="true" aria-labelledby="data-delete-title">
+        <h2 id="data-delete-title">Delete all measurements and results?</h2>
+        <p>
+          This removes your saved analysis history but keeps your account and consent setting.
+          Type <strong>DELETE DATA</strong> to confirm.
+        </p>
+        <label class="block mt-3 text-sm text-slate-600" for="data-delete-confirm-input">
+          Type DELETE DATA to continue
+        </label>
+        <input
+          id="data-delete-confirm-input"
+          type="text"
+          class="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+          placeholder="DELETE DATA"
+          data-data-delete-confirm-input
+        />
+        <p class="mt-2 text-xs text-slate-500" data-data-delete-confirm-help>
+          Deleted: measurements + sport-analysis history. Retained: account, consent, billing.
+        </p>
+        <div class="consent-modal__actions mt-4 flex gap-3 justify-end">
+          <button
+            type="button"
+            class="btn-pill btn-pill-secondary btn-pill-sm"
+            data-data-delete-cancel
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn-pill btn-pill-danger btn-pill-sm btn-pill-disabled"
+            data-data-delete-confirm
+            aria-disabled="true"
+            disabled
+          >
+            Delete data
+          </button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <Fragment slot="scripts">
     <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script is:inline src="/config.js" defer></script>
-    <script is:inline src="/assets/js/app.js?v=7" defer></script>
+    <script is:inline src="/assets/js/app.js?v=8" defer></script>
     <script is:inline src="/assets/js/dashboard.js" defer></script>
     <script is:inline src="/assets/js/checkout.js" defer></script>
   </Fragment>

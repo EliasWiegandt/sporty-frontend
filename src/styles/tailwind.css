@@ -1447,6 +1447,58 @@
     display: flex;
     gap: 0.75rem;
     margin-top: 0.5rem;
+    align-items: center;
+  }
+
+  .history-card__menu {
+    position: relative;
+    margin-left: auto;
+  }
+
+  .history-card__menu-trigger {
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-muted);
+    color: var(--color-text-soft);
+    border-radius: 999px;
+    padding: 0.2rem 0.65rem 0.35rem;
+    line-height: 1;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+
+  .history-card__menu-trigger:hover {
+    border-color: var(--color-brand-300);
+    color: var(--color-brand-700);
+  }
+
+  .history-card__menu-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.35rem);
+    z-index: 20;
+    min-width: 10rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-soft);
+    padding: 0.25rem;
+  }
+
+  .history-card__menu-item {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--color-text-soft);
+    text-align: left;
+    font-size: 0.85rem;
+    border-radius: var(--radius-sm);
+    padding: 0.45rem 0.55rem;
+    cursor: pointer;
+  }
+
+  .history-card__menu-item:hover {
+    background: var(--color-surface-muted);
+    color: var(--color-text);
   }
 
   .badge-premium {
