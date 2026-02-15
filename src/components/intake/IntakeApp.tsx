@@ -275,8 +275,6 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
 
       if (typeof sportyApp.grantConsent === "function") {
         await sportyApp.grantConsent();
-      } else if (typeof sportyApp.recordConsent === "function") {
-        await sportyApp.recordConsent(user.id);
       } else {
         throw new Error("Consent grant API unavailable");
       }
@@ -498,9 +496,12 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
               .select("id,name,slug,category")
               .in("id", subcategoryIds);
             (categories || []).forEach((row: any) => {
-              const fallback = row?.category?.sport?.name || row?.slug || "Sport";
-              const label =
-                typeof row?.name === "string" && row.name.trim() ? row.name.trim() : fallback;
+              const label = typeof row?.name === "string" ? row.name.trim() : "";
+              if (!label) {
+                console.warn("[Intake] sports_subcategories row missing canonical name", {
+                  subcategoryId: row?.id ?? null,
+                });
+              }
               labelById.set(String(row.id), label);
             });
           }

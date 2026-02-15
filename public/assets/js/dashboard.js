@@ -1168,12 +1168,7 @@
 
       target.disabled = true;
       try {
-        if (typeof sportyApp.grantConsent === 'function') {
-          await sportyApp.grantConsent();
-        } else if (typeof sportyApp.recordConsent === 'function') {
-          const user = sportyApp.getUser();
-          await sportyApp.recordConsent(user.id);
-        }
+        await sportyApp.grantConsent();
 
         await sportyApp.refreshConsent();
         updateToggleHelp(true);

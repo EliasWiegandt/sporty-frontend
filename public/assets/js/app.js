@@ -7,7 +7,6 @@
   const CONSENT_TYPE = 'data_retention';
   const CONSENT_VERSION = 'adult-data-retention-v1';
   const MODEL_VERSION = 'free-adult-v1';
-  const PENDING_CONSENT_KEY = 'sporty:pending-consent';
   const SUPABASE_AUTH_TOKEN_SUFFIX = '-auth-token';
 
   const state = {
@@ -71,7 +70,6 @@
     deleteDataItem: (itemType, itemId) => deleteDataItem(itemType, itemId),
     getAccountDeleteStatus: () => fetchAccountDeleteStatus(),
     refreshAccountDelete: () => refreshAccountDelete(),
-    recordConsent: (userId) => recordConsentForUser(userId),
   };
 
   window.SportyApp = api;
@@ -527,24 +525,14 @@
 
   async function handleSignupConsent(user, session, consentChecked) {
     if (!consentChecked || !user) return;
-
-    const userId = user.id;
-    if (!userId) return;
-
-    if (session && session.access_token) {
-      try {
-        await recordConsentForUser(userId);
-        if (state.user && state.user.id === userId) {
-          state.hasConsent = true;
-          notifyListeners();
-        }
-        return;
-      } catch (error) {
-        console.error('[Sporty] Unable to save consent immediately after sign up', error);
-      }
+    if (!session || !session.access_token) return;
+    try {
+      const payload = await grantConsent();
+      state.hasConsent = Boolean(payload && payload.has_consent);
+      notifyListeners();
+    } catch (error) {
+      console.error('[Sporty] Unable to save consent immediately after sign up', error);
     }
-
-    addPendingConsent(userId);
   }
 
   async function signOut() {
@@ -600,16 +588,6 @@
       state.purgeStatus = status?.purge_status || null;
       state.purgeRequestedAt = status?.purge_requested_at || null;
       state.purgeCompletedAt = status?.purge_completed_at || null;
-      if (!state.hasConsent) {
-        const applied = await maybeApplyPendingConsent();
-        if (applied) {
-          const refreshed = await fetchConsentStatus();
-          state.hasConsent = Boolean(refreshed && refreshed.has_consent);
-          state.purgeStatus = refreshed?.purge_status || null;
-          state.purgeRequestedAt = refreshed?.purge_requested_at || null;
-          state.purgeCompletedAt = refreshed?.purge_completed_at || null;
-        }
-      }
       if (!state.hasConsent) {
         resolveConsentPromises(false);
       }
@@ -737,8 +715,8 @@
         }
         confirmBtn.disabled = true;
         try {
-          await recordConsentForUser(state.user.id);
-          state.hasConsent = true;
+          const payload = await grantConsent();
+          state.hasConsent = Boolean(payload && payload.has_consent);
           overlay.hidden = true;
           notifyListeners();
           resolveConsentPromises(true);
@@ -765,74 +743,6 @@
     const { overlay, confirmBtn } = state.consentModal;
     if (confirmBtn) confirmBtn.disabled = false;
     overlay.hidden = false;
-  }
-
-  async function recordConsentForUser(userId) {
-    if (!userId) throw new Error('Missing user for consent');
-    await grantConsent();
-    removePendingConsent(userId);
-    return true;
-  }
-
-  function addPendingConsent(userId) {
-    if (!userId) return;
-    if (typeof localStorage === 'undefined') return;
-    try {
-      console.log('[Sporty] Adding pending consent for:', userId);
-      const ids = getPendingConsentIds();
-      ids.add(userId);
-      localStorage.setItem(PENDING_CONSENT_KEY, JSON.stringify(Array.from(ids)));
-    } catch (error) {
-      console.error('[Sporty] Failed to persist pending consent', error);
-    }
-  }
-
-  function removePendingConsent(userId) {
-    if (!userId) return;
-    if (typeof localStorage === 'undefined') return;
-    try {
-      console.log('[Sporty] Removing pending consent for:', userId);
-      const ids = getPendingConsentIds();
-      if (ids.delete(userId)) {
-        localStorage.setItem(PENDING_CONSENT_KEY, JSON.stringify(Array.from(ids)));
-        console.log('[Sporty] Pending consent removed successfully.');
-      } else {
-        console.log('[Sporty] No pending consent found to remove.');
-      }
-    } catch (error) {
-      console.error('[Sporty] Failed to clear pending consent', error);
-    }
-  }
-
-  function getPendingConsentIds() {
-    if (typeof localStorage === 'undefined') return new Set();
-    try {
-      const raw = localStorage.getItem(PENDING_CONSENT_KEY);
-      if (!raw) return new Set();
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return new Set(parsed);
-      }
-    } catch (error) {
-      console.error('[Sporty] Unable to read pending consent data', error);
-    }
-    return new Set();
-  }
-
-  async function maybeApplyPendingConsent() {
-    if (!state.user) return false;
-    const ids = getPendingConsentIds();
-    if (!ids.has(state.user.id)) return false;
-    try {
-      await recordConsentForUser(state.user.id);
-      state.hasConsent = true;
-      notifyListeners();
-      resolveConsentPromises(true);
-      return true;
-    } catch (error) {
-      console.error('[Sporty] Failed to apply pending consent', error);
-      return false;
-    }
   }
 
   function resolveConsentPromises(value) {
@@ -907,6 +817,29 @@
       ankle_circumference_cm: formPayload.ankle_circumference_cm ?? null,
       wrist_circumference_cm: formPayload.wrist_circumference_cm ?? null,
     };
+    const requiredMeasurementFields = [
+      'height_cm',
+      'weight_kg',
+      'arm_span_cm',
+      'leg_inseam_cm',
+      'shoulder_width_cm',
+      'pelvic_bone_width_cm',
+      'hand_length_cm',
+      'foot_length_cm',
+      'torso_length_cm',
+      'ankle_circumference_cm',
+      'wrist_circumference_cm',
+    ];
+    const missingRequired = requiredMeasurementFields.filter((key) => {
+      const value = measurementRecord[key];
+      return !Number.isFinite(Number(value));
+    });
+    if (missingRequired.length) {
+      console.error('[Sporty] Missing required measurement fields for persistence', {
+        missing: missingRequired,
+      });
+      return { saved: false, reason: 'invalid-measurements' };
+    }
 
     const analysisInput = extras && extras.analysisInput ? extras.analysisInput : null;
 
@@ -1283,7 +1216,6 @@
     state.purgeStatus = payload?.purge_status || 'pending';
     state.purgeRequestedAt = payload?.purge_requested_at || null;
     state.purgeCompletedAt = payload?.purge_completed_at || null;
-    removePendingConsent(state.user.id);
     notifyListeners();
     resolveConsentPromises(false);
     return true;
