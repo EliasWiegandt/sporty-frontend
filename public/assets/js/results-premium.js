@@ -443,9 +443,13 @@
     const cardMedia = match.media?.card || spec.media?.card || null;
     const imageUrl = resolveMediaUrl(cardMedia, resolveStorageBase());
     if (imageUrl) {
+      const imageAlt =
+        (cardMedia && typeof cardMedia.alt === 'string' && cardMedia.alt.trim()
+          ? cardMedia.alt
+          : title);
       const imgContainer = document.createElement('figure');
       imgContainer.className = 'match-card__image-container';
-      imgContainer.innerHTML = `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}" class="match-card__image" loading="lazy" />`;
+      imgContainer.innerHTML = `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" class="match-card__image" loading="lazy" />`;
       card.appendChild(imgContainer);
     }
 

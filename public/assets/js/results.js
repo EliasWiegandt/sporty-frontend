@@ -158,12 +158,16 @@
           : null;
     const imageUrl = resolveMediaUrl(cardMedia, storageBase);
     if (imageUrl) {
+      const imageAlt =
+        (cardMedia && typeof cardMedia.alt === "string" && cardMedia.alt.trim()
+          ? cardMedia.alt
+          : title);
       const imgContainer = document.createElement("figure");
       imgContainer.className = "match-card__image-container";
       imgContainer.innerHTML = `<img src="${escapeHtml(
         imageUrl
       )}" alt="${escapeHtml(
-        title
+        imageAlt
       )}" class="match-card__image" loading="lazy" />`;
       card.appendChild(imgContainer);
     }
