@@ -452,9 +452,9 @@
     const descriptions = document.createElement('div');
     descriptions.className = 'match-card__descriptions';
 
-    // Sport Details (Category Hierarchy)
-    const category = subcategory.category || {};
-    if (Object.keys(category).length > 0) {
+    // Sport Details (Category Hierarchy in canonical YAML order)
+    const hierarchy = Array.isArray(subcategory.hierarchy) ? subcategory.hierarchy : [];
+    if (hierarchy.length > 0) {
       const detailsContainer = document.createElement('div');
       detailsContainer.className = 'match-card__desc-block';
 
@@ -466,15 +466,17 @@
       detailsContainer.appendChild(detailHeader);
       detailsContainer.appendChild(listContainer);
 
-      Object.entries(category).forEach(([key, val]) => {
-        if (!val || !val.name) return;
+      hierarchy.forEach((entry) => {
+        if (!entry || !entry.name) return;
 
         const row = document.createElement('div');
         row.className = 'match-card__detail-row group relative flex items-center';
 
+        const key = String(entry.key || '').trim();
+        if (!key) return;
         const label = key.charAt(0).toUpperCase() + key.slice(1);
-        const value = val.name;
-        const description = val.description;
+        const value = entry.name;
+        const description = entry.description;
 
         row.innerHTML = `
           <span class="font-medium text-slate-700 w-24 shrink-0">${escapeHtml(label)}:</span>
@@ -510,6 +512,8 @@
       });
 
       descriptions.appendChild(detailsContainer);
+    } else if (subcategory && subcategory.slug) {
+      console.warn('[Sporty][taxonomy-order-missing]', { slug: subcategory.slug });
     }
 
     const sportDesc = subcategory.description || sport.description;
