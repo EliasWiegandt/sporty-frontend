@@ -1,10 +1,6 @@
 (for the developer. Codex and agents: you can ignore this file)
 
 # TODO
-
-- "Delete user" functionality
-- Request to have data deleted functionlity
-- The sports and subcategories should be in the order from the taxonomy yaml
 - generate alt-text for images of sports
 - Decide on how we handle non-identifiability. Maybe remove birthdays?
 - Think about terms and conditions when signing up
@@ -15,3 +11,5 @@
 - Add more characters
 - go through again and again and make fronted neat
 - improve graphics on child forecast chart
+- Going back in premium analysis history through dashboard not working
+- Delete analysis dropdown not showing nicely
