@@ -9,6 +9,12 @@
   const SENSITIVE_CONSENT_TYPE = 'sensitive_health_processing';
   const CHILD_CONSENT_TYPE = 'child_data_processing';
   const CONSENT_VERSION = 'consent-policy-v1';
+  const TERMS_VERSION = 'v2026-02';
+  const PRIVACY_VERSION = 'v2026-02';
+  const ALLOWED_SIGNUP_COUNTRIES = new Set([
+    'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT',
+    'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'US',
+  ]);
   const MODEL_VERSION = 'free-adult-v1';
   const SUPABASE_AUTH_TOKEN_SUFFIX = '-auth-token';
 
@@ -388,8 +394,11 @@
     const switchBtn = overlay.querySelector('[data-auth-switch]');
     const switchText = overlay.querySelector('[data-auth-switch-text]');
     const passwordInput = overlay.querySelector('input[name="password"]');
-    const consentRow = overlay.querySelector('[data-signup-consent-row]');
-    const consentInput = overlay.querySelector('[data-signup-consent]');
+    const legalRow = overlay.querySelector('[data-signup-legal-row]');
+    const countryInput = overlay.querySelector('[data-signup-country]');
+    const termsInput = overlay.querySelector('[data-signup-terms-accept]');
+    const privacyInput = overlay.querySelector('[data-signup-privacy-accept]');
+    const ageInput = overlay.querySelector('[data-signup-age-attestation]');
     const resetRow = overlay.querySelector('[data-auth-reset-row]');
 
     if (state.authMode === 'signin') {
@@ -398,9 +407,12 @@
       if (switchBtn) switchBtn.textContent = 'Sign up here';
       if (switchText) switchText.textContent = "Don't have an account yet?";
       if (passwordInput) passwordInput.setAttribute('autocomplete', 'current-password');
-      if (consentRow) {
-        consentRow.classList.add('hidden');
-        if (consentInput) consentInput.checked = false;
+      if (legalRow) {
+        legalRow.classList.add('hidden');
+        if (termsInput) termsInput.checked = false;
+        if (privacyInput) privacyInput.checked = false;
+        if (ageInput) ageInput.checked = false;
+        if (countryInput) countryInput.value = '';
       }
       if (resetRow) resetRow.classList.add('hidden');
     } else {
@@ -409,7 +421,7 @@
       if (switchBtn) switchBtn.textContent = 'Log in here';
       if (switchText) switchText.textContent = 'Already have an account?';
       if (passwordInput) passwordInput.setAttribute('autocomplete', 'new-password');
-      if (consentRow) consentRow.classList.remove('hidden');
+      if (legalRow) legalRow.classList.remove('hidden');
       if (resetRow) resetRow.classList.add('hidden');
     }
 
@@ -483,11 +495,24 @@
     const formData = new FormData(form);
     const email = String(formData.get('email') || '').trim();
     const password = String(formData.get('password') || '');
-    const consentChecked = formData.get('signup-consent') === 'on';
+    const termsAccepted = formData.get('signup_terms_accept') === 'on';
+    const privacyAccepted = formData.get('signup_privacy_accept') === 'on';
+    const ageAttested = formData.get('signup_age_attestation') === 'on';
+    const country = String(formData.get('country_of_residence') || '').trim().toUpperCase();
 
     if (!email || !password) {
       updateAuthStatus('Email and password are required.', 'error');
       return;
+    }
+    if (state.authMode === 'signup') {
+      if (!termsAccepted || !privacyAccepted || !ageAttested || !country) {
+        updateAuthStatus('Sign up requires terms, privacy, age/guardian attestation, and country.', 'error');
+        return;
+      }
+      if (!ALLOWED_SIGNUP_COUNTRIES.has(country)) {
+        updateAuthStatus('Sporty currently supports signups only in the EU and United States.', 'error');
+        return;
+      }
     }
 
     updateAuthStatus('Working…');
@@ -510,7 +535,14 @@
           if (isExistingAccountError(error)) {
             const loginResult = await tryLoginAfterSignup(email, password);
             if (loginResult === 'logged_in') {
-              updateAuthStatus('Welcome back! You are logged in.', 'info');
+              await handleSignupLegalAcceptance(state.session, {
+                terms_version: TERMS_VERSION,
+                privacy_version: PRIVACY_VERSION,
+                age_attestation: ageAttested,
+                guardian_attestation: false,
+                country_of_residence: country,
+              });
+              updateAuthStatus('Welcome back! Legal acceptance recorded.', 'info');
               setTimeout(() => closeAuthOverlay(), 400);
               return;
             }
@@ -524,11 +556,17 @@
           throw error;
         }
         if (data.user) {
-          await handleSignupConsent(data.user, data.session, consentChecked);
-          updateAuthStatus('Account created. Check your inbox to verify your email, then log in.', 'info');
-          setAuthMode('signin', { preserveStatus: true });
+          await handleSignupLegalAcceptance(data.session || state.session, {
+            terms_version: TERMS_VERSION,
+            privacy_version: PRIVACY_VERSION,
+            age_attestation: ageAttested,
+            guardian_attestation: false,
+            country_of_residence: country,
+          });
+          updateAuthStatus('Account created and legal acceptance recorded. You can now log in.', 'info');
+          setTimeout(() => closeAuthOverlay(), 400);
         } else {
-          updateAuthStatus('Check your email to finish setting up your account.', 'info');
+          updateAuthStatus('Unable to finalize signup right now. Please try again.', 'error');
         }
       }
     } catch (error) {
@@ -578,14 +616,33 @@
     }
   }
 
-  async function handleSignupConsent(user, session, consentChecked) {
-    if (!consentChecked || !user) return;
-    if (!session || !session.access_token) return;
+  async function handleSignupLegalAcceptance(session, payload) {
+    if (!session || !session.access_token) {
+      await signOut();
+      throw new Error('Signup could not be finalized. Please log in and retry.');
+    }
     try {
-      await grantConsent(BASIC_CONSENT_TYPE);
-      notifyListeners();
+      const response = await fetch('/api/legal/accept', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        let detail = 'Legal acceptance could not be saved.';
+        try {
+          const parsed = await response.json();
+          detail = parsed?.detail?.message || parsed?.detail || detail;
+        } catch (_) { }
+        await signOut();
+        throw new Error(detail);
+      }
     } catch (error) {
-      console.error('[Sporty] Unable to save consent immediately after sign up', error);
+      console.error('[Sporty] Unable to save legal acceptance during signup', error);
+      await signOut();
+      throw error;
     }
   }
 

@@ -39,14 +39,66 @@
                 </div>
               </div>
 
-              <!-- Consent (Sign up only) -->
-              <div class="hidden" data-signup-consent-row>
+              <div class="hidden grid gap-y-3" data-signup-legal-row>
+                <label class="block">
+                  <span class="block text-sm mb-2 font-medium text-slate-700">Country of residence</span>
+                  <select id="signup-country" name="country_of_residence" class="input-field" data-signup-country>
+                    <option value="">Select country…</option>
+                    <option value="US">United States</option>
+                    <option value="AT">Austria</option>
+                    <option value="BE">Belgium</option>
+                    <option value="BG">Bulgaria</option>
+                    <option value="HR">Croatia</option>
+                    <option value="CY">Cyprus</option>
+                    <option value="CZ">Czechia</option>
+                    <option value="DK">Denmark</option>
+                    <option value="EE">Estonia</option>
+                    <option value="FI">Finland</option>
+                    <option value="FR">France</option>
+                    <option value="DE">Germany</option>
+                    <option value="GR">Greece</option>
+                    <option value="HU">Hungary</option>
+                    <option value="IE">Ireland</option>
+                    <option value="IT">Italy</option>
+                    <option value="LV">Latvia</option>
+                    <option value="LT">Lithuania</option>
+                    <option value="LU">Luxembourg</option>
+                    <option value="MT">Malta</option>
+                    <option value="NL">Netherlands</option>
+                    <option value="PL">Poland</option>
+                    <option value="PT">Portugal</option>
+                    <option value="RO">Romania</option>
+                    <option value="SK">Slovakia</option>
+                    <option value="SI">Slovenia</option>
+                    <option value="ES">Spain</option>
+                    <option value="SE">Sweden</option>
+                  </select>
+                </label>
+                <p class="text-xs text-slate-500">
+                  Sporty currently supports signups only in the EU and United States.
+                </p>
                 <div class="flex items-start">
                   <div class="flex items-center h-5">
-                    <input id="signup-consent" name="signup-consent" type="checkbox" class="border-slate-200 rounded text-teal-600 focus:ring-teal-500" data-signup-consent>
+                    <input id="signup-terms-accept" name="signup_terms_accept" type="checkbox" class="border-slate-200 rounded text-teal-600 focus:ring-teal-500" data-signup-terms-accept>
                   </div>
-                  <label for="signup-consent" class="ms-3 text-sm text-slate-600">
-                    I consent to Sporty storing my measurements and recommendations in line with the <a href="/privacy" class="text-teal-600 decoration-2 hover:underline font-medium">Privacy Policy</a>.
+                  <label for="signup-terms-accept" class="ms-3 text-sm text-slate-600">
+                    I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" class="text-teal-600 decoration-2 hover:underline font-medium">Terms of Service</a>
+                  </label>
+                </div>
+                <div class="flex items-start">
+                  <div class="flex items-center h-5">
+                    <input id="signup-privacy-accept" name="signup_privacy_accept" type="checkbox" class="border-slate-200 rounded text-teal-600 focus:ring-teal-500" data-signup-privacy-accept>
+                  </div>
+                  <label for="signup-privacy-accept" class="ms-3 text-sm text-slate-600">
+                    I acknowledge the <a href="/privacy" target="_blank" rel="noopener noreferrer" class="text-teal-600 decoration-2 hover:underline font-medium">Privacy Notice</a>
+                  </label>
+                </div>
+                <div class="flex items-start">
+                  <div class="flex items-center h-5">
+                    <input id="signup-age-attestation" name="signup_age_attestation" type="checkbox" class="border-slate-200 rounded text-teal-600 focus:ring-teal-500" data-signup-age-attestation>
+                  </div>
+                  <label for="signup-age-attestation" class="ms-3 text-sm text-slate-600">
+                    I confirm I am at least 18 year old.
                   </label>
                 </div>
               </div>
