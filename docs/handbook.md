@@ -37,6 +37,7 @@ Signup legal gate posture: sign-up now requires Terms acceptance, Privacy acknow
 - The dashboard exposes consent-category controls (`basic_processing`, `sensitive_health_processing`, `child_data_processing`) plus account deletion (permanent account closure with immediate sign-out).
 - Dashboard privacy now includes a third control for signed-in users: delete all saved measurements/results while keeping account access and consent.
 - History cards use a neutral `...` overflow menu for per-run deletion actions; keep destructive emphasis in confirmations/modals rather than always-on red card buttons.
+- Dashboard history menus intentionally use visible card overflow plus elevated menu z-layer so the `Delete run` dropdown is never clipped by the card boundary.
 - Backend anonymization/deletion hardening now canonicalizes legacy payload variants server-side; frontend endpoint contracts remain unchanged (`/api/consent/revoke`, `/api/account/delete`, `/api/account/delete-status`), but deletion jobs are resilient to malformed historical rows.
 - Consent state now comes only from backend status endpoints; the old browser `pending consent` localStorage cache was removed.
 - Intake prefill now expects canonical `sports_subcategories.name`; missing names are logged as data issues instead of falling back to nested legacy labels/slugs.
