@@ -39,23 +39,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const user = await verifySupabaseToken(request, env);
-  if (!user) {
-    return new Response(
-      JSON.stringify({
-        detail: {
-          code: 'CONSENT_REQUIRED',
-          message: 'Sign in and grant consent before running analysis.',
-        },
-      }),
-      {
-        status: 403,
-        headers: {
-          ...JSON_HEADERS,
-          'X-Request-Id': reqId,
-        },
-      }
-    );
-  }
 
   const upstreamUrl = new URL('/v1/recommend-adult-free', backendUrl);
   const body = await request.text();
@@ -91,7 +74,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     'X-Request-Id': reqId,
   };
   if (sessionId) upstreamHeaders['X-Session-ID'] = sessionId;
-  upstreamHeaders['X-User-ID'] = user.id;
+  if (user?.id) upstreamHeaders['X-User-ID'] = user.id;
 
   try {
     const upstreamResp = await fetch(upstreamUrl.toString(), {

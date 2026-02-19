@@ -7,6 +7,8 @@ Source of truth for:
 - consent UX journey policy
 - pricing/entry-point behavior
 
+Compliance claim policy for this document: strict no-claim mode (operational statements only; legal certification claims require legal sign-off).
+
 ---
 
 ## Visitor Journeys (Desktop MVP)
@@ -20,19 +22,18 @@ It focuses on how users move through the website to complete their core use case
 
 ## Consent Strategy (Unified Across Journeys)
 
-To minimize friction, Sporty collects consent only at **two key moments**:
+Sporty now uses explicit consent categories (single `v1` contract, no compatibility layer):
 
-1. **Account Creation / Sign-Up**
+1. `basic_processing` — measurements + saved run history
+2. `sensitive_health_processing` — injury/health premium inputs
+3. `child_data_processing` — child profiles/forecasts/child-linked runs
 
-   - Users grant general consent for measurement storage, analytics, and improvement.
-   - Includes acknowledgment of data policy and rights.
-   - Covers all standard body measurements and past sport history.
-
-2. **First Paid Analysis (Adult or Child)**
-   - Users grant explicit consent for storing and processing _sensitive data_ (injuries, health-related info, child data).
-   - This single consent applies to all subsequent paid analyses unless revoked in the profile.
-
-All other interactions — such as free, anonymous analyses — are purely transient (data processed but not stored).
+Anonymous free analyses are preview-only and transient (no identifiable storage).
+Strictly necessary service operations are not consent-only: contract/legal-obligation basis may apply where appropriate.
+Day-1 posture includes guardian-mediated minor (<18) flow; direct child self-service onboarding is out of scope.
+Child analysis monetization policy: no sale/share/license/monetization of child-derived data (including aggregates).
+Child anonymized event collection is disabled; child identifiable analysis data is retained for 7 days then deleted.
+Child results persistence strategy: no retention-extension option at launch; guardians should export the top-3 results PDF from `/child-results` if they need records beyond 7 days.
 
 Users can manage or revoke consent anytime in **Account → Data & Privacy**.
 
@@ -100,8 +101,8 @@ Discover which sports match your body without paying or storing data.
 
 ### Consent
 
-- No consent needed for anonymous use.
-- Logged-in users are already covered by sign-up consent.
+- No consent needed for anonymous preview use.
+- Logged-in free persistence requires `basic_processing`.
 
 ---
 
@@ -144,7 +145,7 @@ Get a deeper, personalized analysis including goals, preferences, injuries, and 
 
 ### Consent
 
-- Triggered once at first paid analysis, covering future detailed runs.
+- Premium submission requires both `basic_processing` and `sensitive_health_processing`.
 
 ---
 
@@ -152,7 +153,7 @@ Get a deeper, personalized analysis including goals, preferences, injuries, and 
 
 ### Goal
 
-Purchase a $1 child credit to forecast a child’s body trajectory and unlock sport matches with guardian consent.
+Purchase a paid child credit to forecast a child’s body trajectory and unlock sport matches with guardian consent.
 
 ### Entry Points
 
@@ -164,7 +165,7 @@ Purchase a $1 child credit to forecast a child’s body trajectory and unlock sp
 1. **Guardian Dashboard ➝ Start Child Analysis**
 
    - Choose or create a child profile.
-   - Confirm guardian consent and apply a child credit (required before continuing).
+   - Confirm guardian consent and apply a paid child credit tied to guardian card verification (required before continuing).
    - Input child measurements and, optionally, parent measurements in the same flow.
 
 2. **Submit ➝ Results (Child Analysis)**
@@ -174,7 +175,8 @@ Purchase a $1 child credit to forecast a child’s body trajectory and unlock sp
    - The backend now routes these premium child inputs through the shared `app/matching.match_child_premium` helper so the component impact cards, match narratives, and alignment panels match the adult premium experience.
 
 3. **Follow-Up**
-   - Dashboard updated with the next recommended re-measure date and recent child analyses.
+   - Dashboard updated with the next recommended re-measure date and recent child analyses (within the 7-day retention window).
+   - Guardians can export a PDF summary (top 3 child matches) from `/child-results` before auto-deletion.
    - Notification prompt for future forecast windows.
 
 ### Key Pages Involved
@@ -186,8 +188,8 @@ Purchase a $1 child credit to forecast a child’s body trajectory and unlock sp
 
 ### Consent
 
-- Collected once at the first child analysis purchase, tied to guardian account.
-- Co-guardians can later approve or revoke jointly in Account settings.
+- Child submission requires `basic_processing` and `child_data_processing`.
+- Co-guardians can later revoke consent categories in Account settings.
 
 ---
 
@@ -229,7 +231,7 @@ This document defines how users navigate through Sporty’s desktop MVP:
 - **Free adults** can quickly discover suitable sports.
 - **Paying adults** gain detailed, data-rich insights.
 - **Guardians** purchase a child credit to forecast body trajectories and receive premium sport matches in one paid package.
-- **Consent** is streamlined: once at signup, and once at the first paid adult or child analysis.
+- **Consent** is explicit per category: basic, sensitive-health, and child-data.
 
 This hierarchy provides a clear framework for the frontend scaffold, ensuring all key routes, flows, and CTAs are aligned with Sporty’s product vision.
 
@@ -239,6 +241,7 @@ This hierarchy provides a clear framework for the frontend scaffold, ensuring al
 ## 9. References
 
 - Backend repo: `../sporty-backend`
+- Compliance baseline: `../sporty-backend/docs/compliance-baseline-gdpr-us.md`
 - Worker deploy workflow: `.github/workflows/deploy.yml`
 - Shared image catalog: `docs/images/catalog.yaml`
 - Design system baseline: Tailwind component layer (`src/styles/tailwind.css`)

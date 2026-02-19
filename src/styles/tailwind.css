@@ -1773,3 +1773,93 @@
     outline: 2px solid #5eead4;
     outline-offset: 2px;
 }
+
+.child-results-print-report {
+  display: none;
+}
+
+@media print {
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  nav,
+  footer,
+  [data-child-results-tabs-root] > nav,
+  [data-tab-panel="forecast"],
+  [data-premium-hero],
+  [data-results-container],
+  [data-empty-state],
+  [data-child-retention-banner],
+  [data-child-export-pdf] {
+    display: none !important;
+  }
+
+  [data-child-results-tabs-root] {
+    max-width: 100% !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  [data-tab-panel="matches"] {
+    padding: 0 !important;
+  }
+
+  .child-results-print-report {
+    display: block !important;
+    color: #111827 !important;
+    font-size: 12pt;
+    line-height: 1.4;
+  }
+
+  .child-results-print-header {
+    border-bottom: 1px solid #d1d5db;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .child-results-print-header h1 {
+    margin: 0;
+    font-size: 18pt;
+  }
+
+  .child-results-print-header p {
+    margin: 0.25rem 0 0;
+    color: #111827 !important;
+  }
+
+  .child-results-print-cards {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .child-results-print-card {
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    padding: 0.75rem;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .child-results-print-card h3 {
+    margin: 0 0 0.4rem;
+    font-size: 13pt;
+  }
+
+  .child-results-print-card p {
+    margin: 0.2rem 0;
+    color: #111827 !important;
+  }
+
+  .child-results-print-footer {
+    margin-top: 0.75rem;
+    border-top: 1px solid #d1d5db;
+    padding-top: 0.5rem;
+    font-size: 10pt;
+    color: #374151 !important;
+  }
+}

@@ -4,6 +4,12 @@ _Last updated: 2025-11-19_
 
 This handbook tracks how the Sporty frontend is assembled and deployed. Pair it with the backend handbook (`../sporty-backend/docs/handbook.md`) for API and entitlement details. (`../sporty-backend/docs/handbook.md`) for API details and shared operational notes.
 
+Compliance posture: strict no-claim mode. Treat frontend/legal copy as operational statements, not legal certification language, unless legal review explicitly approves stronger claims.
+Legal-basis posture: mixed model. Strictly necessary service operations may rely on contract/legal-obligation basis, while explicit consent categories remain required for high-risk/optional processing classes (`sensitive_health_processing`, `child_data_processing`) and user-facing identifiable persistence control (`basic_processing`).
+Minor launch posture: Day-1 guardian-mediated flow for users under 18 is in scope; no direct child self-service onboarding.
+Child hardening posture: child analyses require paid guardian card-backed child credits, child anonymized-event collection is disabled, child-derived data is not monetized (including aggregates), and child identifiable analysis data is retained 7 days before deletion.
+Child results persistence strategy: no retention-extension option at launch; guardians should export PDF from `/child-results` to retain records beyond 7 days.
+
 ---
 
 ## 1. Mission
@@ -18,14 +24,15 @@ This handbook tracks how the Sporty frontend is assembled and deployed. Pair it 
 - Adult intake now exposes two routes (`/intake` and `/intake-premium`) that both hydrate the Preact island at `src/components/intake/IntakeApp.tsx`; the free page keeps traits locked behind the premium controller, while the premium page flips the `mode` prop so the traits/goals/injuries steps appear and the credit-backed submission posts to `/api/recommend-adult-premium`.
 - The payload sent to `/api/recommend-adult-premium` now includes the trait answers collected in the Traits step (`muscle_fiber`, `metabolic_tendency`, `joint_laxity`, `foot_arch`, `temperature_tolerance`, `handedness`, `footedness`) so the matching service can incorporate those signals into premium scoring.
 - Child analysis now requires a child credit up front; guardians collect measurements, apply the credit, and receive both the forecast and premium sport matches in the same flow (`/child-intake` → `/child-results?tab=matches`, with a Forecast tab alongside it).
+- `/child-results` now includes a guardian “Download PDF (Top 3 matches)” export path designed for post-7-day record keeping.
 - The free results page now mirrors the journey vision with a component impact bar, five match cards, measurement comparison tables (with fit bars), and highlight reasoning drawn from each measurement so the narrative stays grounded in the research. Interactive adjustment controls remain deferred until preview endpoints exist.
 - Free, premium, and child-premium result cards render sport detail rows from `optimal_body.subcategory.hierarchy` (ordered array from backend taxonomy seed), not from object-key order. This guarantees YAML-defined order such as `sport -> role -> subrole` and `sport -> stroke -> distance`.
 - Result-card `<img>` alt text now uses backend-provided `spec.media.card.alt` (fallback: card title). Canonical source is the selected image `scene_prompt` from the backend publish pipeline (`F_02`/`F_03` -> `published_body_images.alt_text` -> API payload).
 - Child intake primes the deterministic test family (prefilled on preview branches) and collects child + parent measurements plus premium inputs; once a child credit is applied we post to `/api/forecast-child`, capture the forecast, and render both premium matches and forecast details in `/child-results` (tabs).
 - Logged-in intakes also capture past sports (searchable `sports_subcategories`, using the long-form subcategory `name` such as "Soccer - Forward - Winger", plus intensity and enjoyment/flair/skill flags) and sync them to Supabase before saving recommendations.
-- Logged-in free users can run and store unlimited analyses once they grant consent; anonymous runs still capture past-sport signals anonymously to fuel the data moat.
+- Logged-in free users can run and store analyses once `basic_processing` consent is granted; anonymous free runs are preview-only and not persisted as identifiable history.
 - The dashboard views stored recommendations (free + premium) alongside updated credit balances so users and guardians can revisit previous analyses.
-- The dashboard now exposes two privacy controls: consent revoke (erase identifiable analysis data while keeping account access) and account deletion (permanent account closure with immediate sign-out).
+- The dashboard exposes consent-category controls (`basic_processing`, `sensitive_health_processing`, `child_data_processing`) plus account deletion (permanent account closure with immediate sign-out).
 - Dashboard privacy now includes a third control for signed-in users: delete all saved measurements/results while keeping account access and consent.
 - History cards use a neutral `...` overflow menu for per-run deletion actions; keep destructive emphasis in confirmations/modals rather than always-on red card buttons.
 - Backend anonymization/deletion hardening now canonicalizes legacy payload variants server-side; frontend endpoint contracts remain unchanged (`/api/consent/revoke`, `/api/account/delete`, `/api/account/delete-status`), but deletion jobs are resilient to malformed historical rows.
@@ -87,7 +94,7 @@ Both `/intake` and `/intake-premium` hydrate the same Preact island (`src/compon
 
 - `IntakeApp` auto-saves drafts to `localStorage` under `sporty:intake:draft:v1` whenever basics, measurements, or past sports change. On load it rehydrates that data (including the last step index and current trait answers) so returning visitors resume where they left off. In dev mode the island prefills a dummy run if the cache is empty to speed up design reviews.
 - Submission combines the validated basics, cleaned measurements, past sports, trait answers (collected directly from the DOM), and premium selections into payloads built by `buildFreePayload` or `buildPremiumPayload`. Free runs post to `/api/recommend-adult-free`, premium runs to `/api/recommend-adult-premium`, and the buttons switch to “Generating…” while the request is in flight.
-- Before persisting account history, the island asks `window.SportyApp.ensureConsent()` for logged-in users in both free and premium flows; premium still hard-blocks if consent is declined, while free can continue in non-saved mode. Consent grant/revoke now uses a single backend-backed path (`grantConsent` + `refreshConsent`) without local fallback cache. Success responses are cached in `sessionStorage` (`sporty:lastResult`, `sporty:lastPremiumResult`, and `sporty:lastCreditSnapshot`) so the results screens can show previews while the backend work is finishing.
+- Before persisting account history, free and premium intake require `basic_processing`. Premium final step now also renders an inline `sensitive_health_processing` toggle (intent at UI, grant at submit) and blocks submit until that intent is enabled; child flow hard-blocks without `child_data_processing`. Consent grant/revoke uses one backend contract with explicit `consent_type` and no compatibility layer.
 - Free-flow client persistence writes full adult-required measurement fields (`torso_length_cm`, `wrist_circumference_cm`, plus `ankle_circumference_cm`) so inserts satisfy `measurements_adult_required_extremity_fields_check` and history appears in dashboard.
 - Free-flow persistence now validates required adult measurement fields before insert and returns an explicit client-side save failure (`invalid-measurements`) when any required value is missing.
 
@@ -135,7 +142,7 @@ Both `/intake` and `/intake-premium` hydrate the same Preact island (`src/compon
 - When a user attempts to save data without existing consent, trigger a modal listing each data class (measurements, preferences/goals, injuries, child data) with purpose explanations and opt-in toggles.
 - Provide a “Preview without saving” option so users can decline while still seeing results.
 - Surface a persistent consent status indicator (e.g., banner or profile badge) linking to the consent management view where users can revoke or amend choices.
-- Log consent actions via the Supabase backend; frontend should include policy version in payloads to support GDPR/CCPA compliance.
+- Log consent actions via the backend with explicit `consent_type`, `policy_version`, and jurisdiction.
 - Account deletion requires a destructive confirmation modal (`DELETE` text input), then polls deletion status and signs the user out once complete.
 - Data-only deletion requires `DELETE DATA` confirmation and keeps the account signed in.
 
@@ -178,6 +185,8 @@ Both `/intake` and `/intake-premium` hydrate the same Preact island (`src/compon
 
 `/config.js` is generated on each request and exposes the publishable Supabase configuration, storage bucket, and Stripe public key to browser scripts. Always read the values from `window.SPORTY_CONFIG` rather than hard-coding them.
 
+**Data residency note:** current Supabase project region is Sweden (Stockholm, EU). Frontend privacy copy and consent UX should continue assuming EU-resident personal-data storage.
+
 ---
 
 ## Results Storage Note (Session Storage)
@@ -216,6 +225,7 @@ Product navigation journeys and consent journey policy moved to:
 ## 10. References
 
 - Backend repo: `../sporty-backend`
+- Backend compliance baseline: `../sporty-backend/docs/compliance-baseline-gdpr-us.md`
 - Worker deploy workflow: `.github/workflows/deploy.yml`
 - Shared image catalog: `docs/images/catalog.yaml`
 - Design system baseline: `src/styles/tailwind.css`

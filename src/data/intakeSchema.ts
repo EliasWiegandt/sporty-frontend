@@ -102,7 +102,6 @@ type FreePayload = {
   wrist_circumference_cm: number;
   past_sports?: PastSportInput[];
   traits?: Record<string, string>;
-  consent_preview?: boolean;
 };
 
 type PremiumPayload = {
@@ -162,7 +161,6 @@ export function buildFreePayload(data: FreeIntakeData): FreePayload {
     torso_length_cm,
     ankle_circumference_cm: ankle_circumference_cm ?? null,
     wrist_circumference_cm,
-    consent_preview: true,
   };
 
   const cleanedPastSports = (pastSports || []).filter((entry) => !!entry);

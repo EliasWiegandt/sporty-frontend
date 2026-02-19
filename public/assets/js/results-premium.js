@@ -6,7 +6,10 @@
   const reasonEl = hero ? hero.querySelector('[data-reason]') : null;
   const container = root.querySelector('[data-results-container]');
   const emptyState = root.querySelector('[data-empty-state]');
+  const exportPdfButton = root.querySelector('[data-child-export-pdf]');
+  const printReportRoot = root.querySelector('[data-child-print-report]');
   const subjectLabel = (root.getAttribute('data-subject-label') || 'You').trim() || 'You';
+  const isChildResults = subjectLabel.toLowerCase() === 'child';
   const possessiveLabel = subjectLabel.toLowerCase() === 'you' ? 'Your' : `${subjectLabel}’s`;
   const componentPalette = {
     body: '#0f766e',
@@ -79,7 +82,9 @@
       reasonEl.textContent = parsed.reason || 'Based on your measurements and premium inputs.';
     }
 
-    renderMatches(parsed.matches || []);
+    const matches = parsed.matches || [];
+    renderMatches(matches);
+    setupChildPdfExport(matches);
   }
 
   async function fetchPremiumResultById(id) {
@@ -379,6 +384,7 @@
     if (!matches.length) {
       container.hidden = true;
       if (emptyState) emptyState.hidden = false;
+      setChildExportState([]);
       return;
     }
     container.hidden = false;
@@ -398,7 +404,93 @@
       console.error('[Sporty] Failed to render premium matches', error);
       container.hidden = true;
       if (emptyState) emptyState.hidden = false;
+      setChildExportState([]);
+      return;
     }
+    setChildExportState(matches);
+  }
+
+  function setupChildPdfExport(matches) {
+    if (!isChildResults || !exportPdfButton) return;
+    exportPdfButton.addEventListener('click', () => {
+      if (exportPdfButton.disabled) return;
+      renderChildPrintReport(matches);
+      window.print();
+    });
+  }
+
+  function setChildExportState(matches) {
+    if (!isChildResults || !exportPdfButton) return;
+    const topMatches = getTopMatches(matches);
+    exportPdfButton.disabled = topMatches.length < 1;
+    if (!topMatches.length) {
+      exportPdfButton.setAttribute('aria-disabled', 'true');
+      exportPdfButton.title = 'Run a child analysis first to export PDF results.';
+      clearPrintReport();
+      return;
+    }
+    exportPdfButton.removeAttribute('aria-disabled');
+    exportPdfButton.removeAttribute('title');
+  }
+
+  function clearPrintReport() {
+    if (!printReportRoot) return;
+    printReportRoot.hidden = true;
+    printReportRoot.innerHTML = '';
+  }
+
+  function getTopMatches(matches) {
+    if (!Array.isArray(matches)) return [];
+    return matches
+      .slice()
+      .sort((a, b) => (b.score ?? b.fit_score ?? 0) - (a.score ?? a.fit_score ?? 0))
+      .slice(0, 3);
+  }
+
+  function renderChildPrintReport(matches) {
+    if (!printReportRoot) return;
+    const topMatches = getTopMatches(matches);
+    if (!topMatches.length) {
+      clearPrintReport();
+      return;
+    }
+    const generatedAt = new Date().toLocaleString();
+    const cardsHtml = topMatches
+      .map((match, index) => {
+        const body = match?.optimal_body || {};
+        const sport = body?.sport || {};
+        const subcategory = body?.subcategory || {};
+        const title =
+          subcategory.name || body.category_slug || sport.name || body.sport_slug || 'Sport match';
+        const scoreRaw = match?.score ?? match?.fit_score ?? 0;
+        const scorePercent = Math.round(Number(scoreRaw || 0) * 100);
+        const sportDesc = subcategory.description || sport.description || '';
+        const bodyDesc = body?.spec?.rationale || body?.spec?.overall_description || '';
+        return `
+          <article class="child-results-print-card">
+            <h3>#${index + 1} ${escapeHtml(title)}</h3>
+            <p><strong>Match score:</strong> ${scorePercent}%</p>
+            ${sportDesc ? `<p>${escapeHtml(sportDesc)}</p>` : ''}
+            ${bodyDesc ? `<p>${escapeHtml(bodyDesc)}</p>` : ''}
+          </article>
+        `;
+      })
+      .join('');
+
+    printReportRoot.innerHTML = `
+      <header class="child-results-print-header">
+        <h1>Sporty Child Match Summary (Top 3)</h1>
+        <p>Generated: ${escapeHtml(generatedAt)}</p>
+        <p>Operational copy. Child results are deleted after 7 days.</p>
+      </header>
+      <section class="child-results-print-cards">
+        ${cardsHtml}
+      </section>
+      <footer class="child-results-print-footer">
+        Guardian-managed minor flow. Keep this PDF if you need records beyond 7 days.
+      </footer>
+    `;
+    printReportRoot.hidden = false;
   }
 
   function buildMatchCard(match, rank) {

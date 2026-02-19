@@ -1,46 +1,160 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-
 ---
 <BaseLayout
-  title="Sporty — Privacy (Draft)"
-  description="Draft privacy policy for Sporty."
+  title="Sporty — Privacy (Operational Draft)"
+  description="Operational draft privacy notice for Sporty."
 >
   <main class="policy-page">
-    <h1>Privacy Policy (Draft)</h1>
-    <p>Sporty processes your measurements to generate sport recommendations. We store your data only when you create an account and explicitly consent to retention.</p>
+    <h1>Privacy Notice (Operational Draft)</h1>
+    <p>
+      This page summarizes how Sporty currently handles personal data. It is an operational draft pending lawyer review.
+      It is not a legal certification statement.
+    </p>
 
     <section class="policy-callout">
-      <strong>Key points</strong>
+      <h2>1. Who controls your data</h2>
+      <p>
+        Data controller (placeholder): Sporty EU entity (final legal name/address TODO).
+      </p>
+    </section>
+
+    <section class="policy-callout">
+      <h2>2. Data categories we process</h2>
       <ul>
-        <li>Inputs collected: body measurements, optional preferences, injury notes, past sports, and goals.</li>
-        <li>Storage: Supabase Postgres; data is kept only after you grant consent. You can revoke consent anytime from your profile.</li>
-        <li>Data-only deletion: Dashboard → Account &amp; Data lets you delete measurements and analysis history while keeping your account.</li>
-        <li>Account deletion: you can permanently delete your account from Dashboard → Account &amp; Data.</li>
-        <li>Access: limited to you (and verified guardians for child data in future phases). Row-Level Security protects every table.</li>
-        <li>Sharing: no data sales. Aggregated, anonymized insights may be published.</li>
-        <li>Deletion: choose data-only delete (keep account), consent revoke (erase identifiable sport data + disable storage), or account delete (remove account access and identifiable profile data).</li>
+        <li>Basic profile and measurements.</li>
+        <li>Optional sports history and recommendation outputs.</li>
+        <li>Sensitive health-related context in premium flows (for example injury context).</li>
+        <li>Child-related profile and forecast data in guardian-mediated flows.</li>
+        <li>Billing and credit metadata, plus pseudonymous billing ledger records.</li>
+        <li>Operational security, deletion, and incident metadata.</li>
       </ul>
     </section>
 
     <section class="policy-callout">
-      <strong>Retention matrix (launch default)</strong>
+      <h2>3. Processing purposes</h2>
       <ul>
-        <li>Profile + analysis data (measurements, submissions, recommendations, child-linked runs): deleted by data-only delete, consent revoke, or account deletion (depending on selected scope).</li>
-        <li>Anonymous learning events: retained in de-identified form for model improvement.</li>
-        <li>Billing ledger: minimal pseudonymous purchase/accounting fields retained for up to 10 years for legal obligations.</li>
-        <li>Deletion job logs: retained up to 24 months for operational audit and incident follow-up.</li>
+        <li>Deliver free and premium sport recommendations.</li>
+        <li>Operate user accounts, credits, billing, and support operations.</li>
+        <li>Store and manage recommendation history where applicable.</li>
+        <li>Run deletion, rights-handling, and incident response workflows.</li>
+        <li>Maintain de-identified learning events for adult flows as implemented.</li>
       </ul>
     </section>
 
-    <p>This document is an interim summary while we prepare the lawyer-reviewed policy for launch. Contact us with any questions or concerns.</p>
+    <section class="policy-callout">
+      <h2>4. Legal-basis snapshot (draft)</h2>
+      <ul>
+        <li>
+          Strictly necessary operations (for example account operation, billing/accounting, core service delivery, and security operations)
+          may rely on contract and/or legal-obligation basis, as applicable.
+        </li>
+        <li>
+          Sensitive premium health-context processing requires explicit consent category
+          <code>sensitive_health_processing</code>.
+        </li>
+        <li>
+          Child forecast/premium processing requires explicit consent category
+          <code>child_data_processing</code> in guardian-mediated flows.
+        </li>
+        <li>
+          <code>basic_processing</code> is used as a user-facing consent/control gate for identifiable persistence features.
+        </li>
+      </ul>
+    </section>
+
+    <section class="policy-callout">
+      <h2>5. Consent controls and withdrawal</h2>
+      <p>
+        You can manage consent categories in Account settings. You can revoke categories at any time.
+        Revocation triggers scoped purge behavior for affected data classes under current runtime behavior.
+      </p>
+      <ul>
+        <li><code>basic_processing</code></li>
+        <li><code>sensitive_health_processing</code></li>
+        <li><code>child_data_processing</code></li>
+      </ul>
+    </section>
+
+    <section class="policy-callout">
+      <h2>6. Minor processing (Day-1 posture)</h2>
+      <p>
+        Under-18 minor usage is allowed only through guardian-mediated flows. No direct child self-service onboarding is intended.
+        Child analysis requires a paid guardian card transaction and explicit child-data consent before processing.
+      </p>
+      <p>
+        Child identifiable results are not offered with an in-product retention-extension option at launch; guardians should export
+        PDF copies from results pages if they need records beyond the 7-day retention window.
+      </p>
+    </section>
+
+    <section class="policy-callout">
+      <h2>7. Retention summary (launch defaults)</h2>
+      <ul>
+        <li>Child identifiable analysis data and results (for example child forecast runs): retained for 7 days, then deleted by retention controls.</li>
+        <li>Adult product recommendation/history data: retained per account operation and removed by revocation/deletion/account-closure workflows.</li>
+        <li>Anonymous learning events: adult-only de-identified events retained as implemented; child anonymized event collection is disabled.</li>
+        <li>Billing ledger: minimal pseudonymous records retained up to 10 years for legal/accounting reasons.</li>
+        <li>Deletion and incident operational logs: retained up to 24 months target.</li>
+      </ul>
+    </section>
+
+    <section class="policy-callout">
+      <h2>8b. Child-data commercialization policy</h2>
+      <p>
+        Sporty does not sell, license, or otherwise monetize child-derived data, including child-derived aggregates, under current policy.
+      </p>
+      <p>
+        Sporty also does not use child data for model-training or learning-event pipelines under current policy.
+      </p>
+    </section>
+
+    <section class="policy-callout">
+      <h2>8. Data subject rights and requests</h2>
+      <p>
+        You can request access, deletion, portability, objection/restriction, and correction where applicable.
+        Current request handling follows our operational DSAR workflow.
+      </p>
+      <p>
+        Request channel placeholders: privacy contact email TODO.
+      </p>
+    </section>
+
+    <section class="policy-callout">
+      <h2>9. Security and incident response</h2>
+      <p>
+        Sporty uses technical and operational controls designed to reduce risk, including consent gating, scoped deletion controls,
+        and incident-response procedures. No system can guarantee absolute security.
+      </p>
+    </section>
+
+    <section class="policy-callout">
+      <h2>10. Vendors and transfers</h2>
+      <p>
+        Core vendors include Supabase, Cloudflare, Render, Stripe, and GitHub (development/operations context).
+        Primary data storage region is Sweden (Stockholm, EU). Transfer and contract controls are tracked in internal compliance artifacts.
+      </p>
+    </section>
+
+    <section class="policy-callout">
+      <h2>11. Contact</h2>
+      <ul>
+        <li>Privacy contact: TODO</li>
+        <li>Security incident contact: TODO</li>
+        <li>Legal contact: TODO</li>
+      </ul>
+    </section>
+
+    <p>
+      Operational draft; legal review pending.
+    </p>
   </main>
 
   <footer class="footer">
     <div class="footer-inner">
       <div>
         <strong>Questions?</strong>
-        <p class="lead-copy">Reach us at hello@sporty.test for privacy or data requests.</p>
+        <p class="lead-copy">Contact placeholders are currently TODO and will be finalized before broad launch.</p>
       </div>
       <small>© <span id="year">2025</span> Sporty</small>
     </div>
@@ -49,9 +163,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   <Fragment slot="scripts">
     <script>
       const yearEl = document.getElementById('year');
-    if (yearEl) {
-      yearEl.textContent = String(new Date().getFullYear());
-    }
+      if (yearEl) {
+        yearEl.textContent = String(new Date().getFullYear());
+      }
     </script>
   </Fragment>
 </BaseLayout>

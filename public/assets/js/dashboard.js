@@ -17,7 +17,7 @@
   // Account elements
   const emailEl = root.querySelector('[data-profile-email]');
   const consentStatusEl = root.querySelector('[data-profile-consent-status]');
-  const consentToggle = root.querySelector('[data-consent-toggle]');
+  const consentToggles = root.querySelectorAll('[data-consent-type-toggle]');
   const toggleHelp = root.querySelector('[data-profile-toggle-help]');
   const accountDeleteStatusEl = root.querySelector('[data-account-delete-status]');
   const accountDeleteOpenBtn = root.querySelector('[data-account-delete-open]');
@@ -199,9 +199,9 @@
     });
   }
 
-  if (consentToggle) {
-    consentToggle.addEventListener('change', handleToggleChange);
-  }
+  consentToggles.forEach((toggle) => {
+    toggle.addEventListener('change', handleToggleChange);
+  });
 
   if (accountDeleteOpenBtn) {
     accountDeleteOpenBtn.addEventListener('click', openAccountDeleteModal);
@@ -286,7 +286,9 @@
     const signedIn = Boolean(snapshot && snapshot.user);
     if (signedOutBlock) signedOutBlock.hidden = signedIn;
     if (signedInBlock) signedInBlock.hidden = !signedIn;
-    if (consentToggle) consentToggle.disabled = !signedIn;
+    consentToggles.forEach((toggle) => {
+      toggle.disabled = !signedIn;
+    });
     if (accountDeleteOpenBtn) accountDeleteOpenBtn.disabled = !signedIn;
     if (dataDeleteOpenBtn) dataDeleteOpenBtn.disabled = !signedIn;
 
@@ -309,10 +311,12 @@
       clearInviteInbox();
 
       if (emailEl) emailEl.textContent = '';
-      if (consentStatusEl) consentStatusEl.textContent = '';
+      clearConsentActionStatus();
       if (accountDeleteStatusEl) accountDeleteStatusEl.textContent = '';
       if (dataDeleteStatusEl) dataDeleteStatusEl.textContent = '';
-      if (consentToggle) consentToggle.checked = false;
+      consentToggles.forEach((toggle) => {
+        toggle.checked = false;
+      });
       if (toggleHelp) toggleHelp.textContent = '';
       setMeasurementSystemStatus('', 'info');
       return;
@@ -324,18 +328,15 @@
     }
     lastUserId = snapshot.user.id;
     lastUserEmail = snapshot.user.email || null;
-    updateConsentStatus(snapshot);
+    clearConsentActionStatus();
     updateAccountDeleteStatus(snapshot);
-    // Only update toggle if the state actually changed to prevent flicker
-    if (consentToggle && consentToggle.checked !== Boolean(snapshot.hasConsent)) {
-      consentToggle.checked = Boolean(snapshot.hasConsent);
-    }
+    syncConsentToggles(snapshot);
     if (snapshot.accountDeleteStatus === 'pending' || snapshot.accountDeleteStatus === 'running') {
       startAccountDeletePolling();
     } else {
       stopAccountDeletePolling();
     }
-    updateToggleHelp(snapshot.hasConsent);
+    updateToggleHelp(snapshot);
 
     setCredits('...', '...');
     updateRunButtons(null, null); // loading state
@@ -929,33 +930,64 @@
     }
   }
 
-  function updateToggleHelp(hasConsent) {
-    if (!toggleHelp) return;
-    toggleHelp.textContent = hasConsent
-      ? 'Sporty stores your identifiable analysis data for history and personalization.'
-      : 'Turning this off revokes consent and starts deletion of saved identifiable data. Anonymous insights may still be used to improve recommendations.';
+  function syncConsentToggles(snapshot) {
+    const consents = snapshot?.consents || {};
+    consentToggles.forEach((toggle) => {
+      const consentType = toggle.dataset.consentTypeToggle;
+      const granted = Boolean(consents?.[consentType]?.granted);
+      if (toggle.checked !== granted) {
+        toggle.checked = granted;
+      }
+    });
   }
 
-  function updateConsentStatus(snapshot) {
-    const hasConsent = Boolean(snapshot && snapshot.hasConsent);
-    const purgeStatus = snapshot && snapshot.purgeStatus ? String(snapshot.purgeStatus) : null;
-    if (!consentStatusEl) return;
-    if (hasConsent) {
-      consentStatusEl.className = 'text-sm text-teal-700 bg-teal-50 px-3 py-2 rounded-md border border-teal-100';
-      consentStatusEl.textContent = 'You have granted Sporty data-retention consent.';
-    } else if (purgeStatus === 'pending' || purgeStatus === 'running') {
-      consentStatusEl.className = 'text-sm text-rose-700 bg-rose-50 px-3 py-2 rounded-md border border-rose-100';
-      consentStatusEl.textContent = 'Consent revoked. Data deletion is in progress.';
-    } else if (purgeStatus === 'failed') {
-      consentStatusEl.className = 'text-sm text-red-700 bg-red-50 px-3 py-2 rounded-md border border-red-100';
-      consentStatusEl.textContent = 'Consent revoked, but deletion failed. Please retry or contact support.';
-    } else if (purgeStatus === 'done') {
-      consentStatusEl.className = 'text-sm text-slate-700 bg-slate-100 px-3 py-2 rounded-md border border-slate-200';
-      consentStatusEl.textContent = 'Consent revoked and identifiable data deleted.';
-    } else {
-      consentStatusEl.className = 'text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-md border border-amber-100';
-      consentStatusEl.textContent = 'You have not granted data-retention consent.';
+  function updateToggleHelp(snapshot) {
+    if (!toggleHelp) return;
+    // Keep the static helper copy from dashboard.astro; avoid redundant status text above toggles.
+    if (!toggleHelp.textContent || !toggleHelp.textContent.trim()) {
+      toggleHelp.textContent =
+        'Control storage and processing by data category. Revoking a category starts scoped deletion for that category.';
     }
+  }
+
+  function getConsentLabel(consentType) {
+    if (consentType === 'basic_processing') return 'Basic processing';
+    if (consentType === 'sensitive_health_processing') return 'Sensitive health processing';
+    if (consentType === 'child_data_processing') return 'Child data processing';
+    return 'Consent';
+  }
+
+  function clearConsentActionStatus() {
+    if (!consentStatusEl) return;
+    consentStatusEl.className = 'status-area mt-2';
+    consentStatusEl.textContent = '';
+    consentStatusEl.removeAttribute('role');
+    consentStatusEl.removeAttribute('aria-live');
+    consentStatusEl.hidden = true;
+  }
+
+  function showConsentActionStatus({ type, text }) {
+    if (!consentStatusEl) return;
+    if (!text) {
+      clearConsentActionStatus();
+      return;
+    }
+
+    consentStatusEl.hidden = false;
+    if (type === 'success') {
+      consentStatusEl.className = 'text-sm text-teal-700 bg-teal-50 px-3 py-2 rounded-md border border-teal-100';
+      consentStatusEl.setAttribute('role', 'status');
+      consentStatusEl.setAttribute('aria-live', 'polite');
+    } else if (type === 'error') {
+      consentStatusEl.className = 'text-sm text-red-700 bg-red-50 px-3 py-2 rounded-md border border-red-100';
+      consentStatusEl.setAttribute('role', 'alert');
+      consentStatusEl.setAttribute('aria-live', 'assertive');
+    } else {
+      consentStatusEl.className = 'text-sm text-slate-700 bg-slate-100 px-3 py-2 rounded-md border border-slate-200';
+      consentStatusEl.setAttribute('role', 'status');
+      consentStatusEl.setAttribute('aria-live', 'polite');
+    }
+    consentStatusEl.textContent = text;
   }
 
   function updateAccountDeleteStatus(snapshot) {
@@ -1159,6 +1191,8 @@
   async function handleToggleChange(event) {
     const target = event.currentTarget;
     if (!target) return;
+    const consentType = target.dataset.consentTypeToggle;
+    if (!consentType) return;
 
     if (target.checked) {
       if (!sportyApp.getUser()) {
@@ -1168,18 +1202,29 @@
 
       target.disabled = true;
       try {
-        await sportyApp.grantConsent();
-
-        await sportyApp.refreshConsent();
-        updateToggleHelp(true);
-        const snap = sportyApp.hasConsent ? { hasConsent: sportyApp.hasConsent() } : { hasConsent: true };
-        updateConsentStatus(snap);
+        let snap = (await sportyApp.grantConsent(consentType, 'consent-policy-v1', 'EU')) || {};
+        try {
+          await sportyApp.refreshConsent();
+          const status = typeof sportyApp.getConsentStatus === 'function' ? await sportyApp.getConsentStatus() : null;
+          if (status && typeof status === 'object') snap = status;
+        } catch (refreshError) {
+          console.warn('[Dashboard] Consent refresh after grant failed; using grant response payload', refreshError);
+        }
+        const consent = snap?.consents?.[consentType];
+        const label = getConsentLabel(consentType);
+        updateToggleHelp(snap);
+        syncConsentToggles(snap);
+        if (consent?.granted) {
+          showConsentActionStatus({ type: 'success', text: `${label} turned on successfully.` });
+        } else {
+          target.checked = false;
+          showConsentActionStatus({ type: 'error', text: `Unable to update ${label.toLowerCase()}. Please try again.` });
+        }
       } catch (error) {
         console.error('[Dashboard] Failed to grant consent', error);
         target.checked = false;
-        if (toggleHelp) {
-          toggleHelp.textContent = 'Unable to grant consent. Please try again.';
-        }
+        const label = getConsentLabel(consentType);
+        showConsentActionStatus({ type: 'error', text: `Unable to update ${label.toLowerCase()}. Please try again.` });
       } finally {
         target.disabled = false;
       }
@@ -1187,17 +1232,37 @@
       if (typeof sportyApp.revokeConsent !== 'function') return;
       target.disabled = true;
       try {
-        await sportyApp.revokeConsent();
-        await sportyApp.refreshConsent();
-        updateToggleHelp(false);
-        const status = typeof sportyApp.getConsentStatus === 'function' ? await sportyApp.getConsentStatus() : null;
-        updateConsentStatus({
-          hasConsent: false,
-          purgeStatus: status?.purge_status || null,
-        });
+        let snap = (await sportyApp.revokeConsent(consentType)) || {};
+        try {
+          await sportyApp.refreshConsent();
+          const status = typeof sportyApp.getConsentStatus === 'function' ? await sportyApp.getConsentStatus() : null;
+          if (status && typeof status === 'object') snap = status;
+        } catch (refreshError) {
+          console.warn('[Dashboard] Consent refresh after revoke failed; using revoke response payload', refreshError);
+        }
+        const consent = snap?.consents?.[consentType];
+        const purgeStatus = String(consent?.purge_status || '').toLowerCase();
+        const label = getConsentLabel(consentType);
+        updateToggleHelp(snap);
+        syncConsentToggles(snap);
+        if (purgeStatus === 'failed') {
+          showConsentActionStatus({
+            type: 'error',
+            text: `${label} turned off, but cleanup failed. Please try again.`,
+          });
+        } else if (purgeStatus === 'pending' || purgeStatus === 'running') {
+          showConsentActionStatus({
+            type: 'info',
+            text: `${label} turned off successfully. Data cleanup is in progress.`,
+          });
+        } else {
+          showConsentActionStatus({ type: 'success', text: `${label} turned off successfully.` });
+        }
       } catch (error) {
         console.error(error);
         target.checked = true; // Revert toggle if revoke fails
+        const label = getConsentLabel(consentType);
+        showConsentActionStatus({ type: 'error', text: `Unable to update ${label.toLowerCase()}. Please try again.` });
       } finally {
         target.disabled = false;
       }

@@ -110,17 +110,45 @@ const historyPlaceholders = [
             <p class="lead-copy" data-profile-email></p>
           </header>
 
-          <div class="flex items-center justify-between py-4 border-t border-slate-100">
+          <div class="py-4 border-t border-slate-100">
             <div class="max-w-xl">
-              <h3 class="font-medium text-slate-900">Store my measurements & free results</h3>
+              <h3 class="font-medium text-slate-900">Consent controls</h3>
               <p class="text-sm text-slate-500 mt-1" data-profile-toggle-help>
-                Turning this off revokes storage consent and starts deleting saved identifiable data. Anonymous insights may still improve recommendations.
+                Control storage and processing by data category. Revoking a category starts scoped deletion for that category.
               </p>
             </div>
-            <label class="toggle flex-shrink-0 ml-4" aria-label="Data retention consent">
-              <input type="checkbox" data-consent-toggle />
-              <span class="toggle__track"></span>
-            </label>
+            <div class="mt-3 space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="max-w-xl">
+                  <h4 class="font-medium text-slate-900">Basic processing</h4>
+                  <p class="text-sm text-slate-500 mt-1">Measurements + saved run history.</p>
+                </div>
+                <label class="toggle flex-shrink-0 ml-4" aria-label="Basic processing consent">
+                  <input type="checkbox" data-consent-type-toggle="basic_processing" />
+                  <span class="toggle__track"></span>
+                </label>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="max-w-xl">
+                  <h4 class="font-medium text-slate-900">Sensitive health processing</h4>
+                  <p class="text-sm text-slate-500 mt-1">Injury and health-related premium inputs.</p>
+                </div>
+                <label class="toggle flex-shrink-0 ml-4" aria-label="Sensitive health processing consent">
+                  <input type="checkbox" data-consent-type-toggle="sensitive_health_processing" />
+                  <span class="toggle__track"></span>
+                </label>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="max-w-xl">
+                  <h4 class="font-medium text-slate-900">Child data processing</h4>
+                  <p class="text-sm text-slate-500 mt-1">Child profiles, forecasts, and child-linked analysis runs.</p>
+                </div>
+                <label class="toggle flex-shrink-0 ml-4" aria-label="Child data processing consent">
+                  <input type="checkbox" data-consent-type-toggle="child_data_processing" />
+                  <span class="toggle__track"></span>
+                </label>
+              </div>
+            </div>
           </div>
           
           <div class="status-area mt-2" data-profile-consent-status></div>

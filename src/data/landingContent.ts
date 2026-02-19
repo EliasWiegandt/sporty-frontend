@@ -67,8 +67,8 @@ export const testimonials = [
 export const offerings = [
   {
     ribbon: "No log in required",
-    title: "Quick Analysis",
-    price: "Unlimited free analyses",
+    title: "Unlimited free analyses",
+    price: "Quick Analysis",
     summary:
       "Quickly find sports that fit your body using our biomechanics engine.",
     features: [
@@ -84,8 +84,8 @@ export const offerings = [
   },
   {
     ribbon: "No credit card required",
-    title: "Premium Analysis",
-    price: "10 free analyses with signup",
+    title: "10 free analyses with signup",
+    price: "Premium Analysis",
     summary: "Deeper insights await.",
     features: [
       "Include traits like metabolic tendency, temperature tolerance and dominant side.",
@@ -99,9 +99,9 @@ export const offerings = [
     },
   },
   {
-    ribbon: "No credit card required",
-    title: "Child Forecast and Analysis",
-    price: "5 free analyses with signup",
+    ribbon: "1$",
+    title: "Identity verification required",
+    price: "Child Forecast and Analysis",
     summary: "Forecast a child's growth and match its future body to sports.",
     features: [
       "Forecast your child's body metrics using child + parent measurements.",
@@ -146,7 +146,7 @@ export const faqItems = [
   {
     title: "How do premium credits work?",
     content:
-      "<p>New accounts start with a signup bonus of 10 adult premium analyses and 5 child analyses (no card required). After that, premium adult analyses and child packages each cost a single $5 credit purchased through Stripe Checkout from Pricing or the dashboard.</p>",
+      "<p>Premium adult analyses and child packages each require a paid credit purchased through Stripe Checkout from Pricing or the dashboard.</p><p>Child analysis credits are card-paid and guardian-scoped; no free child-credit path is offered in production.</p>",
   },
   {
     title: "What makes the premium analysis different?",
@@ -156,7 +156,7 @@ export const faqItems = [
   {
     title: "How does the child analysis package work?",
     content:
-      "<p>Guardians measure the child, optionally add parent measurements, then apply a child credit to blend preferences, goals, injuries, and past sports into sport matches.</p><p>Child analyses are only stored when guardians consent, and you can revoke or export data anytime.</p>",
+      "<p>Guardians measure the child, optionally add parent measurements, then apply a paid child credit to blend preferences, goals, injuries, and past sports into sport matches.</p><p>This flow is guardian-only for minors and child identifiable analysis data is retained for a short window (7 days) before deletion under current policy.</p>",
   },
   {
     title: "Can I control what data you store?",

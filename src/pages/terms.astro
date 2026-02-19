@@ -1,25 +1,119 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
-<BaseLayout title="Sporty — Terms (Draft)" description="Draft terms of service for the Sporty MVP.">
+<BaseLayout title="Sporty — Terms of Service (Operational Draft)" description="Operational draft terms of service for Sporty.">
   <main class="terms-shell">
-    <h1 class="section-title">Terms of Service (Draft)</h1>
-    <p class="lead-copy">Formal legal terms will be published before launch. Until then, use this draft to understand how Sporty expects the product to be used.</p>
+    <h1 class="section-title">Terms of Service (Operational Draft)</h1>
+    <p class="lead-copy">
+      These Terms are an operational draft pending legal review. They describe current service expectations and controls,
+      and are not a legal certification statement.
+    </p>
 
     <section class="terms-card">
-      <h2>Usage</h2>
-      <p>Sporty provides sport recommendations for personal discovery. Do not rely on Sporty for medical advice or high-risk decisions.</p>
+      <h2>1. Service description and non-medical use</h2>
+      <p>
+        Sporty provides recommendation and forecasting tools for sports discovery. Sporty is not a medical service and does not
+        provide medical diagnosis, treatment, or emergency guidance.
+      </p>
     </section>
 
     <section class="terms-card">
-      <h2>Data</h2>
-      <p>Measurements are processed transiently unless you opt in. Account holders can delete saved measurements/results, revoke storage consent, or permanently delete their account in <a href="/dashboard">Dashboard → Account &amp; Data</a>. Sporty may retain a minimal pseudonymous billing ledger where required by law.</p>
+      <h2>2. Eligibility and account responsibility</h2>
+      <p>
+        You are responsible for account credentials, activity in your account, and accuracy of information you submit.
+      </p>
     </section>
 
     <section class="terms-card">
-      <h2>Credits</h2>
-      <p>Premium credits support deeper analyses. Credits are non-transferable and tied to the purchasing account.</p>
+      <h2>3. Guardian responsibility for child profiles</h2>
+      <p>
+        Minor child usage (under 18) is only permitted through guardian-mediated flows. Guardians are responsible for attestations,
+        permissions, and requests related to child profiles and child-linked processing. Child analyses require paid child credits tied to guardian card transactions.
+      </p>
     </section>
+
+    <section class="terms-card">
+      <h2>4. Credits and billing</h2>
+      <p>
+        Premium analyses use credits tied to the purchasing account. Credit and payment operations are processed through
+        configured payment and infrastructure providers. No free child-credit path is offered in production.
+      </p>
+    </section>
+
+    <section class="terms-card">
+      <h2>4b. Child data handling baseline</h2>
+      <p>
+        Child identifiable analysis data and child results are retained for a short operational window (7 days) and then deleted under retention controls.
+        Sporty does not monetize child-derived data, including child-derived aggregates, under current policy.
+      </p>
+      <p>
+        Child data is not used in model-training or learning-event pipelines under current policy.
+      </p>
+      <p>
+        No retention-extension option is offered at launch; guardians should use the child-results PDF export if they need records beyond the 7-day window.
+      </p>
+    </section>
+
+    <section class="terms-card">
+      <h2>5. Refund policy</h2>
+      <p>
+        Default rule: no refunds for credits or completed services.
+      </p>
+      <p>
+        Exception: where applicable law, card-network rules, or payment-provider requirements mandate a refund or equivalent remedy,
+        those requirements apply.
+      </p>
+    </section>
+
+    <section class="terms-card">
+      <h2>6. Acceptable use</h2>
+      <p>
+        You agree not to misuse the service, bypass controls, interfere with security, or use the product for unlawful activity.
+      </p>
+    </section>
+
+    <section class="terms-card">
+      <h2>7. Intellectual property</h2>
+      <p>
+        Sporty product content, code, and branding remain owned by Sporty and licensors. You receive a limited right to use the
+        service under these Terms.
+      </p>
+    </section>
+
+    <section class="terms-card">
+      <h2>8. Warranty and liability limitations (draft)</h2>
+      <p>
+        The service is provided on an "as available" basis. To the extent permitted by applicable law, Sporty disclaims implied
+        warranties and limits liability for indirect or consequential losses.
+      </p>
+    </section>
+
+    <section class="terms-card">
+      <h2>9. Governing law and venue (EU default draft)</h2>
+      <p>
+        These Terms are intended to follow EU-default governing law and venue posture aligned with Sporty’s EU registration.
+        Final jurisdiction and venue text remains pending legal finalization.
+      </p>
+    </section>
+
+    <section class="terms-card">
+      <h2>10. Changes to these Terms</h2>
+      <p>
+        Sporty may update these Terms as the product and legal requirements evolve. Material updates will be published with an
+        updated effective date and reasonable notice mechanism.
+      </p>
+    </section>
+
+    <section class="terms-card">
+      <h2>11. Contact</h2>
+      <ul>
+        <li>Legal contact: TODO</li>
+        <li>Privacy contact: TODO</li>
+        <li>Security incident contact: TODO</li>
+      </ul>
+    </section>
+
+    <p class="lead-copy">Operational draft; legal review pending.</p>
   </main>
 
   <Fragment slot="scripts">

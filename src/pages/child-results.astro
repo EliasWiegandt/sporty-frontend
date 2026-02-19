@@ -48,13 +48,30 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <header class="result-header anchored" data-premium-hero>
           <h1 class="section-title">Child’s Premium Matches</h1>
           <p class="cta-inline" data-reason>Based on the child’s forecasted adult build and premium inputs.</p>
+          <div
+            class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-slate-700"
+            data-child-retention-banner
+          >
+            Child identifiable data and results are deleted after 7 days. Export now to keep a copy.
+          </div>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="btn-pill btn-pill-secondary btn-pill-sm"
+              data-child-export-pdf
+              disabled
+            >
+              Download PDF (Top 3 matches)
+            </button>
+          </div>
         </header>
 
         <div class="results-container" data-results-container></div>
+        <section class="child-results-print-report" data-child-print-report hidden></section>
 
         <div class="empty-state" data-empty-state hidden>
           <h2>No premium analysis loaded</h2>
-          <p>Run a child analysis with a child credit to see detailed insights here.</p>
+          <p>Run a guardian-managed child analysis (under 18) with a paid child credit to see detailed insights here.</p>
           <div class="btn-row justify-center">
             <a class="btn-primary" href="/child-intake">Run a child analysis</a>
             <button type="button" class="btn-secondary" data-tab-jump="forecast">View forecasted body</button>

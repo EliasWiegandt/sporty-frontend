@@ -21,6 +21,7 @@ import {
 type SportySnapshot = {
   user: { id: string; email?: string | null } | null;
   hasConsent?: boolean;
+  consents?: Record<string, { granted?: boolean }>;
   session?: { access_token?: string } | null;
   purgeStatus?: string | null;
 };
@@ -37,6 +38,8 @@ type MeasurementValues = Record<string, number | null>;
 type Props = {
   adultAgeGroups: string[];
 };
+
+const CHILD_NOTICE_VERSION = 'child-privacy-notice-v1';
 
 const STEP_KEYS = [
   'child',
@@ -113,6 +116,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
   const [sex, setSex] = useState<Sex>('female');
   const [ethnicity, setEthnicity] = useState<string>('');
   const [adultAgeGroup, setAdultAgeGroup] = useState<string>(adultAgeGroups[2] || adultAgeGroups[0] || '25-35 years');
+  const [childNoticeAccepted, setChildNoticeAccepted] = useState(false);
 
   const [childMeasurements, setChildMeasurements] = useState<MeasurementValues>(() => buildEmptyMeasurements());
 
@@ -318,10 +322,10 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
     premiumControllerRef.current
       ?.update({
         user: snapshot.user ? { id: snapshot.user.id } : null,
-        hasConsent: Boolean(snapshot.hasConsent),
+        hasConsent: Boolean(snapshot?.consents?.child_data_processing?.granted),
       })
       .catch((err) => console.error('[ChildIntake] Failed to update premium controller', err));
-  }, [snapshot.user?.id, snapshot.hasConsent]);
+  }, [snapshot.user?.id, snapshot?.consents?.child_data_processing?.granted]);
 
   useEffect(() => {
     const resolved = resolveMeasurementSystemOnClient();
@@ -453,6 +457,10 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
       setStatus('Choose a child before continuing.', 'error');
       return;
     }
+    if (!childNoticeAccepted) {
+      setStatus('Please review and accept the child data notice before continuing.', 'error');
+      return;
+    }
     if (!birthdate || !sex) {
       setStatus('Birthdate and sex are required.', 'error');
       return;
@@ -492,6 +500,17 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
       setStatus('Add a child analysis credit to continue.', 'error');
       return;
     }
+    if (
+      sportyAppRef.current &&
+      typeof sportyAppRef.current.ensureConsent === 'function' &&
+      !Boolean(snapshot?.consents?.child_data_processing?.granted)
+    ) {
+      const accepted = await sportyAppRef.current.ensureConsent('child_data_processing');
+      if (!accepted) {
+        setStatus('Child analysis needs explicit child-data consent before processing.', 'error');
+        return;
+      }
+    }
 
     const payload: any = {
       child_id: childId,
@@ -502,6 +521,8 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
       adult_age_group: adultAgeGroup,
       measurements: { ...childMeasurements },
       traits: { ...traits },
+      child_notice_acknowledged: childNoticeAccepted,
+      child_notice_version: CHILD_NOTICE_VERSION,
     };
     if (includeMother) {
       payload.mother = { display_name: 'Mother', measurements: { ...motherMeasurements } };
@@ -564,6 +585,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
   }, [
     adultAgeGroup,
     birthdate,
+    childNoticeAccepted,
     childFields,
     childId,
     childMeasurements,
@@ -641,6 +663,10 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
         setStatus('Choose a child before continuing.', 'error');
         return;
       }
+      if (!childNoticeAccepted) {
+        setStatus('Please review and accept the child data notice before continuing.', 'error');
+        return;
+      }
       if (!birthdate) {
         setStatus('Birthdate is required.', 'error');
         return;
@@ -678,7 +704,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
     setStatus('');
     const nextIndex = Math.min(STEP_KEYS.length - 1, stepIndex + 1);
     setStepIndex(nextIndex);
-  }, [birthdate, childFields, childId, childMeasurements, currentStep, focusField, sex, setStatus, stepIndex, validateAllMeasurements]);
+  }, [birthdate, childFields, childId, childMeasurements, childNoticeAccepted, currentStep, focusField, sex, setStatus, stepIndex, validateAllMeasurements]);
 
   return (
     <div className="space-y-8" data-child-intake>
@@ -752,6 +778,27 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
               </div>
             </div>
           </div>
+
+          <section className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 space-y-3">
+            <h3 className="text-sm font-semibold text-slate-900">Direct guardian notice (required)</h3>
+            <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
+              <li>This flow is only for minors under 18, managed by a guardian account.</li>
+              <li>Child analysis requires a paid child credit from a guardian card transaction.</li>
+              <li>Child identifiable analysis data and results are retained for 7 days, then deleted; export PDF from the results page if you need a copy.</li>
+              <li>Child data is not used for model training and not monetized.</li>
+              <li>Guardians can request access/deletion through account and privacy channels (contact placeholders currently TODO).</li>
+            </ul>
+            <label className="flex items-start gap-3 rounded-xl border border-amber-300 bg-white px-3 py-3">
+              <input
+                type="checkbox"
+                checked={childNoticeAccepted}
+                onChange={(e) => setChildNoticeAccepted(Boolean((e.target as HTMLInputElement).checked))}
+              />
+              <span className="text-sm text-slate-800">
+                I confirm I am the guardian and acknowledge this child data notice.
+              </span>
+            </label>
+          </section>
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="space-y-2">

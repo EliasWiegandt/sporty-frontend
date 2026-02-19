@@ -31,6 +31,7 @@ import type {
 type SportySnapshot = {
   user: { id: string } | null;
   hasConsent: boolean;
+  consents?: Record<string, { granted?: boolean; purge_status?: string | null }>;
   session?: { access_token?: string } | null;
   purgeStatus?: string | null;
   purgeRequestedAt?: string | null;
@@ -190,6 +191,9 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
   const [consentGiven, setConsentGiven] = useState(false);
   const consentIntentRef = useRef(false);
   const [consentSaving, setConsentSaving] = useState(false);
+  const [sensitiveConsentGiven, setSensitiveConsentGiven] = useState(false);
+  const sensitiveConsentIntentRef = useRef(false);
+  const [sensitiveConsentSaving, setSensitiveConsentSaving] = useState(false);
   const [measurementSystem, setMeasurementSystem] =
     useState<MeasurementSystem>("metric");
 
@@ -274,15 +278,17 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       }
 
       if (typeof sportyApp.grantConsent === "function") {
-        await sportyApp.grantConsent();
+        await sportyApp.grantConsent("basic_processing", "consent-policy-v1", "EU");
       } else {
         throw new Error("Consent grant API unavailable");
       }
 
       await sportyApp?.refreshConsent?.();
       const hasConsent =
-        typeof sportyApp?.hasConsent === "function"
-          ? Boolean(sportyApp.hasConsent())
+        typeof sportyApp?.hasConsentType === "function"
+          ? Boolean(sportyApp.hasConsentType("basic_processing"))
+          : typeof sportyApp?.hasConsent === "function"
+            ? Boolean(sportyApp.hasConsent())
           : true;
       if (!hasConsent) {
         throw new Error("Consent was not recorded");
@@ -297,6 +303,43 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       setConsentSaving(false);
     }
   }, [consentSaving, sportySnapshot.user]);
+
+  const handleGrantSensitiveConsent = useCallback(async (): Promise<boolean> => {
+    if (sensitiveConsentSaving || !sportySnapshot.user) return false;
+
+    setSensitiveConsentSaving(true);
+    try {
+      const sportyApp = typeof window !== "undefined" ? (window as any).SportyApp : null;
+      const user = sportyApp?.getUser?.();
+
+      if (!user) {
+        throw new Error("Not authenticated");
+      }
+
+      if (typeof sportyApp.grantConsent === "function") {
+        await sportyApp.grantConsent("sensitive_health_processing", "consent-policy-v1", "EU");
+      } else {
+        throw new Error("Sensitive consent grant API unavailable");
+      }
+
+      await sportyApp?.refreshConsent?.();
+      const hasSensitiveConsent =
+        typeof sportyApp?.hasConsentType === "function"
+          ? Boolean(sportyApp.hasConsentType("sensitive_health_processing"))
+          : false;
+      if (!hasSensitiveConsent) {
+        throw new Error("Sensitive consent was not recorded");
+      }
+      setSensitiveConsentGiven(true);
+      return true;
+    } catch (error) {
+      console.error('[Intake] Failed to grant sensitive consent', error);
+      setSensitiveConsentGiven(false);
+      throw error;
+    } finally {
+      setSensitiveConsentSaving(false);
+    }
+  }, [sensitiveConsentSaving, sportySnapshot.user]);
 
   const currentStepIndexRef = useRef(currentStepIndex);
   const isRestoringRef = useRef(false);
@@ -756,11 +799,19 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
         "info"
       );
 
-      let consentAccepted = snapshot.hasConsent || consentGiven || consentIntentRef.current;
+      const hasBasicConsent = Boolean(
+        snapshot?.consents?.basic_processing?.granted || snapshot.hasConsent
+      );
+      let consentAccepted = hasBasicConsent || consentGiven || consentIntentRef.current;
+      let hasSensitiveConsent = Boolean(
+        snapshot?.consents?.sensitive_health_processing?.granted
+      );
+      let sensitiveConsentAccepted =
+        hasSensitiveConsent || sensitiveConsentGiven || sensitiveConsentIntentRef.current;
       const sportyApp =
         typeof window !== "undefined" ? (window as any).SportyApp : null;
 
-      // For logged-in users, require consent before persisting account history.
+      // For logged-in users, require basic consent before persisting account history.
       if (
         sportyApp &&
         snapshot.user &&
@@ -768,7 +819,7 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
         typeof sportyApp.ensureConsent === "function"
       ) {
         try {
-          consentAccepted = await sportyApp.ensureConsent();
+          consentAccepted = await sportyApp.ensureConsent("basic_processing");
           premiumController?.setConsent?.(consentAccepted);
         } catch (error) {
           console.error("Consent prompt failed", error);
@@ -786,6 +837,31 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
             return;
           }
         }
+      }
+
+      if (wantsPremium && snapshot.user && !hasSensitiveConsent && sensitiveConsentAccepted) {
+        try {
+          const ok = await handleGrantSensitiveConsent();
+          sensitiveConsentIntentRef.current = Boolean(ok);
+          hasSensitiveConsent = Boolean(ok);
+          sensitiveConsentAccepted = Boolean(ok);
+        } catch (_error) {
+          sensitiveConsentIntentRef.current = false;
+          sensitiveConsentAccepted = false;
+          hasSensitiveConsent = false;
+          setStatus("Unable to record sensitive-data consent right now. Please try again.", "error");
+          setSubmitBusy(false);
+          return;
+        }
+      }
+
+      if (wantsPremium && snapshot.user && !hasSensitiveConsent) {
+        setStatus(
+          "Premium analysis needs explicit sensitive-data consent (injury/health factors). Turn on the sensitive consent toggle first.",
+          "error"
+        );
+        setSubmitBusy(false);
+        return;
       }
 
       try {
@@ -912,6 +988,10 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       basics,
       measurements,
       traits,
+      consentGiven,
+      sensitiveConsentGiven,
+      handleGrantConsent,
+      handleGrantSensitiveConsent,
     ]
   );
 
@@ -1062,8 +1142,16 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
           </button>
         )}
         {isFinalStep && (() => {
-          const needsConsent = mode === "free" && sportySnapshot.user && !sportySnapshot.hasConsent && !consentGiven;
-          const isDisabled = needsConsent;
+          const needsBasicConsent =
+            sportySnapshot.user &&
+            !Boolean(sportySnapshot?.consents?.basic_processing?.granted || sportySnapshot.hasConsent) &&
+            !consentGiven;
+          const needsSensitiveConsent =
+            mode === "premium" &&
+            sportySnapshot.user &&
+            !Boolean(sportySnapshot?.consents?.sensitive_health_processing?.granted) &&
+            !sensitiveConsentGiven;
+          const isDisabled = Boolean(needsBasicConsent || needsSensitiveConsent);
           return (
             <button
               type="button"
@@ -1174,7 +1262,9 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       </div>
 
       {/* Consent prompt only when not already granted */}
-      {isFinalStep && sportySnapshot.user && !sportySnapshot.hasConsent && (
+      {isFinalStep &&
+        sportySnapshot.user &&
+        !Boolean(sportySnapshot?.consents?.basic_processing?.granted || sportySnapshot.hasConsent) && (
         <div className="dashboard-card border-2 border-amber-100 bg-amber-50/30">
           <div className="flex items-center justify-between py-4">
             <div className="max-w-xl">
@@ -1193,6 +1283,35 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
                   setConsentGiven(target.checked);
                 }}
                 disabled={consentSaving}
+              />
+              <span className="toggle__track"></span>
+            </label>
+          </div>
+        </div>
+      )}
+
+      {isFinalStep &&
+        mode === "premium" &&
+        sportySnapshot.user &&
+        !Boolean(sportySnapshot?.consents?.sensitive_health_processing?.granted) && (
+        <div className="dashboard-card border-2 border-amber-100 bg-amber-50/30">
+          <div className="flex items-center justify-between py-4">
+            <div className="max-w-xl">
+              <h3 className="font-medium text-slate-900">Consent to sensitive health processing</h3>
+              <p className="text-sm text-slate-500 mt-1">
+                Allow Sporty to process injury and health-related premium inputs as part of your premium analysis.
+              </p>
+            </div>
+            <label className="toggle flex-shrink-0 ml-4" aria-label="Sensitive health processing consent">
+              <input
+                type="checkbox"
+                checked={sensitiveConsentGiven}
+                onChange={(e) => {
+                  const target = e.target as HTMLInputElement;
+                  sensitiveConsentIntentRef.current = target.checked;
+                  setSensitiveConsentGiven(target.checked);
+                }}
+                disabled={sensitiveConsentSaving}
               />
               <span className="toggle__track"></span>
             </label>

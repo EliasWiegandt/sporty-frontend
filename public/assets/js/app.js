@@ -4,8 +4,11 @@
   const SUPABASE_URL = CONFIG.SUPABASE_URL || window.SUPABASE_URL || '';
   const SUPABASE_KEY =
     CONFIG.SUPABASE_PUBLISHABLE_KEY || window.SUPABASE_PUBLISHABLE_KEY || '';
-  const CONSENT_TYPE = 'data_retention';
-  const CONSENT_VERSION = 'adult-data-retention-v1';
+  const CONSENT_TYPES = ['basic_processing', 'sensitive_health_processing', 'child_data_processing'];
+  const BASIC_CONSENT_TYPE = 'basic_processing';
+  const SENSITIVE_CONSENT_TYPE = 'sensitive_health_processing';
+  const CHILD_CONSENT_TYPE = 'child_data_processing';
+  const CONSENT_VERSION = 'consent-policy-v1';
   const MODEL_VERSION = 'free-adult-v1';
   const SUPABASE_AUTH_TOKEN_SUFFIX = '-auth-token';
 
@@ -13,6 +16,7 @@
     client: null,
     session: null,
     user: null,
+    consents: {},
     hasConsent: false,
     purgeStatus: null,
     purgeRequestedAt: null,
@@ -23,6 +27,7 @@
     listeners: new Set(),
     consentResolvers: [],
     consentModal: null,
+    pendingConsentType: BASIC_CONSENT_TYPE,
     authOverlay: null,
     authMode: 'signin',
     authStatusEl: null,
@@ -46,6 +51,7 @@
     getUser: () => state.user,
     getSession: () => state.session,
     hasConsent: () => state.hasConsent,
+    hasConsentType: (consentType) => hasConsentType(consentType),
     onAuthChange: (callback) => {
       if (typeof callback !== 'function') return () => { };
       state.listeners.add(callback);
@@ -56,15 +62,16 @@
     closeAuth: () => closeAuthOverlay(),
     setAuthMode: (mode) => setAuthMode(mode),
     signOut: () => signOut(),
-    ensureConsent: () => ensureConsent(),
+    ensureConsent: (consentType) => ensureConsent(consentType || BASIC_CONSENT_TYPE),
     saveRecommendation: (formPayload, resultPayload, extras) =>
       saveRecommendation(formPayload, resultPayload, extras),
     fetchRecommendations: (limit) => fetchRecommendations(limit),
     refreshConsent: () => loadConsent(),
     getConsentStatus: () => fetchConsentStatus(),
-    grantConsent: () => grantConsent(),
+    grantConsent: (consentType, policyVersion, jurisdiction) =>
+      grantConsent(consentType || BASIC_CONSENT_TYPE, policyVersion, jurisdiction),
     fetchConsents: () => fetchConsents(),
-    revokeConsent: () => revokeConsent(),
+    revokeConsent: (consentType) => revokeConsent(consentType || BASIC_CONSENT_TYPE),
     deleteAccount: () => deleteAccount(),
     deleteAllData: () => deleteAllData(),
     deleteDataItem: (itemType, itemId) => deleteDataItem(itemType, itemId),
@@ -88,6 +95,7 @@
     return {
       session: state.session,
       user: state.user,
+      consents: state.consents,
       hasConsent: state.hasConsent,
       purgeStatus: state.purgeStatus,
       purgeRequestedAt: state.purgeRequestedAt,
@@ -96,6 +104,49 @@
       accountDeleteRequestedAt: state.accountDeleteRequestedAt,
       accountDeleteCompletedAt: state.accountDeleteCompletedAt,
     };
+  }
+
+  function emptyConsentMap() {
+    return {
+      [BASIC_CONSENT_TYPE]: {
+        granted: false,
+        purge_status: null,
+        purge_requested_at: null,
+        purge_completed_at: null,
+      },
+      [SENSITIVE_CONSENT_TYPE]: {
+        granted: false,
+        purge_status: null,
+        purge_requested_at: null,
+        purge_completed_at: null,
+      },
+      [CHILD_CONSENT_TYPE]: {
+        granted: false,
+        purge_status: null,
+        purge_requested_at: null,
+        purge_completed_at: null,
+      },
+    };
+  }
+
+  function applyConsentPayload(payload) {
+    const fallback = emptyConsentMap();
+    const next = payload && payload.consents ? payload.consents : {};
+    state.consents = {
+      ...fallback,
+      ...next,
+    };
+    const basic = state.consents[BASIC_CONSENT_TYPE] || {};
+    state.hasConsent = Boolean(basic.granted);
+    state.purgeStatus = basic.purge_status || null;
+    state.purgeRequestedAt = basic.purge_requested_at || null;
+    state.purgeCompletedAt = basic.purge_completed_at || null;
+  }
+
+  function hasConsentType(consentType) {
+    if (!consentType) return false;
+    const row = state.consents?.[consentType];
+    return Boolean(row && row.granted);
   }
 
   async function init() {
@@ -206,7 +257,11 @@
     if (state.user) {
       loadConsent();
     } else {
+      state.consents = emptyConsentMap();
       state.hasConsent = false;
+      state.purgeStatus = null;
+      state.purgeRequestedAt = null;
+      state.purgeCompletedAt = null;
       state.accountDeleteStatus = null;
       state.accountDeleteRequestedAt = null;
       state.accountDeleteCompletedAt = null;
@@ -527,8 +582,7 @@
     if (!consentChecked || !user) return;
     if (!session || !session.access_token) return;
     try {
-      const payload = await grantConsent();
-      state.hasConsent = Boolean(payload && payload.has_consent);
+      await grantConsent(BASIC_CONSENT_TYPE);
       notifyListeners();
     } catch (error) {
       console.error('[Sporty] Unable to save consent immediately after sign up', error);
@@ -584,10 +638,7 @@
 
     try {
       const status = await fetchConsentStatus();
-      state.hasConsent = Boolean(status && status.has_consent);
-      state.purgeStatus = status?.purge_status || null;
-      state.purgeRequestedAt = status?.purge_requested_at || null;
-      state.purgeCompletedAt = status?.purge_completed_at || null;
+      applyConsentPayload(status);
       if (!state.hasConsent) {
         resolveConsentPromises(false);
       }
@@ -646,30 +697,31 @@
     return payload;
   }
 
-  async function grantConsent() {
+  async function grantConsent(consentType = BASIC_CONSENT_TYPE, policyVersion = CONSENT_VERSION, jurisdiction = 'EU') {
     if (!state.user) throw new Error('Not signed in');
     const response = await authFetch('/api/consent/grant', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: '{}',
+      body: JSON.stringify({
+        consent_type: consentType,
+        policy_version: policyVersion,
+        jurisdiction,
+      }),
     });
     if (!response.ok) {
       throw new Error('Unable to grant consent');
     }
     const payload = await response.json();
-    state.hasConsent = Boolean(payload && payload.has_consent);
-    state.purgeStatus = payload?.purge_status || null;
-    state.purgeRequestedAt = payload?.purge_requested_at || null;
-    state.purgeCompletedAt = payload?.purge_completed_at || null;
+    applyConsentPayload(payload);
     notifyListeners();
     return payload;
   }
 
-  function ensureConsent() {
+  function ensureConsent(consentType = BASIC_CONSENT_TYPE) {
     if (!state.client || !state.user) return Promise.resolve(false);
-    if (state.hasConsent) return Promise.resolve(true);
+    if (hasConsentType(consentType)) return Promise.resolve(true);
 
-    openConsentModal();
+    openConsentModal(consentType);
 
     return new Promise((resolve) => {
       state.consentResolvers.push(resolve);
@@ -698,6 +750,8 @@
 
     const confirmBtn = overlay.querySelector('[data-consent-confirm]');
     const declineBtn = overlay.querySelector('[data-consent-decline]');
+    const titleEl = overlay.querySelector('#consent-modal-title');
+    const bodyEl = overlay.querySelector('p');
 
     overlay.addEventListener('click', (event) => {
       if (event.target === overlay) {
@@ -715,8 +769,7 @@
         }
         confirmBtn.disabled = true;
         try {
-          const payload = await grantConsent();
-          state.hasConsent = Boolean(payload && payload.has_consent);
+          await grantConsent(state.pendingConsentType || BASIC_CONSENT_TYPE);
           overlay.hidden = true;
           notifyListeners();
           resolveConsentPromises(true);
@@ -734,13 +787,26 @@
       });
     }
 
-    state.consentModal = { overlay, confirmBtn, declineBtn };
+    state.consentModal = { overlay, confirmBtn, declineBtn, titleEl, bodyEl };
   }
 
-  function openConsentModal() {
+  function openConsentModal(consentType = BASIC_CONSENT_TYPE) {
     createConsentModal();
     if (!state.consentModal) return;
-    const { overlay, confirmBtn } = state.consentModal;
+    state.pendingConsentType = consentType;
+    const { overlay, confirmBtn, titleEl, bodyEl } = state.consentModal;
+    if (titleEl && bodyEl) {
+      if (consentType === 'sensitive_health_processing') {
+        titleEl.textContent = 'Allow sensitive-health processing?';
+        bodyEl.textContent = 'This enables injury and health-related premium inputs for analysis. You can revoke this later in your profile.';
+      } else if (consentType === 'child_data_processing') {
+        titleEl.textContent = 'Allow child-data processing?';
+        bodyEl.textContent = 'This enables child profiles, forecasts, and child-linked analysis. You can revoke this later in your profile.';
+      } else {
+        titleEl.textContent = 'Allow Sporty to store your results?';
+        bodyEl.textContent = 'We only save your measurements and recommendations after you consent. You can revoke this later from your profile.';
+      }
+    }
     if (confirmBtn) confirmBtn.disabled = false;
     overlay.hidden = false;
   }
@@ -779,15 +845,15 @@
     if (!state.client || !state.user) {
       return { saved: false, reason: 'not-authorized' };
     }
-    if (!state.hasConsent) {
+    if (!hasConsentType(BASIC_CONSENT_TYPE)) {
       try {
         const status = await fetchConsentStatus();
-        state.hasConsent = Boolean(status && status.has_consent);
+        applyConsentPayload(status);
       } catch (error) {
         console.warn('[Sporty] Failed to refresh consent before save', error);
       }
     }
-    if (!state.hasConsent) {
+    if (!hasConsentType(BASIC_CONSENT_TYPE)) {
       return { saved: false, reason: 'no-consent' };
     }
 
@@ -1199,26 +1265,25 @@
     }
   }
 
-  async function revokeConsent() {
+  async function revokeConsent(consentType = BASIC_CONSENT_TYPE) {
     if (!state.user) {
       throw new Error('Not signed in');
     }
     const response = await authFetch('/api/consent/revoke', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: '{}',
+      body: JSON.stringify({ consent_type: consentType }),
     });
     if (!response.ok) {
       throw new Error('Unable to revoke consent');
     }
     const payload = await response.json();
-    state.hasConsent = Boolean(payload && payload.has_consent);
-    state.purgeStatus = payload?.purge_status || 'pending';
-    state.purgeRequestedAt = payload?.purge_requested_at || null;
-    state.purgeCompletedAt = payload?.purge_completed_at || null;
+    applyConsentPayload(payload);
     notifyListeners();
-    resolveConsentPromises(false);
-    return true;
+    if (consentType === BASIC_CONSENT_TYPE) {
+      resolveConsentPromises(false);
+    }
+    return payload;
   }
 
   async function deleteAccount() {

@@ -25,6 +25,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const upstream = new URL('/v1/consent/revoke', backendUrl);
+  const body = await request.text();
   const upstreamResp = await fetch(upstream.toString(), {
     method: 'POST',
     headers: {
@@ -33,7 +34,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       'X-Request-Id': reqId,
       'X-User-ID': user.id,
     },
-    body: '{}',
+    body,
     signal: AbortSignal.timeout(10_000),
   });
 
