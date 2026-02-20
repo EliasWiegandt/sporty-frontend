@@ -1,17 +1,14 @@
 (for the developer. Codex and agents: you can ignore this file)
 
 # TODO
-- Fix privacy emails things.
+- Going back in premium analysis history through dashboard not working
+- skift til 1 USD/EUR pr. analyse
 - pages for showcasing the different sports in sporty + the data we have on them
 - And we also need to fix a mobile version
-- skift til 1 USD/EUR pr. analyse
 - Add more characters
 - go through again and again and make fronted neat
 - improve graphics on child forecast chart
-- Going back in premium analysis history through dashboard not working
-- Fix analysis delete dropdown not showing nicely on dashboard
 - Have Codex look once more at the compliance parts - what legals things should we fix
-- Fix issue with premium analysis that should open from history
 - Fix test.paid user has no hand and foot length + more prefilled
 - Fix that traits data appear to be still prefilled even after consent withdrawn for test.paid
 - Find a good way to do tests of all of this.
