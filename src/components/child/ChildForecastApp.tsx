@@ -20,7 +20,6 @@ import {
 
 type SportySnapshot = {
   user: { id: string; email?: string | null } | null;
-  hasConsent?: boolean;
   consents?: Record<string, { granted?: boolean }>;
   session?: { access_token?: string } | null;
   purgeStatus?: string | null;
@@ -322,7 +321,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
     premiumControllerRef.current
       ?.update({
         user: snapshot.user ? { id: snapshot.user.id } : null,
-        hasConsent: Boolean(snapshot?.consents?.child_data_processing?.granted),
+        consents: snapshot?.consents || {},
       })
       .catch((err) => console.error('[ChildIntake] Failed to update premium controller', err));
   }, [snapshot.user?.id, snapshot?.consents?.child_data_processing?.granted]);

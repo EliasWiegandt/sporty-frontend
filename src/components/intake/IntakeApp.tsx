@@ -30,7 +30,6 @@ import type {
 
 type SportySnapshot = {
   user: { id: string } | null;
-  hasConsent: boolean;
   consents?: Record<string, { granted?: boolean; purge_status?: string | null }>;
   session?: { access_token?: string } | null;
   purgeStatus?: string | null;
@@ -178,7 +177,6 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
   const [maxVisitedIndex, setMaxVisitedIndex] = useState(0);
   const [sportySnapshot, setSportySnapshot] = useState<SportySnapshot>({
     user: null,
-    hasConsent: false,
   });
   const [pastSports, setPastSports] = useState<PastSportsEntry[]>(() => []);
   const [basics, setBasics] = useState<{ birthday: string; sex: Sex | "" }>(
@@ -284,13 +282,11 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       }
 
       await sportyApp?.refreshConsent?.();
-      const hasConsent =
+      const hasBasicConsentConfirmed =
         typeof sportyApp?.hasConsentType === "function"
           ? Boolean(sportyApp.hasConsentType("basic_processing"))
-          : typeof sportyApp?.hasConsent === "function"
-            ? Boolean(sportyApp.hasConsent())
           : true;
-      if (!hasConsent) {
+      if (!hasBasicConsentConfirmed) {
         throw new Error("Consent was not recorded");
       }
       setConsentGiven(true);
@@ -724,7 +720,7 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
 
       const requiresPremium = mode === "premium";
       // If user opted in to consent in this session, record it before submit
-      if (!sportySnapshot.hasConsent && consentGiven) {
+      if (!sportySnapshot?.consents?.basic_processing?.granted && consentGiven) {
         try {
           const ok = await handleGrantConsent();
           consentIntentRef.current = Boolean(ok);
@@ -800,7 +796,7 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       );
 
       const hasBasicConsent = Boolean(
-        snapshot?.consents?.basic_processing?.granted || snapshot.hasConsent
+        snapshot?.consents?.basic_processing?.granted
       );
       let consentAccepted = hasBasicConsent || consentGiven || consentIntentRef.current;
       let hasSensitiveConsent = Boolean(
@@ -1022,7 +1018,7 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
     const MAX_ATTEMPTS = 50; // 5 seconds max
 
     const applySnapshot = (snapshot: SportySnapshot | null) => {
-      const normalized = snapshot || { user: null, hasConsent: false };
+      const normalized = snapshot || { user: null, consents: {} };
       setSportySnapshot(normalized);
       premiumControllerRef.current?.update(normalized).catch((error) => {
         console.error("Failed to update premium controller", error);
@@ -1044,7 +1040,7 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
               applySnapshot(snapshot)
             );
           } else {
-            applySnapshot({ user: null, hasConsent: false });
+            applySnapshot({ user: null, consents: {} });
           }
         });
         return true;
@@ -1144,7 +1140,7 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
         {isFinalStep && (() => {
           const needsBasicConsent =
             sportySnapshot.user &&
-            !Boolean(sportySnapshot?.consents?.basic_processing?.granted || sportySnapshot.hasConsent) &&
+            !Boolean(sportySnapshot?.consents?.basic_processing?.granted) &&
             !consentGiven;
           const needsSensitiveConsent =
             mode === "premium" &&
@@ -1264,7 +1260,7 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       {/* Consent prompt only when not already granted */}
       {isFinalStep &&
         sportySnapshot.user &&
-        !Boolean(sportySnapshot?.consents?.basic_processing?.granted || sportySnapshot.hasConsent) && (
+        !Boolean(sportySnapshot?.consents?.basic_processing?.granted) && (
         <div className="dashboard-card border-2 border-amber-100 bg-amber-50/30">
           <div className="flex items-center justify-between py-4">
             <div className="max-w-xl">
@@ -1276,7 +1272,7 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
             <label className="toggle flex-shrink-0 ml-4" aria-label="Data retention consent">
               <input
                 type="checkbox"
-                checked={consentGiven || sportySnapshot.hasConsent}
+                checked={consentGiven}
                 onChange={(e) => {
                   const target = e.target as HTMLInputElement;
                   consentIntentRef.current = target.checked;

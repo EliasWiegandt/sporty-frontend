@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { verifySupabaseToken } from './_auth';
 
 const JSON_HEADERS = {
   'Content-Type': 'application/json',
@@ -37,6 +38,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
     );
   }
 
+  const user = await verifySupabaseToken(request, env);
+  if (!user) {
+    return new Response(
+      JSON.stringify({ detail: 'Unauthorized' }),
+      {
+        status: 401,
+        headers: {
+          ...JSON_HEADERS,
+          'X-Request-Id': reqId,
+        },
+      }
+    );
+  }
+
   const upstreamUrl = new URL('/create-checkout-session', backendUrl);
   const body = await request.text();
 
@@ -46,6 +61,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       headers: {
         'Content-Type': 'application/json',
         'X-API-Key': apiKey,
+        'X-User-ID': user.id,
         'X-Request-Id': reqId,
       },
       body,

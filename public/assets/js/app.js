@@ -23,7 +23,6 @@
     session: null,
     user: null,
     consents: {},
-    hasConsent: false,
     purgeStatus: null,
     purgeRequestedAt: null,
     purgeCompletedAt: null,
@@ -56,7 +55,6 @@
     getClient: () => state.client,
     getUser: () => state.user,
     getSession: () => state.session,
-    hasConsent: () => state.hasConsent,
     hasConsentType: (consentType) => hasConsentType(consentType),
     onAuthChange: (callback) => {
       if (typeof callback !== 'function') return () => { };
@@ -68,16 +66,16 @@
     closeAuth: () => closeAuthOverlay(),
     setAuthMode: (mode) => setAuthMode(mode),
     signOut: () => signOut(),
-    ensureConsent: (consentType) => ensureConsent(consentType || BASIC_CONSENT_TYPE),
+    ensureConsent: (consentType) => ensureConsent(consentType),
     saveRecommendation: (formPayload, resultPayload, extras) =>
       saveRecommendation(formPayload, resultPayload, extras),
     fetchRecommendations: (limit) => fetchRecommendations(limit),
     refreshConsent: () => loadConsent(),
     getConsentStatus: () => fetchConsentStatus(),
     grantConsent: (consentType, policyVersion, jurisdiction) =>
-      grantConsent(consentType || BASIC_CONSENT_TYPE, policyVersion, jurisdiction),
+      grantConsent(consentType, policyVersion, jurisdiction),
     fetchConsents: () => fetchConsents(),
-    revokeConsent: (consentType) => revokeConsent(consentType || BASIC_CONSENT_TYPE),
+    revokeConsent: (consentType) => revokeConsent(consentType),
     deleteAccount: () => deleteAccount(),
     deleteAllData: () => deleteAllData(),
     deleteDataItem: (itemType, itemId) => deleteDataItem(itemType, itemId),
@@ -102,7 +100,6 @@
       session: state.session,
       user: state.user,
       consents: state.consents,
-      hasConsent: state.hasConsent,
       purgeStatus: state.purgeStatus,
       purgeRequestedAt: state.purgeRequestedAt,
       purgeCompletedAt: state.purgeCompletedAt,
@@ -143,7 +140,6 @@
       ...next,
     };
     const basic = state.consents[BASIC_CONSENT_TYPE] || {};
-    state.hasConsent = Boolean(basic.granted);
     state.purgeStatus = basic.purge_status || null;
     state.purgeRequestedAt = basic.purge_requested_at || null;
     state.purgeCompletedAt = basic.purge_completed_at || null;
@@ -264,7 +260,6 @@
       loadConsent();
     } else {
       state.consents = emptyConsentMap();
-      state.hasConsent = false;
       state.purgeStatus = null;
       state.purgeRequestedAt = null;
       state.purgeCompletedAt = null;
@@ -696,7 +691,7 @@
     try {
       const status = await fetchConsentStatus();
       applyConsentPayload(status);
-      if (!state.hasConsent) {
+      if (!hasConsentType(BASIC_CONSENT_TYPE)) {
         resolveConsentPromises(false);
       }
       await refreshAccountDelete();
@@ -754,7 +749,8 @@
     return payload;
   }
 
-  async function grantConsent(consentType = BASIC_CONSENT_TYPE, policyVersion = CONSENT_VERSION, jurisdiction = 'EU') {
+  async function grantConsent(consentType, policyVersion = CONSENT_VERSION, jurisdiction = 'EU') {
+    if (!consentType) throw new Error('Missing consent type');
     if (!state.user) throw new Error('Not signed in');
     const response = await authFetch('/api/consent/grant', {
       method: 'POST',
@@ -774,7 +770,8 @@
     return payload;
   }
 
-  function ensureConsent(consentType = BASIC_CONSENT_TYPE) {
+  function ensureConsent(consentType) {
+    if (!consentType) return Promise.resolve(false);
     if (!state.client || !state.user) return Promise.resolve(false);
     if (hasConsentType(consentType)) return Promise.resolve(true);
 
@@ -826,7 +823,7 @@
         }
         confirmBtn.disabled = true;
         try {
-          await grantConsent(state.pendingConsentType || BASIC_CONSENT_TYPE);
+          await grantConsent(state.pendingConsentType);
           overlay.hidden = true;
           notifyListeners();
           resolveConsentPromises(true);
@@ -847,7 +844,8 @@
     state.consentModal = { overlay, confirmBtn, declineBtn, titleEl, bodyEl };
   }
 
-  function openConsentModal(consentType = BASIC_CONSENT_TYPE) {
+  function openConsentModal(consentType) {
+    if (!consentType) return;
     createConsentModal();
     if (!state.consentModal) return;
     state.pendingConsentType = consentType;
@@ -1322,7 +1320,8 @@
     }
   }
 
-  async function revokeConsent(consentType = BASIC_CONSENT_TYPE) {
+  async function revokeConsent(consentType) {
+    if (!consentType) throw new Error('Missing consent type');
     if (!state.user) {
       throw new Error('Not signed in');
     }

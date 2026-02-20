@@ -8,8 +8,17 @@
     promise: null,
     selectedId: null,
   };
+  const legalState = {
+    current: null,
+  };
+  const ALLOWED_COUNTRIES = [
+    'US', 'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE',
+    'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE',
+  ];
+  const LEGAL_COUNTRY_STORAGE_KEY = 'sporty:legal:country';
 
   ensureChildModalStyles();
+  ensureLegalModalStyles();
 
   buttons.forEach((button) => {
     button.addEventListener('click', (event) => handleClick(event, button));
@@ -99,6 +108,9 @@
     const user = await ensureUser(statusEl);
     if (!user) return;
 
+    const legalReady = await ensureLegalReady(statusEl);
+    if (!legalReady) return;
+
     let subjectChild = null;
     if (creditType === 'child') {
       subjectChild = await selectChildProfile(statusEl);
@@ -119,16 +131,39 @@
     }
 
     try {
+      const token = getAccessToken();
+      if (!token) {
+        throw new Error('Sign in to purchase credits.');
+      }
       const resp = await fetch('/api/create-checkout-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(payload),
       });
 
       if (!resp.ok) {
         const err = await safeJson(resp);
-        const message =
-          err && err.detail ? err.detail : `Checkout failed (${resp.status})`;
+        if (resp.status === 403 && err?.detail?.code === 'LEGAL_REACCEPT_REQUIRED') {
+          const recovered = await completeLegalAcceptance(statusEl, {
+            can_purchase: false,
+            terms: {
+              current_version: err?.detail?.required_versions?.terms || null,
+              accepted_version: err?.detail?.accepted_versions?.terms || null,
+            },
+            privacy: {
+              current_version: err?.detail?.required_versions?.privacy || null,
+              accepted_version: err?.detail?.accepted_versions?.privacy || null,
+            },
+          });
+          if (recovered) {
+            toggleButton(button, false);
+            return handleClick(event, button);
+          }
+        }
+        const message = resolveApiErrorMessage(err, `Checkout failed (${resp.status})`);
         throw new Error(message);
       }
 
@@ -152,6 +187,133 @@
         'error'
       );
       toggleButton(button, false);
+    }
+  }
+
+  function resolveApiErrorMessage(payload, fallbackMessage) {
+    if (!payload) return fallbackMessage;
+    const detail = payload.detail;
+    if (typeof detail === 'string') return detail;
+    if (detail && typeof detail === 'object' && typeof detail.message === 'string') {
+      return detail.message;
+    }
+    return fallbackMessage;
+  }
+
+  function getAccessToken() {
+    const session = sportyApp?.getSession ? sportyApp.getSession() : null;
+    return session?.access_token || null;
+  }
+
+  async function fetchLegalStatus() {
+    const token = getAccessToken();
+    if (!token) throw new Error('Missing auth token');
+    const response = await fetch('/api/legal/status', {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const payload = await safeJson(response);
+    if (!response.ok) {
+      throw new Error(resolveApiErrorMessage(payload, 'Unable to load legal status.'));
+    }
+    return payload;
+  }
+
+  async function ensureLegalReady(statusEl) {
+    try {
+      const legalStatus = await fetchLegalStatus();
+      legalState.current = legalStatus;
+      if (legalStatus?.can_purchase) return true;
+      return await completeLegalAcceptance(statusEl, legalStatus);
+    } catch (error) {
+      console.error('[Sporty] Unable to verify legal status', error);
+      setStatus(
+        statusEl,
+        error instanceof Error ? error.message : 'Unable to verify terms acceptance right now.',
+        'error'
+      );
+      return false;
+    }
+  }
+
+  async function completeLegalAcceptance(statusEl, legalStatus) {
+    setStatus(statusEl, 'Latest Terms/Privacy acceptance required before purchase.', 'warn');
+    const defaultCountry = loadSavedLegalCountry();
+    const accepted = await openLegalAcceptanceModal({
+      defaultCountry,
+      termsVersion: legalStatus?.terms?.current_version || null,
+      privacyVersion: legalStatus?.privacy?.current_version || null,
+    });
+    if (!accepted) {
+      setStatus(statusEl, 'Checkout paused until legal acceptance is completed.', 'warn');
+      return false;
+    }
+
+    const termsVersion = accepted.termsVersion || legalStatus?.terms?.current_version;
+    const privacyVersion = accepted.privacyVersion || legalStatus?.privacy?.current_version;
+    if (!termsVersion || !privacyVersion) {
+      setStatus(statusEl, 'Missing legal document versions. Please retry in a moment.', 'error');
+      return false;
+    }
+
+    try {
+      const token = getAccessToken();
+      if (!token) throw new Error('Missing auth token');
+      const response = await fetch('/api/legal/accept', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          terms_version: termsVersion,
+          privacy_version: privacyVersion,
+          age_attestation: Boolean(accepted.ageAttested),
+          guardian_attestation: false,
+          country_of_residence: accepted.country,
+        }),
+      });
+      const payload = await safeJson(response);
+      if (!response.ok) {
+        throw new Error(resolveApiErrorMessage(payload, 'Legal acceptance could not be recorded.'));
+      }
+      saveLegalCountry(accepted.country);
+      const freshStatus = await fetchLegalStatus();
+      legalState.current = freshStatus;
+      if (!freshStatus?.can_purchase) {
+        setStatus(statusEl, 'Legal acceptance is still not current. Please retry.', 'error');
+        return false;
+      }
+      setStatus(statusEl, 'Legal acceptance updated. Continuing checkout…', 'info');
+      return true;
+    } catch (error) {
+      console.error('[Sporty] Unable to record legal acceptance', error);
+      setStatus(
+        statusEl,
+        error instanceof Error ? error.message : 'Unable to record legal acceptance.',
+        'error'
+      );
+      return false;
+    }
+  }
+
+  function loadSavedLegalCountry() {
+    try {
+      const value = localStorage.getItem(LEGAL_COUNTRY_STORAGE_KEY);
+      return value && ALLOWED_COUNTRIES.includes(value) ? value : 'US';
+    } catch (_) {
+      return 'US';
+    }
+  }
+
+  function saveLegalCountry(countryCode) {
+    try {
+      localStorage.setItem(LEGAL_COUNTRY_STORAGE_KEY, countryCode);
+    } catch (_) {
+      // ignore storage failures
     }
   }
 
@@ -301,6 +463,150 @@
     return modal;
   }
 
+  function getLegalModal() {
+    let modal = document.querySelector('[data-checkout-legal-modal]');
+    if (modal) return modal;
+
+    modal = document.createElement('div');
+    modal.className = 'checkout-legal-modal';
+    modal.setAttribute('data-checkout-legal-modal', '');
+    modal.innerHTML = `
+      <div class="checkout-legal-modal__backdrop" data-legal-modal-backdrop></div>
+      <div class="checkout-legal-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="legal-modal-title">
+        <header class="checkout-legal-modal__header">
+          <h2 id="legal-modal-title">Confirm legal acceptance</h2>
+          <p>Before payment, accept the latest Terms and Privacy Notice.</p>
+        </header>
+        <label class="checkout-legal-modal__field">
+          <span>Country of residence</span>
+          <select data-legal-modal-country></select>
+        </label>
+        <div class="checkout-legal-modal__checklist">
+          <label>
+            <input type="checkbox" data-legal-modal-terms />
+            <span>I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a></span>
+          </label>
+          <label>
+            <input type="checkbox" data-legal-modal-privacy />
+            <span>I acknowledge the <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Notice</a></span>
+          </label>
+          <label>
+            <input type="checkbox" data-legal-modal-age />
+            <span>I confirm I am 18+ or purchasing as a guardian.</span>
+          </label>
+        </div>
+        <p class="checkout-legal-modal__status" data-legal-modal-status hidden></p>
+        <footer class="checkout-legal-modal__actions">
+          <button class="btn-ghost" type="button" data-legal-modal-cancel>Cancel</button>
+          <button class="btn-primary" type="button" data-legal-modal-confirm>Continue</button>
+        </footer>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    return modal;
+  }
+
+  function setLegalModalStatus(statusEl, message, tone) {
+    if (!statusEl) return;
+    if (!message) {
+      statusEl.textContent = '';
+      statusEl.hidden = true;
+      statusEl.dataset.tone = '';
+      return;
+    }
+    statusEl.textContent = message;
+    statusEl.hidden = false;
+    statusEl.dataset.tone = tone || 'warn';
+  }
+
+  function openLegalAcceptanceModal({ defaultCountry, termsVersion, privacyVersion }) {
+    return new Promise((resolve) => {
+      const modal = getLegalModal();
+      const countrySelect = modal.querySelector('[data-legal-modal-country]');
+      const termsInput = modal.querySelector('[data-legal-modal-terms]');
+      const privacyInput = modal.querySelector('[data-legal-modal-privacy]');
+      const ageInput = modal.querySelector('[data-legal-modal-age]');
+      const statusEl = modal.querySelector('[data-legal-modal-status]');
+      const confirmBtn = modal.querySelector('[data-legal-modal-confirm]');
+      const cancelBtn = modal.querySelector('[data-legal-modal-cancel]');
+      const backdrop = modal.querySelector('[data-legal-modal-backdrop]');
+
+      if (countrySelect) {
+        countrySelect.innerHTML = '';
+        ALLOWED_COUNTRIES.forEach((code) => {
+          const option = document.createElement('option');
+          option.value = code;
+          option.textContent = code === 'US' ? 'United States' : code;
+          if (code === defaultCountry) {
+            option.selected = true;
+          }
+          countrySelect.appendChild(option);
+        });
+      }
+      if (termsInput) termsInput.checked = false;
+      if (privacyInput) privacyInput.checked = false;
+      if (ageInput) ageInput.checked = false;
+      setLegalModalStatus(statusEl, '', 'info');
+
+      const cleanup = () => {
+        modal.classList.remove('is-open');
+        confirmBtn?.removeEventListener('click', onConfirm);
+        cancelBtn?.removeEventListener('click', onCancel);
+        backdrop?.removeEventListener('click', onCancel);
+        document.removeEventListener('keydown', onKeydown);
+      };
+
+      const onConfirm = () => {
+        const country = countrySelect?.value || '';
+        const termsChecked = Boolean(termsInput?.checked);
+        const privacyChecked = Boolean(privacyInput?.checked);
+        const ageChecked = Boolean(ageInput?.checked);
+        if (!country) {
+          setLegalModalStatus(statusEl, 'Select country of residence.', 'error');
+          return;
+        }
+        if (!termsChecked || !privacyChecked || !ageChecked) {
+          setLegalModalStatus(
+            statusEl,
+            'Check Terms, Privacy, and age/guardian attestation to continue.',
+            'error'
+          );
+          return;
+        }
+        cleanup();
+        resolve({
+          country,
+          ageAttested: ageChecked,
+          termsVersion,
+          privacyVersion,
+        });
+      };
+
+      const onCancel = () => {
+        cleanup();
+        resolve(null);
+      };
+
+      const onKeydown = (event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          onCancel();
+        }
+      };
+
+      confirmBtn?.addEventListener('click', onConfirm);
+      cancelBtn?.addEventListener('click', onCancel);
+      backdrop?.addEventListener('click', onCancel);
+      document.addEventListener('keydown', onKeydown);
+
+      requestAnimationFrame(() => {
+        modal.classList.add('is-open');
+        countrySelect?.focus({ preventScroll: true });
+      });
+    });
+  }
+
   function ensureChildModalStyles() {
     if (document.querySelector('style[data-checkout-child-modal-style]')) return;
     const style = document.createElement('style');
@@ -357,6 +663,94 @@
         background: rgba(248, 250, 252, 0.95);
       }
       .checkout-child-modal__actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function ensureLegalModalStyles() {
+    if (document.querySelector('style[data-checkout-legal-modal-style]')) return;
+    const style = document.createElement('style');
+    style.setAttribute('data-checkout-legal-modal-style', '');
+    style.textContent = `
+      .checkout-legal-modal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9001;
+      }
+      .checkout-legal-modal.is-open {
+        display: flex;
+      }
+      .checkout-legal-modal__backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+      }
+      .checkout-legal-modal__dialog {
+        position: relative;
+        width: min(480px, 92vw);
+        background: #ffffff;
+        border-radius: 24px;
+        padding: 1.75rem;
+        box-shadow: 0 18px 60px rgba(15, 23, 42, 0.28);
+        display: grid;
+        gap: 1rem;
+      }
+      .checkout-legal-modal__header h2 {
+        margin: 0 0 0.25rem;
+        font-size: 1.3rem;
+      }
+      .checkout-legal-modal__header p {
+        margin: 0;
+        color: rgba(71, 85, 105, 0.95);
+      }
+      .checkout-legal-modal__field {
+        display: grid;
+        gap: 0.5rem;
+        font-weight: 600;
+      }
+      .checkout-legal-modal__field span {
+        font-size: 0.95rem;
+        color: rgba(15, 23, 42, 0.75);
+      }
+      .checkout-legal-modal__field select {
+        font-size: 1rem;
+        padding: 0.65rem 0.75rem;
+        border-radius: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.45);
+        background: rgba(248, 250, 252, 0.95);
+      }
+      .checkout-legal-modal__checklist {
+        display: grid;
+        gap: 0.75rem;
+      }
+      .checkout-legal-modal__checklist label {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.65rem;
+        color: rgba(15, 23, 42, 0.9);
+      }
+      .checkout-legal-modal__checklist a {
+        color: #0f766e;
+        font-weight: 600;
+      }
+      .checkout-legal-modal__status {
+        margin: 0;
+        font-size: 0.9rem;
+      }
+      .checkout-legal-modal__status[data-tone="error"] {
+        color: #b91c1c;
+      }
+      .checkout-legal-modal__status[data-tone="warn"] {
+        color: #9a3412;
+      }
+      .checkout-legal-modal__actions {
         display: flex;
         justify-content: flex-end;
         gap: 0.75rem;

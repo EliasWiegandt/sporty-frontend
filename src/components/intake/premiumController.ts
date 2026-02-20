@@ -17,7 +17,7 @@ export type PremiumSelectionData = {
 };
 
 export type PremiumController = {
-  update: (snapshot: { user: { id: string } | null; hasConsent: boolean }) => Promise<void>;
+  update: (snapshot: { user: { id: string } | null; consents?: Record<string, { granted?: boolean }> }) => Promise<void>;
   collect: () => { applyCredit: boolean; data: PremiumSelectionData | null; errors: string[] };
   setConsent: (value: boolean) => void;
   reset: () => void;
