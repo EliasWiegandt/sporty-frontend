@@ -358,7 +358,7 @@
       if (hiddenFactors.length > 0) {
         const hiddenContainer = document.createElement("div");
         hiddenContainer.className = "factor-list--hidden";
-        hiddenContainer.hidden = true;
+        hiddenContainer.hidden = false;
         hiddenFactors.forEach((f) =>
           hiddenContainer.appendChild(createFactorItem(f))
         );
@@ -366,11 +366,11 @@
 
         const toggleBtn = document.createElement("button");
         toggleBtn.className = "btn-ghost btn-sm factor-toggle";
-        toggleBtn.textContent = `Show all factors`;
+        toggleBtn.textContent = "Show less";
         toggleBtn.onclick = () => {
           const isHidden = hiddenContainer.hidden;
           hiddenContainer.hidden = !isHidden;
-          toggleBtn.textContent = isHidden ? "Show less" : `Show all factors`;
+          toggleBtn.textContent = isHidden ? "Show less" : "Show all factors";
         };
         factorsSection.appendChild(list);
         factorsSection.appendChild(toggleBtn);
