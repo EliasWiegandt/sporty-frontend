@@ -218,6 +218,19 @@
     background-color: #991b1b;
   }
 
+  .btn-pill-danger-soft {
+    background-color: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+    box-shadow: none;
+  }
+
+  .btn-pill-danger-soft:hover {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border-color: #f87171;
+  }
+
   .btn-pill:disabled,
   .btn-pill[aria-disabled="true"],
   .btn-pill-disabled {
@@ -288,6 +301,32 @@
     background-color: rgba(148, 163, 184, 0.12);
     color: rgba(100, 116, 139, 0.9);
     cursor: not-allowed;
+  }
+
+  .input-select-pill {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border-radius: var(--radius-pill);
+    min-height: 2.75rem;
+    padding-right: 2.75rem;
+    background-color: var(--color-surface);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%2364758b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.9rem center;
+    background-size: 1rem 1rem;
+  }
+
+  .input-select-pill:hover:not([disabled]) {
+    border-color: var(--color-brand-300);
+  }
+
+  .input-select-pill:invalid {
+    border-color: #cbd5e1;
+  }
+
+  .input-select-pill::-ms-expand {
+    display: none;
   }
 
   .tooltip-trigger {

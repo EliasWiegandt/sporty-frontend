@@ -251,15 +251,15 @@ const historyPlaceholders = [
               <div class="grid gap-3 sm:grid-cols-3">
                 <label class="field">
                   <span class="field__label">Name</span>
-                  <input class="input-base" type="text" name="name" placeholder="Optional" />
+                  <input class="input-field" type="text" name="name" placeholder="Optional" />
                 </label>
                 <label class="field">
                   <span class="field__label">Birthdate</span>
-                  <input class="input-base" type="date" name="birthdate" required />
+                  <input class="input-field" type="date" name="birthdate" required />
                 </label>
                 <label class="field">
                   <span class="field__label">Sex</span>
-                  <select class="input-base" name="sex" required>
+                  <select class="input-field input-select-pill" name="sex" required>
                     <option value="female">Female</option>
                     <option value="male">Male</option>
                     <option value="other">Other</option>
@@ -270,7 +270,7 @@ const historyPlaceholders = [
               <div class="grid gap-3 sm:grid-cols-2 mt-3">
                 <label class="field">
                   <span class="field__label">Your relation</span>
-                  <select class="input-base" name="biological_role" required>
+                  <select class="input-field input-select-pill" name="biological_role" required>
                     <option value="unknown">Unknown</option>
                     <option value="mother">Biological mother</option>
                     <option value="father">Biological father</option>

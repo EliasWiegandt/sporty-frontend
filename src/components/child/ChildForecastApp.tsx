@@ -755,7 +755,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
             <label className="space-y-2">
               <div className="text-sm font-semibold text-slate-800">Child</div>
               <select
-                className="input-base"
+                className="input-field input-select-pill"
                 value={childId}
                 onChange={(e) => setChildId((e.target as HTMLSelectElement).value)}
                 required
@@ -802,7 +802,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
           <div className="grid gap-4 md:grid-cols-2">
             <label className="space-y-2">
               <div className="text-sm font-semibold text-slate-800">Birthdate</div>
-              <input className="input-base" type="date" value={birthdate} onChange={(e) => setBirthdate((e.target as HTMLInputElement).value)} required />
+              <input className="input-field" type="date" value={birthdate} onChange={(e) => setBirthdate((e.target as HTMLInputElement).value)} required />
             </label>
             <div className="space-y-2">
               <div className="text-sm font-semibold text-slate-800">Sex</div>
@@ -817,7 +817,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
             </div>
             <label className="space-y-2">
               <div className="text-sm font-semibold text-slate-800">Ethnicity (optional)</div>
-              <select className="input-base" value={ethnicity} onChange={(e) => setEthnicity((e.target as HTMLSelectElement).value)}>
+              <select className="input-field input-select-pill" value={ethnicity} onChange={(e) => setEthnicity((e.target as HTMLSelectElement).value)}>
                 <option value="">General population</option>
                 <option value="caucasian">Caucasian</option>
                 <option value="asian">Asian</option>
@@ -825,7 +825,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
             </label>
             <label className="space-y-2">
               <div className="text-sm font-semibold text-slate-800">Target adult cohort</div>
-              <select className="input-base" value={adultAgeGroup} onChange={(e) => setAdultAgeGroup((e.target as HTMLSelectElement).value)}>
+              <select className="input-field input-select-pill" value={adultAgeGroup} onChange={(e) => setAdultAgeGroup((e.target as HTMLSelectElement).value)}>
                 {adultAgeGroups.map((group) => (
                   <option key={group} value={group}>
                     {group}

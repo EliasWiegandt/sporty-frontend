@@ -741,8 +741,8 @@
         inviteBlock.innerHTML = `
           <div class="text-xs text-slate-500 uppercase tracking-wider font-medium">Invite co-guardian</div>
           <div class="mt-1 grid gap-2 sm:grid-cols-[1fr_auto_auto] items-center">
-            <input class="input-base" type="email" placeholder="Email address" data-invite-email />
-            <select class="input-base" data-invite-bio>
+            <input class="input-field" type="email" placeholder="Email address" data-invite-email />
+            <select class="input-field input-select-pill" data-invite-bio>
               <option value="unknown">Unknown</option>
               <option value="mother">Biological mother</option>
               <option value="father">Biological father</option>
@@ -807,7 +807,7 @@
           relBlock.innerHTML = `
             <div class="text-xs text-slate-500 uppercase tracking-wider font-medium">Your relation</div>
             <div class="mt-1 grid gap-2 sm:grid-cols-[1fr_auto] items-center">
-              <select class="input-base" data-relation-select>
+              <select class="input-field input-select-pill" data-relation-select>
                 <option value="unknown">Unknown</option>
                 <option value="mother">Biological mother</option>
                 <option value="father">Biological father</option>

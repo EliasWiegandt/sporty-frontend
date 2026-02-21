@@ -75,16 +75,10 @@ const PastSportsStep: FunctionalComponent<Props> = ({ entries, onUpdate }) => {
 
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="text-sm text-slate-500">
+          <h3 className="type-lead text-slate-800 m-0">Sports passport</h3>
+          <span className="text-xs uppercase tracking-wide text-slate-400">
             {entries.length} sport{entries.length === 1 ? "" : "s"} added
           </span>
-          <button
-            type="button"
-            className="btn-pill btn-pill-secondary btn-pill-sm"
-            onClick={handleAdd}
-          >
-            Add sport
-          </button>
         </div>
 
         {entries.length === 0 && (
@@ -104,6 +98,16 @@ const PastSportsStep: FunctionalComponent<Props> = ({ entries, onUpdate }) => {
               onRemove={() => handleRemove(entry.id)}
             />
           ))}
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            type="button"
+            className="btn-pill btn-pill-secondary btn-pill-xs"
+            onClick={handleAdd}
+          >
+            Add sport
+          </button>
         </div>
       </section>
     </div>
@@ -269,7 +273,7 @@ const PastSportItem: FunctionalComponent<ItemProps> = ({
             />
           </span>
           <select
-            className="input-field w-full bg-white"
+            className="input-field input-select-pill w-full bg-white"
             value={entry.intensity || ""}
             onChange={(e) =>
               onChange({ intensity: (e.currentTarget.value as any) || null })
@@ -290,7 +294,7 @@ const PastSportItem: FunctionalComponent<ItemProps> = ({
             Enjoyed it?
           </span>
           <select
-            className="input-field w-full bg-white"
+            className="input-field input-select-pill w-full bg-white"
             value={entry.liked === null ? "" : entry.liked ? "yes" : "no"}
             onChange={(e) => {
               const val = e.currentTarget.value;
@@ -307,7 +311,7 @@ const PastSportItem: FunctionalComponent<ItemProps> = ({
             Felt natural?
           </span>
           <select
-            className="input-field w-full bg-white"
+            className="input-field input-select-pill w-full bg-white"
             value={
               entry.had_flair === null ? "" : entry.had_flair ? "yes" : "no"
             }
@@ -326,7 +330,7 @@ const PastSportItem: FunctionalComponent<ItemProps> = ({
             Good at it?
           </span>
           <select
-            className="input-field w-full bg-white"
+            className="input-field input-select-pill w-full bg-white"
             value={
               entry.achieved_skill === null
                 ? ""
@@ -349,7 +353,7 @@ const PastSportItem: FunctionalComponent<ItemProps> = ({
       <div className="flex justify-end">
         <button
           type="button"
-          className="text-sm text-red-600 hover:text-red-700 px-3 py-2"
+          className="btn-pill btn-pill-danger-soft btn-pill-xs"
           onClick={onRemove}
         >
           Remove

@@ -72,7 +72,7 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
             </button>
           </div>
           <template data-template>
-            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm" data-item>
+            <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm" data-item>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="space-y-2">
                   <span className="type-body font-semibold text-slate-800">Preference</span>
@@ -92,7 +92,7 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
                 </label>
                 <label className="space-y-2">
                   <span className="type-body font-semibold text-slate-800">Priority</span>
-                  <select className="input-field" data-field="priority">
+                  <select className="input-field input-select-pill" data-field="priority">
                     <option value="must_have">Must have</option>
                     <option value="nice_to_have">Nice to have</option>
                   </select>
@@ -101,7 +101,7 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
               <div className="flex justify-end">
                 <button
                   type="button"
-                  className="btn-pill btn-pill-secondary btn-pill-xs"
+                  className="btn-pill btn-pill-danger-soft btn-pill-xs"
                   data-remove
                 >
                   Remove
@@ -141,7 +141,7 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
             </button>
           </div>
           <template data-template>
-            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm" data-item>
+            <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm" data-item>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="space-y-2">
                   <span className="type-body font-semibold text-slate-800">Goal</span>
@@ -161,7 +161,7 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
                 </label>
                 <label className="space-y-2">
                   <span className="type-body font-semibold text-slate-800">Priority</span>
-                  <select className="input-field" data-field="priority">
+                  <select className="input-field input-select-pill" data-field="priority">
                     <option value="must_have">Must have</option>
                     <option value="nice_to_have">Nice to have</option>
                   </select>
@@ -170,7 +170,7 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
               <div className="flex justify-end">
                 <button
                   type="button"
-                  className="btn-pill btn-pill-secondary btn-pill-xs"
+                  className="btn-pill btn-pill-danger-soft btn-pill-xs"
                   data-remove
                 >
                   Remove
@@ -230,7 +230,7 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
                 </label>
                 <label className="space-y-2">
                   <span className="type-body font-semibold text-slate-800">Severity</span>
-                  <select className="input-field" data-field="severity">
+                  <select className="input-field input-select-pill" data-field="severity">
                     <option value="severe">Severe</option>
                     <option value="somewhat_bad">Somewhat bad</option>
                     <option value="mostly_healed">Mostly healed</option>
@@ -240,7 +240,7 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
               <div className="flex justify-end">
                 <button
                   type="button"
-                  className="btn-pill btn-pill-secondary btn-pill-xs"
+                  className="btn-pill btn-pill-danger-soft btn-pill-xs"
                   data-remove
                 >
                   Remove

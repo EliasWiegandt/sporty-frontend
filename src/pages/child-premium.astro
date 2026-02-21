@@ -59,11 +59,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <div class="premium-item" data-item>
             <label class="field">
               <span class="field__label">Preference</span>
-              <select class="input-base" data-field="preference_id" required></select>
+              <select class="input-field input-select-pill" data-field="preference_id" required></select>
             </label>
             <label class="field">
               <span class="field__label">Priority</span>
-              <select class="input-base" data-field="priority">
+              <select class="input-field input-select-pill" data-field="priority">
                 <option value="must_have">Must have</option>
                 <option value="nice_to_have" selected>Nice to have</option>
               </select>
@@ -86,11 +86,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <div class="premium-item" data-item>
             <label class="field">
               <span class="field__label">Goal</span>
-              <select class="input-base" data-field="goal_id" required></select>
+              <select class="input-field input-select-pill" data-field="goal_id" required></select>
             </label>
             <label class="field">
               <span class="field__label">Priority</span>
-              <select class="input-base" data-field="priority">
+              <select class="input-field input-select-pill" data-field="priority">
                 <option value="must_have">Must have</option>
                 <option value="nice_to_have" selected>Nice to have</option>
               </select>
@@ -113,15 +113,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <div class="premium-item" data-item>
             <label class="field">
               <span class="field__label">Injury</span>
-              <select class="input-base" data-field="injury_id" required></select>
+              <select class="input-field input-select-pill" data-field="injury_id" required></select>
             </label>
             <label class="field">
               <span class="field__label">Subcategory</span>
-              <select class="input-base" data-field="injury_subcategory_id"></select>
+              <select class="input-field input-select-pill" data-field="injury_subcategory_id"></select>
             </label>
             <label class="field">
               <span class="field__label">Severity</span>
-              <select class="input-base" data-field="severity">
+              <select class="input-field input-select-pill" data-field="severity">
                 <option value="mostly_healed">Mostly healed</option>
                 <option value="somewhat_bad" selected>Somewhat bad</option>
                 <option value="severe">Severe</option>
@@ -129,7 +129,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             </label>
             <label class="field">
               <span class="field__label">Notes (optional)</span>
-              <input class="input-base" type="text" data-field="notes" placeholder="Recovery notes" />
+              <input class="input-field" type="text" data-field="notes" placeholder="Recovery notes" />
             </label>
             <button type="button" class="btn-ghost btn-sm" data-remove>Remove</button>
           </div>
@@ -179,7 +179,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             </div>
             <label class="space-y-2">
               <span class="type-body font-semibold text-slate-800">Intensity</span>
-              <select class="input-field" data-field="intensity">
+              <select class="input-field input-select-pill" data-field="intensity">
                 <option value="">Select</option>
                 <option value="light">Casual / recreational</option>
                 <option value="moderate">Regular weekly sessions</option>
@@ -190,7 +190,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <div class="grid gap-4 md:grid-cols-3">
               <label class="space-y-2">
                 <span class="type-body font-semibold text-slate-800">Enjoyed it?</span>
-                <select class="input-field" data-field="liked">
+                <select class="input-field input-select-pill" data-field="liked">
                   <option value="">Select</option>
                   <option value="yes">Yes</option>
                   <option value="no">No</option>
@@ -198,7 +198,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
               </label>
               <label class="space-y-2">
                 <span class="type-body font-semibold text-slate-800">Felt natural?</span>
-                <select class="input-field" data-field="had_flair">
+                <select class="input-field input-select-pill" data-field="had_flair">
                   <option value="">Select</option>
                   <option value="yes">Yes</option>
                   <option value="no">No</option>
@@ -206,7 +206,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
               </label>
               <label class="space-y-2">
                 <span class="type-body font-semibold text-slate-800">Became good?</span>
-                <select class="input-field" data-field="achieved_skill">
+                <select class="input-field input-select-pill" data-field="achieved_skill">
                   <option value="">Select</option>
                   <option value="yes">Yes</option>
                   <option value="no">No</option>
