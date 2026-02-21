@@ -119,6 +119,24 @@ const buildEmptyMeasurements = (keys: string[]): MeasurementFormValues => {
   return output;
 };
 
+const normalizeMeasurementDraftPatch = (
+  raw: Record<string, unknown>,
+  keys: string[]
+): MeasurementFormValues => {
+  const patch = buildEmptyMeasurements(keys);
+  keys.forEach((key) => {
+    if (!(key in raw)) return;
+    const value = raw[key];
+    if (value === null || value === undefined || value === "") {
+      patch[key] = null;
+      return;
+    }
+    const parsed = Number(value);
+    patch[key] = Number.isFinite(parsed) ? parsed : null;
+  });
+  return patch;
+};
+
 const SEX_OPTIONS: Set<Sex> = new Set([
   "female",
   "male",
@@ -406,7 +424,11 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
         setBasics((prev) => ({ ...prev, ...parsed.basics }));
       }
       if (parsed.measurements) {
-        setMeasurements((prev) => ({ ...prev, ...parsed.measurements }));
+        const normalizedPatch = normalizeMeasurementDraftPatch(
+          parsed.measurements,
+          measurementKeys
+        );
+        setMeasurements((prev) => ({ ...prev, ...normalizedPatch }));
       }
       if (Array.isArray(parsed.pastSports)) {
         const restoredPastSports = parsed.pastSports.map(
@@ -471,27 +493,54 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
     (async () => {
       try {
         const userId = sportySnapshot.user!.id;
+        const needsPremiumExtremities = mode === "premium";
 
-        const [{ data: profile }, { data: measurement }, { data: pastSportsRows }] = await Promise.all([
-          client
-            .from("profiles")
-            .select("birthdate,sex,preferred_measurement_system")
-            .eq("id", userId)
-            .maybeSingle(),
-          client
-            .from("measurements")
-            .select("*")
-            .eq("subject_type", "adult")
-            .eq("subject_user_id", userId)
-            .order("measured_at", { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-          client
-            .from("past_sports")
-            .select("id,sport_subcategory_id,years_played,age_started_years,intensity,liked,had_flair,achieved_skill")
-            .eq("subject_type", "adult")
-            .eq("subject_user_id", userId)
-            .order("created_at", { ascending: false }),
+        const profilePromise = client
+          .from("profiles")
+          .select("birthdate,sex,preferred_measurement_system")
+          .eq("id", userId)
+          .maybeSingle();
+
+        const latestMeasurementPromise = client
+          .from("measurements")
+          .select("*")
+          .eq("subject_type", "adult")
+          .eq("subject_user_id", userId)
+          .order("measured_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const latestCompletePremiumMeasurementPromise = needsPremiumExtremities
+          ? client
+              .from("measurements")
+              .select("*")
+              .eq("subject_type", "adult")
+              .eq("subject_user_id", userId)
+              .not("hand_length_cm", "is", "null")
+              .not("foot_length_cm", "is", "null")
+              .not("ankle_circumference_cm", "is", "null")
+              .order("measured_at", { ascending: false })
+              .limit(1)
+              .maybeSingle()
+          : Promise.resolve({ data: null });
+
+        const pastSportsPromise = client
+          .from("past_sports")
+          .select("id,sport_subcategory_id,years_played,age_started_years,intensity,liked,had_flair,achieved_skill")
+          .eq("subject_type", "adult")
+          .eq("subject_user_id", userId)
+          .order("created_at", { ascending: false });
+
+        const [
+          { data: profile },
+          { data: latestMeasurement },
+          { data: latestCompletePremiumMeasurement },
+          { data: pastSportsRows },
+        ] = await Promise.all([
+          profilePromise,
+          latestMeasurementPromise,
+          latestCompletePremiumMeasurementPromise,
+          pastSportsPromise,
         ]);
 
         if (profile) {
@@ -506,12 +555,17 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
           persistMeasurementSystemLocal(preferredSystem);
         }
 
-        if (measurement) {
+        const measurementForPrefill =
+          (needsPremiumExtremities ? latestCompletePremiumMeasurement : null) || latestMeasurement;
+
+        if (measurementForPrefill) {
           setMeasurements((prev) => {
             const next = { ...prev };
             measurementKeys.forEach((id) => {
-              if (next[id] !== null && next[id] !== undefined) return;
-              const value = (measurement as any)[id];
+              if (typeof next[id] === "number" && Number.isFinite(next[id])) {
+                return;
+              }
+              const value = (measurementForPrefill as any)[id];
               if (value === null || value === undefined) return;
               const numVal = Number(value);
               next[id] = Number.isFinite(numVal) ? numVal : null;
@@ -578,7 +632,7 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
         console.warn("[Intake] Unable to prefill from saved profile/measurements/past sports", error);
       }
     })();
-  }, [sportySnapshot.user?.id]);
+  }, [measurementKeys, mode, sportySnapshot.user?.id]);
 
   const validateBasics = useCallback((): StepValidationResult<
     Pick<FreeIntakeData, "birthday" | "sex">

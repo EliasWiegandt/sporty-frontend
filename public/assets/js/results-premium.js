@@ -6,6 +6,8 @@
   const reasonEl = hero ? hero.querySelector('[data-reason]') : null;
   const container = root.querySelector('[data-results-container]');
   const emptyState = root.querySelector('[data-empty-state]');
+  const emptyTitle = emptyState ? emptyState.querySelector('h2') : null;
+  const emptyMessage = emptyState ? emptyState.querySelector('p') : null;
   const exportPdfButton = root.querySelector('[data-child-export-pdf]');
   const printReportRoot = root.querySelector('[data-child-print-report]');
   const subjectLabel = (root.getAttribute('data-subject-label') || 'You').trim() || 'You';
@@ -43,30 +45,114 @@
 
   init().catch((error) => {
     console.error('[Sporty] Failed to init premium results page', error);
-    if (emptyState) emptyState.hidden = false;
+    showEmptyState('Unable to load this premium run right now.');
   });
+
+  function showEmptyState(message) {
+    if (container) {
+      container.hidden = true;
+    }
+    if (emptyTitle) {
+      emptyTitle.textContent = 'Premium analysis unavailable';
+    }
+    if (emptyMessage && message) {
+      emptyMessage.textContent = message;
+    }
+    if (emptyState) {
+      emptyState.hidden = false;
+    }
+  }
+
+  function isRenderablePremiumPayload(payload) {
+    if (!payload || typeof payload !== 'object') return false;
+    if (!Array.isArray(payload.matches) || payload.matches.length === 0) return false;
+    return payload.matches.some((match) => match && typeof match === 'object' && match.optimal_body);
+  }
+
+  async function waitForAuthReady() {
+    const sportyApp = window.SportyApp || window.sportyApp;
+    if (!sportyApp) {
+      return { ready: false, hasSession: false, phase: 'no-sporty-app' };
+    }
+    if (sportyApp.ready && typeof sportyApp.ready.then === 'function') {
+      try {
+        await sportyApp.ready;
+      } catch (_) {
+        // Continue to session check; auth bootstrap may still succeed.
+      }
+    }
+    const directSession = sportyApp.getSession ? sportyApp.getSession() : null;
+    if (directSession && directSession.user) {
+      return { ready: true, hasSession: true, phase: 'ready-direct' };
+    }
+    if (typeof sportyApp.onAuthChange !== 'function') {
+      return { ready: true, hasSession: false, phase: 'ready-no-auth-listener' };
+    }
+    return await new Promise((resolve) => {
+      let done = false;
+      const finish = (payload) => {
+        if (done) return;
+        done = true;
+        if (typeof unsubscribe === 'function') unsubscribe();
+        clearTimeout(timer);
+        resolve(payload);
+      };
+      const unsubscribe = sportyApp.onAuthChange((snap) => {
+        const hasSession = Boolean(snap && snap.session && snap.session.user);
+        if (hasSession) {
+          finish({ ready: true, hasSession: true, phase: 'auth-change' });
+        }
+      });
+      const timer = setTimeout(() => {
+        const session = sportyApp.getSession ? sportyApp.getSession() : null;
+        finish({
+          ready: true,
+          hasSession: Boolean(session && session.user),
+          phase: 'auth-timeout',
+        });
+      }, 3000);
+    });
+  }
 
   async function init() {
     let parsed = null;
+    let payloadSource = 'session';
+    let invalidReason = null;
+    const params = new URLSearchParams(window.location.search || '');
+    const resultId = params.get('id');
     const stored = sessionStorage.getItem('sporty:lastPremiumResult');
     if (stored) {
       try {
-        parsed = JSON.parse(stored);
+        const candidate = JSON.parse(stored);
+        if (isRenderablePremiumPayload(candidate)) {
+          parsed = candidate;
+        } else {
+          invalidReason = 'Cached premium payload is invalid or incomplete.';
+        }
       } catch (error) {
         console.error('[Sporty] Failed to parse premium analysis payload', error);
       }
     }
 
     if (!parsed) {
-      const params = new URLSearchParams(window.location.search || '');
-      const id = params.get('id');
-      if (id) {
-        parsed = await fetchPremiumResultById(id);
+      payloadSource = 'database';
+      if (resultId) {
+        const fetched = await fetchPremiumResultById(resultId);
+        if (isRenderablePremiumPayload(fetched)) {
+          parsed = fetched;
+        } else if (fetched) {
+          invalidReason = 'Stored premium payload is invalid or incomplete.';
+        }
       }
     }
 
-    if (!parsed || typeof parsed !== 'object') {
-      if (emptyState) emptyState.hidden = false;
+    if (!parsed || typeof parsed !== 'object' || !isRenderablePremiumPayload(parsed)) {
+      const idHint = resultId ? ` (run ${resultId})` : '';
+      showEmptyState(
+        invalidReason
+          ? `This premium run cannot be rendered${idHint}. ${invalidReason} Run a new premium analysis.`
+          : `No premium analysis payload found${idHint}. Run a premium analysis first.`
+      );
       return;
     }
 
@@ -83,13 +169,23 @@
     }
 
     const matches = parsed.matches || [];
-    renderMatches(matches);
+    renderMatches(matches, { source: payloadSource, resultId });
     setupChildPdfExport(matches);
   }
 
   async function fetchPremiumResultById(id) {
     try {
       const sportyApp = window.SportyApp || window.sportyApp;
+      const auth = await waitForAuthReady();
+      const hasSession = Boolean(sportyApp && sportyApp.getSession && sportyApp.getSession() && sportyApp.getSession().user);
+      if (!hasSession) {
+        console.error('[Sporty] Premium fetch skipped: auth session unavailable', {
+          runId: id,
+          hasSession,
+          phase: auth.phase,
+        });
+        return null;
+      }
       const client = sportyApp && sportyApp.getClient ? sportyApp.getClient() : null;
       if (!client) return null;
 
@@ -113,7 +209,12 @@
       }
       return null;
     } catch (error) {
-      console.error('[Sporty] Failed to fetch premium analysis by id', error);
+      console.error('[Sporty] Failed to fetch premium analysis by id', {
+        runId: id,
+        phase: 'db-fetch',
+        errorCode: error && error.code ? error.code : null,
+        errorMessage: error && error.message ? error.message : String(error),
+      });
       return null;
     }
   }
@@ -378,16 +479,16 @@
     return span;
   }
 
-  function renderMatches(matches) {
+  function renderMatches(matches, context = {}) {
     if (!container) return;
     container.innerHTML = '';
     if (!matches.length) {
-      container.hidden = true;
-      if (emptyState) emptyState.hidden = false;
+      showEmptyState('No premium matches were returned for this run.');
       setChildExportState([]);
       return;
     }
     container.hidden = false;
+    let renderedCount = 0;
     try {
       matches
         .slice()
@@ -396,14 +497,23 @@
           try {
             const card = buildMatchCard(match, index + 1);
             container.appendChild(card);
+            renderedCount += 1;
           } catch (error) {
             console.error('[Sporty] Failed to render premium match card', error, match);
           }
         });
     } catch (error) {
       console.error('[Sporty] Failed to render premium matches', error);
-      container.hidden = true;
-      if (emptyState) emptyState.hidden = false;
+      showEmptyState('Unable to render premium matches for this run.');
+      setChildExportState([]);
+      return;
+    }
+    if (renderedCount === 0) {
+      console.error('[Sporty] Premium payload produced zero renderable cards', {
+        source: context.source || 'unknown',
+        resultId: context.resultId || null,
+      });
+      showEmptyState('Premium run payload exists but no match cards could be rendered.');
       setChildExportState([]);
       return;
     }

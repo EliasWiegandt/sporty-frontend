@@ -56,6 +56,51 @@
     return await fetchResultById();
   }
 
+  async function waitForAuthReady() {
+    const sportyApp = window.SportyApp || window.sportyApp;
+    if (!sportyApp) {
+      return { ready: false, hasSession: false, phase: 'no-sporty-app' };
+    }
+    if (sportyApp.ready && typeof sportyApp.ready.then === 'function') {
+      try {
+        await sportyApp.ready;
+      } catch (_) {
+        // Continue to session check; auth bootstrap may still succeed.
+      }
+    }
+    const directSession = sportyApp.getSession ? sportyApp.getSession() : null;
+    if (directSession && directSession.user) {
+      return { ready: true, hasSession: true, phase: 'ready-direct' };
+    }
+    if (typeof sportyApp.onAuthChange !== 'function') {
+      return { ready: true, hasSession: false, phase: 'ready-no-auth-listener' };
+    }
+    return await new Promise((resolve) => {
+      let done = false;
+      const finish = (payload) => {
+        if (done) return;
+        done = true;
+        if (typeof unsubscribe === 'function') unsubscribe();
+        clearTimeout(timer);
+        resolve(payload);
+      };
+      const unsubscribe = sportyApp.onAuthChange((snap) => {
+        const hasSession = Boolean(snap && snap.session && snap.session.user);
+        if (hasSession) {
+          finish({ ready: true, hasSession: true, phase: 'auth-change' });
+        }
+      });
+      const timer = setTimeout(() => {
+        const session = sportyApp.getSession ? sportyApp.getSession() : null;
+        finish({
+          ready: true,
+          hasSession: Boolean(session && session.user),
+          phase: 'auth-timeout',
+        });
+      }, 3000);
+    });
+  }
+
   async function fetchResultById() {
     try {
       const params = new URLSearchParams(window.location.search || "");
@@ -63,6 +108,16 @@
       if (!id) return null;
 
       const sportyApp = window.SportyApp || window.sportyApp;
+      const auth = await waitForAuthReady();
+      const hasSession = Boolean(sportyApp && sportyApp.getSession && sportyApp.getSession() && sportyApp.getSession().user);
+      if (!hasSession) {
+        console.error("[Sporty] Free fetch skipped: auth session unavailable", {
+          runId: id,
+          hasSession,
+          phase: auth.phase,
+        });
+        return null;
+      }
       const client = sportyApp && sportyApp.getClient ? sportyApp.getClient() : null;
       if (!client) return null;
 
@@ -80,7 +135,12 @@
       }
       return null;
     } catch (error) {
-      console.error("[Sporty] Failed to fetch free analysis by id", error);
+      console.error("[Sporty] Failed to fetch free analysis by id", {
+        runId: new URLSearchParams(window.location.search || "").get("id"),
+        phase: "db-fetch",
+        errorCode: error && error.code ? error.code : null,
+        errorMessage: error && error.message ? error.message : String(error),
+      });
       return null;
     }
   }

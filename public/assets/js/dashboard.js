@@ -1487,6 +1487,24 @@
     if (historyGrid) historyGrid.innerHTML = '';
   }
 
+  function parseRecommendationSummary(summaryRaw) {
+    if (!summaryRaw) return {};
+    if (typeof summaryRaw === 'object') return summaryRaw;
+    if (typeof summaryRaw !== 'string') return {};
+    try {
+      const parsed = JSON.parse(summaryRaw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function isRenderablePremiumPayload(payload) {
+    if (!payload || typeof payload !== 'object') return false;
+    if (!Array.isArray(payload.matches) || payload.matches.length === 0) return false;
+    return payload.matches.some((match) => match && typeof match === 'object' && match.optimal_body);
+  }
+
   async function loadHistory(userId) {
     if (!historyGrid) return;
 
@@ -1497,22 +1515,35 @@
     if (!client) return;
 
     try {
-      // Keep adult history on the stable RLS-safe view and enrich item IDs for delete-item.
+      // Read from recommendations so premium card links only point to renderable premium payloads.
       const { data: adultData, error: adultError } = await client
-        .from('recommendation_results')
-        .select('*')
+        .from('recommendations')
+        .select('id,created_at,summary,result_payload')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
       if (adultError) throw adultError;
 
       const adultItems = (adultData || []).map((item) => {
-        const isPremium = Boolean(item.is_premium);
+        const summaryParsed = parseRecommendationSummary(item.summary);
+        const payload =
+          item.result_payload && typeof item.result_payload === 'object'
+            ? item.result_payload
+            : null;
+        const analysisType =
+          (payload && typeof payload.analysis_type === 'string' ? payload.analysis_type : null) ||
+          (typeof summaryParsed.analysis_type === 'string' ? summaryParsed.analysis_type : null) ||
+          'free';
+        const isPremium = analysisType === 'premium' && isRenderablePremiumPayload(payload);
+        const summaryText =
+          summaryParsed.reason ||
+          summaryParsed.suggested_sport ||
+          (isPremium ? 'Premium analysis completed.' : 'Analysis completed.');
         return {
           id: item.id,
           itemType: 'adult_run',
           title: isPremium ? 'Adult Premium Analysis' : 'Adult Quick Analysis',
           date: item.created_at,
-          summary: item.summary || 'Analysis completed.',
+          summary: summaryText,
           isPremium,
           link: isPremium ? `/results/premium?id=${item.id}` : `/results?id=${item.id}`,
         };
