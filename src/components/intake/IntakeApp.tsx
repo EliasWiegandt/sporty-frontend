@@ -357,6 +357,10 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
 
   const currentStepIndexRef = useRef(currentStepIndex);
   const isRestoringRef = useRef(false);
+  const restoredDraftFlagsRef = useRef<{ hasBasicScopedDraft: boolean; hasTraitsDraft: boolean }>({
+    hasBasicScopedDraft: false,
+    hasTraitsDraft: false,
+  });
 
   useEffect(() => {
     currentStepIndexRef.current = currentStepIndex;
@@ -420,6 +424,19 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
     setRestoringFlag(true);
 
     try {
+      const hasBasicsDraft = Boolean(parsed?.basics?.birthday || parsed?.basics?.sex);
+      const hasMeasurementsDraft = Boolean(
+        parsed?.measurements && typeof parsed.measurements === "object" && Object.keys(parsed.measurements).length > 0
+      );
+      const hasPastSportsDraft = Array.isArray(parsed?.pastSports) && parsed.pastSports.length > 0;
+      const hasTraitsDraftFlag = Boolean(
+        parsed?.traits && typeof parsed.traits === "object" && Object.keys(parsed.traits).length > 0
+      );
+      restoredDraftFlagsRef.current = {
+        hasBasicScopedDraft: hasBasicsDraft || hasMeasurementsDraft || hasPastSportsDraft,
+        hasTraitsDraft: hasTraitsDraftFlag,
+      };
+
       if (parsed.basics) {
         setBasics((prev) => ({ ...prev, ...parsed.basics }));
       }
@@ -477,11 +494,48 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
     restoreDraft();
   }, [restoreDraft]);
 
+  useEffect(() => {
+    if (!sportySnapshot.user?.id) return;
+    const basicGranted = Boolean(sportySnapshot.consents?.basic_processing?.granted);
+    const sensitiveGranted = Boolean(
+      sportySnapshot.consents?.sensitive_health_processing?.granted
+    );
+    const flags = restoredDraftFlagsRef.current;
+
+    if (!basicGranted && flags.hasBasicScopedDraft) {
+      setBasics({ birthday: "", sex: "" });
+      setMeasurements(buildEmptyMeasurements(measurementKeys));
+      setPastSports([]);
+      try {
+        window.localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        // ignore storage errors
+      }
+      flags.hasBasicScopedDraft = false;
+    }
+
+    if (!sensitiveGranted && flags.hasTraitsDraft) {
+      setTraits({});
+      try {
+        window.localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        // ignore storage errors
+      }
+      flags.hasTraitsDraft = false;
+    }
+  }, [
+    measurementKeys,
+    sportySnapshot.consents?.basic_processing?.granted,
+    sportySnapshot.consents?.sensitive_health_processing?.granted,
+    sportySnapshot.user?.id,
+  ]);
+
   const serverPrefillAppliedRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!sportySnapshot.user?.id) return;
+    if (!sportySnapshot.consents?.basic_processing?.granted) return;
     if (serverPrefillAppliedRef.current) return;
 
     const sportyApp = (window as any).SportyApp;

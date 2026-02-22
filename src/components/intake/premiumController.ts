@@ -601,6 +601,7 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
   let updateToken = 0;
   let prefilledUserId: string | null = null;
   let restoredUserId: string | null = null;
+  let lastAdultSensitiveConsentGranted: boolean | null = null;
 
   const toggleWrapper = null;
   const applyToggle = null;
@@ -697,7 +698,18 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
         }))
       );
       injuryList.setOptions(flatSubcats);
-      if (creditType === 'adult' && restoredUserId !== userId) {
+      const adultSensitiveConsentGranted =
+        creditType === 'adult'
+          ? Boolean(snapshot?.consents?.sensitive_health_processing?.granted)
+          : true;
+      if (creditType === 'adult' && lastAdultSensitiveConsentGranted === true && !adultSensitiveConsentGranted) {
+        preferenceList.reset();
+        goalList.reset();
+        injuryList.reset();
+      }
+      lastAdultSensitiveConsentGranted = adultSensitiveConsentGranted;
+
+      if (creditType === 'adult' && adultSensitiveConsentGranted && restoredUserId !== userId) {
         try {
           const restored = await fetchLatestAdultPremiumSelections(client, userId);
           if (token !== updateToken) return;
@@ -723,7 +735,8 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
       if (
         prefillForTesting &&
         prefilledUserId !== userId &&
-        restoredUserId !== userId
+        restoredUserId !== userId &&
+        adultSensitiveConsentGranted
       ) {
         // Prefill a couple of entries for faster local testing.
         if ((injuryList as any).addEntry) {

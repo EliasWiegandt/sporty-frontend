@@ -1320,6 +1320,21 @@
     }
   }
 
+  function clearConsentScopedDraftCaches(consentType) {
+    try {
+      if (consentType === BASIC_CONSENT_TYPE || consentType === SENSITIVE_CONSENT_TYPE) {
+        localStorage.removeItem('sporty:intake:draft:v1');
+        sessionStorage.removeItem('sporty:intake:draft:v1');
+      }
+      if (consentType === CHILD_CONSENT_TYPE) {
+        localStorage.removeItem('sporty:child-intake:draft:v1');
+        sessionStorage.removeItem('sporty:child-intake:draft:v1');
+      }
+    } catch (error) {
+      console.warn('[Sporty] Failed to clear consent-scoped draft caches', error);
+    }
+  }
+
   async function revokeConsent(consentType) {
     if (!consentType) throw new Error('Missing consent type');
     if (!state.user) {
@@ -1335,6 +1350,7 @@
     }
     const payload = await response.json();
     applyConsentPayload(payload);
+    clearConsentScopedDraftCaches(consentType);
     notifyListeners();
     if (consentType === BASIC_CONSENT_TYPE) {
       resolveConsentPromises(false);

@@ -74,13 +74,6 @@ const PastSportsStep: FunctionalComponent<Props> = ({ entries, onUpdate }) => {
       </header>
 
       <section className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="type-lead text-slate-800 m-0">Sports passport</h3>
-          <span className="text-xs uppercase tracking-wide text-slate-400">
-            {entries.length} sport{entries.length === 1 ? "" : "s"} added
-          </span>
-        </div>
-
         {entries.length === 0 && (
           <p className="text-sm text-slate-500 border border-dashed border-slate-300 rounded-2xl px-4 py-6 text-center">
             Add the sports and disciplines you’ve spent time in. These influence
