@@ -327,6 +327,16 @@
     }
     card.appendChild(descriptions);
 
+    const bodyHref = buildSportBodyHref(body, subcategory);
+    if (bodyHref) {
+      const ctaWrap = document.createElement("div");
+      ctaWrap.className = "mt-4";
+      ctaWrap.innerHTML = `<a class="btn-pill btn-pill-secondary btn-pill-sm" href="${escapeHtml(
+        bodyHref
+      )}">Read about this sport body</a>`;
+      card.appendChild(ctaWrap);
+    }
+
     // 4. Factors (Top 5 + Expand)
     const factors = extractFactors(match);
     if (factors.length > 0) {
@@ -721,6 +731,21 @@
     const cleanedPath = card.path.replace(/^\/+/g, "");
     if (base) return `${base}/${cleanedPath}`;
     return null;
+  }
+
+  function slugify(value) {
+    return String(value || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+  }
+
+  function buildSportBodyHref(body, subcategory) {
+    if (!body || body.id === undefined || body.id === null) return null;
+    const rawSlug = subcategory?.name || body.category_slug || body.sport_slug || "body";
+    const slug = slugify(rawSlug) || "body";
+    return `/sport-bodies/${slug}-${body.id}`;
   }
 
   function escapeHtml(value) {

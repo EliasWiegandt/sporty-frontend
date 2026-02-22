@@ -1,0 +1,32 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const pageTitle = 'Sport Bodies | Sporty';
+const pageDescription = 'Browse every published Sporty body profile with measurements, traits, goals, preferences, injuries, and sources.';
+const canonicalUrl = new URL('/sport-bodies', Astro.url).toString();
+---
+<BaseLayout title={pageTitle} description={pageDescription} canonical={canonicalUrl}>
+  <main class="section-shell sport-body-directory-page">
+    <header class="sport-body-directory-header">
+      <p class="badge-subtle">Public evidence directory</p>
+      <h1 class="section-title">Sport body pages</h1>
+      <p class="lead-copy">Open any body page to inspect the exact evidence used in premium matching.</p>
+    </header>
+
+    <section class="card-shell sport-body-directory-controls">
+      <label class="type-small" for="sport-body-search">Search sport body pages</label>
+      <input id="sport-body-search" class="input-field" type="search" placeholder="Search by sport, role, or slug" />
+      <p class="card-copy" data-directory-count>Loading…</p>
+    </section>
+
+    <section class="sport-body-directory-grid" data-directory-grid>
+      <article class="card-shell">
+        <p class="card-copy">Loading body profiles…</p>
+      </article>
+    </section>
+  </main>
+
+  <Fragment slot="scripts">
+    <script is:inline src="/assets/js/sport-bodies-directory.js" defer></script>
+  </Fragment>
+</BaseLayout>

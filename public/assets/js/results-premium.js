@@ -308,6 +308,21 @@
     return `${numeric.toFixed(1)}%`;
   }
 
+  function slugify(value) {
+    return String(value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  function buildSportBodyHref(body, subcategory) {
+    if (!body || body.id === undefined || body.id === null) return null;
+    const rawSlug = subcategory?.name || body.category_slug || body.sport_slug || 'body';
+    const slug = slugify(rawSlug) || 'body';
+    return `/sport-bodies/${slug}-${body.id}`;
+  }
+
   function renderAlignmentList(target, entries, keyField) {
     if (!target) return;
     target.innerHTML = '';
@@ -741,6 +756,14 @@
       `;
     }
     card.appendChild(descriptions);
+
+    const bodyHref = buildSportBodyHref(body, subcategory);
+    if (bodyHref) {
+      const ctaWrap = document.createElement('div');
+      ctaWrap.className = 'mt-4';
+      ctaWrap.innerHTML = `<a class="btn-pill btn-pill-secondary btn-pill-sm" href="${escapeHtml(bodyHref)}">Read about this sport body</a>`;
+      card.appendChild(ctaWrap);
+    }
 
     const sectionsContainer = document.createElement('div');
     sectionsContainer.className = 'mt-4 flex flex-col gap-4';

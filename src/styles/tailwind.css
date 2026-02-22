@@ -1817,6 +1817,436 @@
   display: none;
 }
 
+.sport-body-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.sport-body-header {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 1rem;
+  align-items: center;
+}
+
+.sport-body-header__media {
+  border-radius: 1rem;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.sport-body-header__media img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.sport-body-disclaimer {
+  border-radius: 0.9rem;
+  border: 1px solid #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+}
+
+.sport-body-top-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.sport-body-hierarchy-row {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  background: #fff;
+  display: grid;
+  grid-template-columns: minmax(7rem, 9rem) minmax(0, 1fr);
+  gap: 0.35rem 0.75rem;
+}
+
+.sport-body-hierarchy-row__label {
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.sport-body-hierarchy-row__value {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.sport-body-hierarchy-row__desc {
+  grid-column: 1 / -1;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.sport-body-sections {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.sport-body-accordion {
+  border-radius: 0.95rem;
+  border: 1px solid #dbe5f0;
+  background: #fff;
+  overflow: clip;
+}
+
+.sport-body-accordion > summary {
+  cursor: pointer;
+  padding: 0.8rem 1rem;
+  font-weight: 700;
+  list-style: none;
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.sport-body-accordion > summary::-webkit-details-marker {
+  display: none;
+}
+
+.sport-body-accordion[open] > summary {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.sport-body-accordion__content {
+  padding: 0.85rem 1rem 1rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.sport-body-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #fff;
+  padding: 0.75rem;
+}
+
+.sport-body-item h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.sport-body-item__meta {
+  margin: 0.4rem 0 0;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.sport-body-item__reasoning {
+  margin: 0.45rem 0 0;
+  color: #1e293b;
+  font-size: 0.92rem;
+}
+
+.sport-body-sources {
+  margin-top: 0.6rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.sport-body-source-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.7rem;
+  padding: 0.6rem 0.7rem;
+  background: #f8fafc;
+}
+
+.sport-body-source-card__title {
+  margin: 0;
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.sport-body-source-card__meta,
+.sport-body-source-card__use {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.sport-body-source-card__chips {
+  margin-top: 0.35rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.source-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: 1px solid transparent;
+}
+
+.source-chip-ok {
+  background: #ecfeff;
+  color: #0f766e;
+  border-color: #5eead4;
+}
+
+.source-chip-warn {
+  background: #fff7ed;
+  color: #b45309;
+  border-color: #fdba74;
+}
+
+.sport-body-footer-note {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 0.8rem;
+}
+
+.sport-body-footer-note p {
+  margin: 0.2rem 0;
+  color: #475569;
+  font-size: 0.92rem;
+}
+
+.sport-body-directory-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.sport-body-directory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.9rem;
+}
+
+.sport-body-directory-card {
+  gap: 0.7rem;
+}
+
+.sport-body-directory-card__image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 0.8rem;
+  border: 1px solid #e2e8f0;
+}
+
+.sport-body-directory-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+@media (max-width: 900px) {
+  .sport-body-header,
+  .sport-body-top-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sport-body-redesign {
+  gap: 1rem;
+}
+
+.sport-body-disclaimer--subtle {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.sport-body-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.sport-body-hero__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.sport-body-hero__copy > .section-title {
+  margin-bottom: 0;
+}
+
+.sport-body-hero__descriptions {
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+}
+
+.sport-body-hero__media {
+  margin: 0;
+  border: 1px solid #dbe5f0;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: #f8fafc;
+  aspect-ratio: 1 / 1;
+  display: grid;
+}
+
+.sport-body-hero__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sport-body-hero__media figcaption {
+  padding: 0.55rem 0.7rem;
+  font-size: 0.82rem;
+  color: #475569;
+  background: #f8fafc;
+}
+
+.sport-body-image-fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: linear-gradient(135deg, #e2e8f0 0%, #f1f5f9 100%);
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.sport-body-at-a-glance {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.sport-body-glance-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.sport-body-glance-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.6rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.7rem;
+  padding: 0.5rem 0.6rem;
+}
+
+.sport-body-glance-list p {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.sport-body-glance-list span {
+  align-self: center;
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 0.85rem;
+}
+
+.sport-body-glance-list--compact li {
+  grid-template-columns: minmax(0, 1fr) minmax(84px, auto);
+}
+
+.sport-body-glossary dl {
+  margin: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.sport-body-glossary dt {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.sport-body-glossary dd {
+  margin: 0 0 0.45rem;
+  color: #475569;
+}
+
+.sport-body-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.sport-body-data-table th,
+.sport-body-data-table td {
+  border: 1px solid #e2e8f0;
+  padding: 0.45rem 0.5rem;
+  vertical-align: top;
+}
+
+.sport-body-data-table th {
+  background: #f8fafc;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #475569;
+}
+
+.sport-body-data-table tbody tr:nth-child(even) {
+  background: #fcfdff;
+}
+
+.sport-body-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.6rem;
+}
+
+.sport-body-source-section h3 {
+  margin: 0 0 0.45rem;
+  font-size: 0.95rem;
+}
+
+.sport-body-data-table--sources td strong {
+  color: #0f172a;
+}
+
+.sport-body-directory-card__media {
+  position: relative;
+}
+
+.sport-body-directory-card__placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 170px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.8rem;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+@media (max-width: 1080px) {
+  .sport-body-at-a-glance {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .sport-body-hero,
+  .sport-body-top-grid,
+  .sport-body-at-a-glance {
+    grid-template-columns: 1fr;
+  }
+
+}
+
 @media print {
   body {
     background: #fff !important;

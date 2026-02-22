@@ -1,0 +1,625 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const slugAndId = String(Astro.params.slugAndId || '');
+const match = slugAndId.match(/^(.*)-(\d+)$/);
+if (!match) {
+  return Astro.redirect('/sport-bodies', 302);
+}
+
+const incomingSlug = match[1];
+const bodyId = match[2];
+const detailUrl = new URL(`/api/sport-bodies/${encodeURIComponent(bodyId)}`, Astro.url);
+const detailResp = await fetch(detailUrl);
+
+if (detailResp.status === 404) {
+  return new Response('Sport body not found', { status: 404 });
+}
+if (!detailResp.ok) {
+  return new Response('Failed to load sport body', { status: 502 });
+}
+
+const payload = await detailResp.json();
+const body = payload.body || {};
+const canonicalPath = payload.canonical_path || body.canonical_path || '/sport-bodies';
+const canonicalUrl = new URL(canonicalPath, Astro.url).toString();
+const canonicalSlug = canonicalPath.split('/').pop()?.replace(/-\d+$/, '') || '';
+if (incomingSlug !== canonicalSlug) {
+  return Astro.redirect(canonicalPath, 301);
+}
+
+const storageBase =
+  String((Astro.locals as any)?.runtime?.env?.SUPABASE_STORAGE_URL || '').trim().replace(/\/$/, '');
+
+function resolveMediaUrl(path?: string | null) {
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path)) return path;
+  if (!storageBase) return path;
+  return `${storageBase}/${String(path).replace(/^\/+/, '')}`;
+}
+
+const measurementLabels: Record<string, { label: string; unit?: string; why: string }> = {
+  height_cm: { label: 'Height', unit: 'cm', why: 'Affects leverage, stride length, and reach in many sports.' },
+  weight_kg: { label: 'Weight', unit: 'kg', why: 'Influences force output, momentum, and relative power.' },
+  arm_span_cm: { label: 'Arm span', unit: 'cm', why: 'Important for reach, coverage, and stroke length.' },
+  leg_inseam_cm: { label: 'Leg inseam', unit: 'cm', why: 'Relates to stride mechanics and lower-body leverage.' },
+  shoulder_width_cm: { label: 'Shoulder width', unit: 'cm', why: 'Supports stability and upper-body force transfer.' },
+  pelvic_bone_width_cm: { label: 'Pelvic width', unit: 'cm', why: 'Shapes hip mechanics and change-of-direction dynamics.' },
+  torso_length_cm: { label: 'Torso length', unit: 'cm', why: 'Changes posture control and segment balance.' },
+  hand_length_cm: { label: 'Hand length', unit: 'cm', why: 'Contributes to grip/contact mechanics where relevant.' },
+  foot_length_cm: { label: 'Foot length', unit: 'cm', why: 'Affects base of support and force transmission.' },
+  ankle_circumference_cm: { label: 'Ankle circumference', unit: 'cm', why: 'Proxy for lower-leg morphology and load tolerance.' },
+  wrist_circumference_cm: { label: 'Wrist circumference', unit: 'cm', why: 'Proxy for distal-limb structure in hand/arm tasks.' },
+};
+
+const traitLabels: Record<string, string> = {
+  muscle_fiber: 'Muscle fiber profile',
+  metabolic_tendency: 'Metabolic tendency',
+  joint_laxity: 'Joint laxity',
+  foot_arch: 'Foot arch',
+  temperature_tolerance: 'Temperature tolerance',
+  dominant_side: 'Dominant side',
+};
+
+const importanceRank: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
+function asList(value: any): any[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function sourceKey(source: any): string {
+  return [
+    String(source?.url || '').trim().toLowerCase(),
+    String(source?.short_name || source?.title || '').trim().toLowerCase(),
+    String(source?.publisher || '').trim().toLowerCase(),
+    String(source?.year || '').trim().toLowerCase(),
+  ].join('|');
+}
+
+function collectSources(rows: any[], getSources: (row: any) => any[]): { list: any[]; indexMap: Map<string, number> } {
+  const list: any[] = [];
+  const indexMap = new Map<string, number>();
+  for (const row of rows) {
+    for (const source of getSources(row)) {
+      const key = sourceKey(source);
+      if (!key) continue;
+      if (!indexMap.has(key)) {
+        indexMap.set(key, list.length + 1);
+        list.push(source);
+      }
+    }
+  }
+  return { list, indexMap };
+}
+
+function sourceRefs(sources: any[], indexMap: Map<string, number>): number[] {
+  const refs = new Set<number>();
+  for (const source of asList(sources)) {
+    const idx = indexMap.get(sourceKey(source));
+    if (idx) refs.add(idx);
+  }
+  return Array.from(refs).sort((a, b) => a - b);
+}
+
+function sourceRowAnchorId(sectionKey: string, index: number): string {
+  return `source-${sectionKey}-${index}`;
+}
+
+function withGlobalSourceRefNumbers(localRefs: number[], sectionKey: string, offsets: Map<string, number>): number[] {
+  const offset = offsets.get(sectionKey) ?? 0;
+  return localRefs.map((n) => n + offset);
+}
+
+const hierarchy = asList(body.hierarchy);
+const measurements = asList(payload.measurements).sort((a: any, b: any) => {
+  const left = importanceRank[String(a?.importance || '').toLowerCase()] ?? 3;
+  const right = importanceRank[String(b?.importance || '').toLowerCase()] ?? 3;
+  if (left !== right) return left - right;
+  return String(a?.measurement_key || '').localeCompare(String(b?.measurement_key || ''));
+});
+const traits = asList(payload.traits);
+const goals = asList(payload.goals);
+const preferences = asList(payload.preferences);
+const injuries = asList(payload.injuries);
+const transferRows = asList(payload.past_sport_transfer);
+
+const measurementSources = collectSources(measurements, (row) => asList(row?.sources));
+const traitSources = collectSources(traits, (row) => asList(row?.sources));
+const goalSources = collectSources(goals, (row) => asList(row?.sources));
+const preferenceSources = collectSources(preferences, (row) => asList(row?.sources));
+const injurySources = collectSources(injuries, (row) => {
+  return [
+    ...asList(row?.risk?.sources),
+    ...asList(row?.prevention?.sources),
+    ...asList(row?.heal?.sources),
+  ];
+});
+const transferSources = collectSources(transferRows, (row) => asList(row?.correlation_sources));
+
+const sourceSections = [
+  { key: 'measurements', label: 'Measurements', ...measurementSources },
+  { key: 'traits', label: 'Traits', ...traitSources },
+  { key: 'goals', label: 'Goals', ...goalSources },
+  { key: 'preferences', label: 'Preferences', ...preferenceSources },
+  { key: 'injuries', label: 'Injuries', ...injurySources },
+  { key: 'transfer', label: 'Past-sport transfer', ...transferSources },
+];
+
+const sourceSectionOffsets = new Map<string, number>();
+let runningSourceNumber = 0;
+for (const section of sourceSections) {
+  sourceSectionOffsets.set(section.key, runningSourceNumber);
+  runningSourceNumber += asList(section.list).length;
+}
+
+const mediaCard = body?.media?.card || null;
+const resolvedMediaSrc = resolveMediaUrl(mediaCard?.path);
+const mediaAlt = mediaCard?.alt || body?.title || 'Sport body image';
+
+const title = body.title || 'Sport body';
+const bodyNarrative = body?.rationale || body?.overall_description || '';
+const pageTitle = `Sport Body Evidence: ${title} | Sporty`;
+const pageDescription = `Evidence page for ${title}. Measurements, traits, goals, preferences, injuries, reasoning, and sources used by Sporty matching.`;
+
+const ldWebPage = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: pageTitle,
+  description: pageDescription,
+  url: canonicalUrl,
+};
+
+const ldBreadcrumb = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Sport Bodies', item: new URL('/sport-bodies', Astro.url).toString() },
+    { '@type': 'ListItem', position: 2, name: title, item: canonicalUrl },
+  ],
+};
+---
+<BaseLayout title={pageTitle} description={pageDescription} canonical={canonicalUrl}>
+  <main class="section-shell sport-body-page sport-body-redesign">
+    <aside class="sport-body-disclaimer sport-body-disclaimer--subtle" role="note" aria-label="Disclaimer">
+      <strong>Important:</strong> {payload.disclaimer}
+    </aside>
+
+    <header class="sport-body-hero">
+      <div class="sport-body-hero__copy">
+        <p class="badge-subtle">Public evidence page</p>
+        <h1 class="section-title">{title}</h1>
+        <div class="match-card__descriptions sport-body-hero__descriptions">
+          <div class="match-card__desc-block">
+            <h4>Sport</h4>
+            <div class="space-y-1 text-sm">
+              {hierarchy.length > 0 ? (
+                hierarchy.map((entry: any) => {
+                  const key = String(entry?.key || '').trim();
+                  const label = key ? key.charAt(0).toUpperCase() + key.slice(1) : 'Level';
+                  const value = entry?.name || '-';
+                  const description = entry?.description;
+                  return (
+                    <div class="match-card__detail-row group relative flex items-center">
+                      <span class="font-medium text-slate-700 w-24 shrink-0">{label}:</span>
+                      <span class="text-slate-900 truncate mr-1">{value}</span>
+                      {description && (
+                        <div class="relative flex items-center">
+                          <span class="cursor-help text-slate-400 hover:text-slate-600 transition-colors" aria-label={`${label} description`}>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                          </span>
+                          <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-2 bg-slate-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 leading-snug">
+                            {description}
+                            <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <p>Hierarchy not available for this profile.</p>
+              )}
+            </div>
+          </div>
+
+          {bodyNarrative && (
+            <div class="match-card__desc-block">
+              <h4>Athletes' bodies</h4>
+              <p>{bodyNarrative}</p>
+            </div>
+          )}
+        </div>
+      </div>
+      <figure class="sport-body-hero__media">
+        {resolvedMediaSrc ? (
+          <img src={resolvedMediaSrc} data-media-src={mediaCard?.path || ''} alt={mediaAlt} loading="eager" />
+        ) : (
+          <div class="sport-body-image-fallback">Image unavailable</div>
+        )}
+      </figure>
+    </header>
+
+    <section class="sport-body-glossary card-shell">
+      <h2 class="card-title">Quick glossary</h2>
+      <dl>
+        <dt>Prior</dt>
+        <dd>Model estimate before updating with the current evidence; the starting baseline.</dd>
+        <dt>Posterior</dt>
+        <dd>Model-updated estimate after combining prior evidence with observed data.</dd>
+        <dt>Standard deviation</dt>
+        <dd>Spread around the estimate; lower means tighter expected range.</dd>
+        <dt>Alignment</dt>
+        <dd>How well a goal/preference/injury profile matches this body pattern.</dd>
+      </dl>
+    </section>
+
+    <section class="sport-body-sections">
+      <details class="sport-body-accordion" open id="measurements">
+        <summary>Measurements</summary>
+        <div class="sport-body-accordion__content">
+          <table class="sport-body-data-table">
+            <thead>
+              <tr>
+                <th>Factor</th>
+                <th>Prior</th>
+                <th>Posterior</th>
+                <th>Success-impact</th>
+                <th>Reasoning behind prior</th>
+                <th>Prior estimate sources</th>
+              </tr>
+            </thead>
+            <tbody>
+              {measurements.map((row: any) => {
+                const meta = measurementLabels[row?.measurement_key] || {
+                  label: String(row?.measurement_key || 'Measurement').replace(/_/g, ' '),
+                  unit: row?.unit || '',
+                  why: 'Contributes to this profile match.',
+                };
+                const refs = sourceRefs(asList(row?.sources), measurementSources.indexMap);
+                const globalRefs = withGlobalSourceRefNumbers(refs, 'measurements', sourceSectionOffsets);
+                return (
+                  <tr>
+                    <td>{meta.label}</td>
+                    <td>{row?.prior_mean ?? '—'} ± {row?.prior_std_dev ?? '—'} {meta.unit || row?.unit || ''}</td>
+                    <td>{row?.posterior_mean ?? '—'} ± {row?.posterior_std_dev ?? '—'} {meta.unit || row?.unit || ''}</td>
+                    <td>{row?.importance || 'n/a'}</td>
+                    <td>{row?.reasoning || meta.why}</td>
+                    <td>
+                      {refs.length ? (
+                        refs.map((n, idx) => (
+                          <>
+                            {idx > 0 && ' '}
+                            <a href={`#${sourceRowAnchorId('measurements', n)}`}>[{globalRefs[idx]}]</a>
+                          </>
+                        ))
+                      ) : '—'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details class="sport-body-accordion" open id="traits">
+        <summary>Traits</summary>
+        <div class="sport-body-accordion__content">
+          <table class="sport-body-data-table">
+            <thead>
+              <tr>
+                <th>Factor</th>
+                <th>Value</th>
+                <th>Impact</th>
+                <th>Reasoning</th>
+                <th>Sources</th>
+              </tr>
+            </thead>
+            <tbody>
+              {traits.map((row: any) => {
+                const refs = sourceRefs(asList(row?.sources), traitSources.indexMap);
+                const globalRefs = withGlobalSourceRefNumbers(refs, 'traits', sourceSectionOffsets);
+                return (
+                  <tr>
+                    <td>{traitLabels[row?.trait_key] || row?.trait_key}</td>
+                    <td>{row?.value || '—'}</td>
+                    <td>{row?.importance || 'n/a'}</td>
+                    <td>{row?.reasoning || '—'}</td>
+                    <td>
+                      {refs.length ? (
+                        refs.map((n, idx) => (
+                          <>
+                            {idx > 0 && ' '}
+                            <a href={`#${sourceRowAnchorId('traits', n)}`}>[{globalRefs[idx]}]</a>
+                          </>
+                        ))
+                      ) : '—'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details class="sport-body-accordion" id="goals">
+        <summary>Goals</summary>
+        <div class="sport-body-accordion__content">
+          <table class="sport-body-data-table">
+            <thead>
+              <tr>
+                <th>Factor</th>
+                <th>Alignment</th>
+                <th>Reasoning</th>
+                <th>Sources</th>
+              </tr>
+            </thead>
+            <tbody>
+              {goals.map((row: any) => {
+                const refs = sourceRefs(asList(row?.sources), goalSources.indexMap);
+                const globalRefs = withGlobalSourceRefNumbers(refs, 'goals', sourceSectionOffsets);
+                return (
+                  <tr>
+                    <td>{row?.name || row?.goal_id || '—'}</td>
+                    <td>{row?.alignment || 'none'}</td>
+                    <td>{row?.reasoning || '—'}</td>
+                    <td>
+                      {refs.length ? (
+                        refs.map((n, idx) => (
+                          <>
+                            {idx > 0 && ' '}
+                            <a href={`#${sourceRowAnchorId('goals', n)}`}>[{globalRefs[idx]}]</a>
+                          </>
+                        ))
+                      ) : '—'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details class="sport-body-accordion" id="preferences">
+        <summary>Preferences</summary>
+        <div class="sport-body-accordion__content">
+          <table class="sport-body-data-table">
+            <thead>
+              <tr>
+                <th>Factor</th>
+                <th>Alignment</th>
+                <th>Reasoning</th>
+                <th>Sources</th>
+              </tr>
+            </thead>
+            <tbody>
+              {preferences.map((row: any) => {
+                const refs = sourceRefs(asList(row?.sources), preferenceSources.indexMap);
+                const globalRefs = withGlobalSourceRefNumbers(refs, 'preferences', sourceSectionOffsets);
+                return (
+                  <tr>
+                    <td>{row?.name || row?.preference_id || '—'}</td>
+                    <td>{row?.alignment || 'none'}</td>
+                    <td>{row?.reasoning || '—'}</td>
+                    <td>
+                      {refs.length ? (
+                        refs.map((n, idx) => (
+                          <>
+                            {idx > 0 && ' '}
+                            <a href={`#${sourceRowAnchorId('preferences', n)}`}>[{globalRefs[idx]}]</a>
+                          </>
+                        ))
+                      ) : '—'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details class="sport-body-accordion" id="injuries">
+        <summary>Injuries</summary>
+        <div class="sport-body-accordion__content">
+          {[
+            ['Risk', 'risk'],
+            ['Prevention', 'prevention'],
+            ['Heal', 'heal'],
+          ].map(([label, key]) => (
+            <section class="sport-body-source-section">
+              <h3>{label}</h3>
+              <table class="sport-body-data-table">
+                <thead>
+                  <tr>
+                    <th>Factor</th>
+                    <th>Value</th>
+                    <th>Definition</th>
+                    <th>Full reasoning</th>
+                    <th>Sources</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {injuries.map((row: any) => {
+                    const dim = row?.[key] || {};
+                    const refs = sourceRefs(asList(dim?.sources), injurySources.indexMap);
+                    const globalRefs = withGlobalSourceRefNumbers(refs, 'injuries', sourceSectionOffsets);
+                    return (
+                      <tr>
+                        <td>{row?.name || row?.injury_id || '—'}</td>
+                        <td>{dim?.value || 'none'}</td>
+                        <td>{row?.definition || '—'}</td>
+                        <td>{dim?.full_reasoning || '—'}</td>
+                        <td>
+                          {refs.length ? (
+                            refs.map((n, idx) => (
+                              <>
+                                {idx > 0 && ' '}
+                                <a href={`#${sourceRowAnchorId('injuries', n)}`}>[{globalRefs[idx]}]</a>
+                              </>
+                            ))
+                          ) : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </section>
+          ))}
+        </div>
+      </details>
+
+      <details class="sport-body-accordion" id="transfer">
+        <summary>Past-sport transfer logic</summary>
+        <div class="sport-body-accordion__content">
+          <table class="sport-body-data-table">
+            <thead>
+              <tr>
+                <th>Past sport</th>
+                <th>Average correlation (success)</th>
+                <th>Std dev</th>
+                <th>Correlation reasoning</th>
+                <th>Correlation sources</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transferRows.map((row: any) => {
+                const refs = sourceRefs(asList(row?.correlation_sources), transferSources.indexMap);
+                const globalRefs = withGlobalSourceRefNumbers(refs, 'transfer', sourceSectionOffsets);
+                return (
+                  <tr>
+                    <td>{row?.past_slug || '—'}</td>
+                    <td>{row?.correlation_average ?? '—'}</td>
+                    <td>{row?.correlation_std_dev ?? '—'}</td>
+                    <td>{row?.correlation_reasoning || 'No explanation provided.'}</td>
+                    <td>
+                      {refs.length ? (
+                        refs.map((n, idx) => (
+                          <>
+                            {idx > 0 && ' '}
+                            <a href={`#${sourceRowAnchorId('transfer', n)}`}>[{globalRefs[idx]}]</a>
+                          </>
+                        ))
+                      ) : '—'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details class="sport-body-accordion" id="sources" open>
+        <summary>Sources</summary>
+        <div class="sport-body-accordion__content">
+          {sourceSections.map((section) => {
+            const label = section.label;
+            const sources = section.list;
+            const sectionKey = section.key;
+            return (
+              <section class="sport-body-source-section">
+                <h3>{label} sources</h3>
+                {asList(sources).length ? (
+                  <table class="sport-body-data-table sport-body-data-table--sources">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Source</th>
+                        <th>Use</th>
+                        <th>URL</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {asList(sources).map((source: any, idx: number) => (
+                        <tr id={sourceRowAnchorId(sectionKey, idx + 1)}>
+                          <td>[{(sourceSectionOffsets.get(sectionKey) ?? 0) + idx + 1}]</td>
+                          <td>
+                            <strong>{source?.short_name || source?.title || 'Source'}</strong>
+                            <br />
+                            <span>{source?.publisher || 'Publisher n/a'} · {source?.year || 'Year n/a'}</span>
+                          </td>
+                          <td>{source?.use || 'No usage note provided.'}</td>
+                          <td>
+                            {source?.url ? (
+                              <a href={source.url} target="_blank" rel="noreferrer noopener">Open source</a>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p class="card-copy">No sources listed.</p>
+                )}
+              </section>
+            );
+          })}
+        </div>
+      </details>
+    </section>
+
+    <footer class="sport-body-footer-note">
+      <p>{payload.disclaimer}</p>
+      <p>
+        See also: <a href="/terms">Terms</a> and <a href="/privacy">Privacy</a>.
+      </p>
+    </footer>
+  </main>
+
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(ldWebPage)}></script>
+    <script type="application/ld+json" set:html={JSON.stringify(ldBreadcrumb)}></script>
+  </Fragment>
+
+  <Fragment slot="scripts">
+    <script>
+      (() => {
+        const root = document.querySelector('.sport-body-redesign');
+        if (!root) return;
+
+        const config = (window && window.SPORTY_CONFIG) || null;
+        const storageBase =
+          config && typeof config.SUPABASE_STORAGE_URL === 'string'
+            ? config.SUPABASE_STORAGE_URL.replace(/\/$/, '')
+            : '';
+
+        const media = root.querySelector('.sport-body-hero__media img[data-media-src]');
+        const mediaFallback = root.querySelector('.sport-body-image-fallback');
+        if (media) {
+          const raw = String(media.getAttribute('data-media-src') || '').trim();
+          if (raw && !/^https?:\/\//i.test(raw) && storageBase) {
+            media.src = `${storageBase}/${raw.replace(/^\/+/, '')}`;
+          }
+          media.addEventListener('error', () => {
+            media.setAttribute('hidden', 'hidden');
+            if (mediaFallback) mediaFallback.removeAttribute('hidden');
+          });
+        }
+
+        const revealSourceHashTarget = () => {
+          const hash = window.location.hash;
+          if (!hash) return;
+          const target = document.getElementById(hash.slice(1));
+          if (!target) return;
+          const sourcesDetails = target.closest('details#sources');
+          if (!sourcesDetails) return;
+          sourcesDetails.open = true;
+          requestAnimationFrame(() => {
+            target.scrollIntoView({ block: 'center' });
+          });
+        };
+
+        window.addEventListener('hashchange', revealSourceHashTarget);
+        revealSourceHashTarget();
+      })();
+    </script>
+  </Fragment>
+</BaseLayout>
