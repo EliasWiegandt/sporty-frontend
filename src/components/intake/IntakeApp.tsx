@@ -42,8 +42,6 @@ export type PastSportsEntry = PastSportInput & {
   sport_label?: string | null;
 };
 
-const STORAGE_KEY = "sporty:intake:draft:v1";
-
 const TRAIT_FIELDS = [
   "muscle_fiber",
   "metabolic_tendency",
@@ -119,24 +117,6 @@ const buildEmptyMeasurements = (keys: string[]): MeasurementFormValues => {
   return output;
 };
 
-const normalizeMeasurementDraftPatch = (
-  raw: Record<string, unknown>,
-  keys: string[]
-): MeasurementFormValues => {
-  const patch = buildEmptyMeasurements(keys);
-  keys.forEach((key) => {
-    if (!(key in raw)) return;
-    const value = raw[key];
-    if (value === null || value === undefined || value === "") {
-      patch[key] = null;
-      return;
-    }
-    const parsed = Number(value);
-    patch[key] = Number.isFinite(parsed) ? parsed : null;
-  });
-  return patch;
-};
-
 const SEX_OPTIONS: Set<Sex> = new Set([
   "female",
   "male",
@@ -151,18 +131,28 @@ type StepValidationResult<T> =
 const isSexOption = (value: string): value is Sex =>
   SEX_OPTIONS.has(value as Sex);
 
-const supportsLocalStorage = (): boolean => {
-  if (typeof window === "undefined") {
-    return false;
-  }
-  try {
-    const key = "__sporty_intake_test__";
-    window.localStorage.setItem(key, "1");
-    window.localStorage.removeItem(key);
-    return true;
-  } catch {
-    return false;
-  }
+type IntakePrefillPastSport = {
+  sport_subcategory_id?: string | null;
+  sport_label?: string | null;
+  years_played?: number | null;
+  age_started_years?: number | null;
+  intensity?: string | null;
+  liked?: boolean | null;
+  had_flair?: boolean | null;
+  achieved_skill?: boolean | null;
+};
+
+type IntakePrefillResponse = {
+  prefill?: {
+    basics?: Partial<{ birthday: string; sex: string }>;
+    measurements?: Partial<Record<string, number>>;
+    traits?: Partial<Record<string, string>>;
+    past_sports?: IntakePrefillPastSport[];
+    preferences?: PremiumIntakeData["preferences"];
+    goals?: PremiumIntakeData["goals"];
+    injuries?: PremiumIntakeData["injuries"];
+  };
+  sources?: Record<string, unknown>;
 };
 
 type IntakeAppProps = {
@@ -356,337 +346,114 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
   }, [sensitiveConsentSaving, sportySnapshot.user]);
 
   const currentStepIndexRef = useRef(currentStepIndex);
-  const isRestoringRef = useRef(false);
-  const restoredDraftFlagsRef = useRef<{ hasBasicScopedDraft: boolean; hasTraitsDraft: boolean }>({
-    hasBasicScopedDraft: false,
-    hasTraitsDraft: false,
-  });
+  const prefillAppliedUserIdRef = useRef<string | null>(null);
+  const basicsTouchedRef = useRef<Set<string>>(new Set());
+  const measurementsTouchedRef = useRef<Set<string>>(new Set());
+  const traitsTouchedRef = useRef<Set<string>>(new Set());
+  const pastSportsTouchedRef = useRef(false);
 
   useEffect(() => {
     currentStepIndexRef.current = currentStepIndex;
   }, [currentStepIndex]);
 
-  const saveDraft = useCallback(() => {
-    if (!supportsLocalStorage()) return;
-
-    const draft = {
-      step: currentStepIndexRef.current + 1,
-      basics: { ...basics },
-      measurements: { ...measurements },
-      pastSports: pastSports.map(({ id, ...rest }) => rest),
-      traits: { ...traits },
-    };
-
-    const hasBasics = Boolean(draft.basics.birthday || draft.basics.sex);
-    const hasMeasurements = Object.keys(draft.measurements).length > 0;
-    const hasPast = draft.pastSports.length > 0;
-    const hasTraits = Object.keys(draft.traits || {}).length > 0;
-
-    try {
-      if (hasBasics || hasMeasurements || hasPast || hasTraits) {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
-      } else {
-        window.localStorage.removeItem(STORAGE_KEY);
-      }
-    } catch {
-      // ignore storage errors
-    }
-  }, [basics, measurements, pastSports, traits]);
-
-  // Autosave on change
   useEffect(() => {
-    if (!isRestoringRef.current) {
-      saveDraft();
+    if (!sportySnapshot.user?.id) {
+      prefillAppliedUserIdRef.current = null;
+      basicsTouchedRef.current.clear();
+      measurementsTouchedRef.current.clear();
+      traitsTouchedRef.current.clear();
+      pastSportsTouchedRef.current = false;
     }
-  }, [basics, measurements, pastSports, traits, saveDraft]);
-
-  const restoreDraft = useCallback(() => {
-    if (!supportsLocalStorage()) return null;
-    let raw: string | null = null;
-    try {
-      raw = window.localStorage.getItem(STORAGE_KEY);
-    } catch {
-      return null;
-    }
-    if (!raw) return null;
-
-    let parsed: Record<string, any>;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      return null;
-    }
-
-    const setRestoringFlag = (value: boolean) => {
-      isRestoringRef.current = value;
-    };
-
-    setRestoringFlag(true);
-
-    try {
-      const hasBasicsDraft = Boolean(parsed?.basics?.birthday || parsed?.basics?.sex);
-      const hasMeasurementsDraft = Boolean(
-        parsed?.measurements && typeof parsed.measurements === "object" && Object.keys(parsed.measurements).length > 0
-      );
-      const hasPastSportsDraft = Array.isArray(parsed?.pastSports) && parsed.pastSports.length > 0;
-      const hasTraitsDraftFlag = Boolean(
-        parsed?.traits && typeof parsed.traits === "object" && Object.keys(parsed.traits).length > 0
-      );
-      restoredDraftFlagsRef.current = {
-        hasBasicScopedDraft: hasBasicsDraft || hasMeasurementsDraft || hasPastSportsDraft,
-        hasTraitsDraft: hasTraitsDraftFlag,
-      };
-
-      if (parsed.basics) {
-        setBasics((prev) => ({ ...prev, ...parsed.basics }));
-      }
-      if (parsed.measurements) {
-        const normalizedPatch = normalizeMeasurementDraftPatch(
-          parsed.measurements,
-          measurementKeys
-        );
-        setMeasurements((prev) => ({ ...prev, ...normalizedPatch }));
-      }
-      if (Array.isArray(parsed.pastSports)) {
-        const restoredPastSports = parsed.pastSports.map(
-          (entry: any, idx: number) => ({
-            ...entry,
-            id: `restored-${idx}-${Date.now()}`,
-          })
-        );
-        setPastSports(restoredPastSports);
-      }
-      const traitsDraft = parsed?.traits;
-      if (traitsDraft && typeof traitsDraft === "object") {
-        const restoredTraits: TraitAnswers = {};
-        TRAIT_FIELDS.forEach((fieldName) => {
-          const value = traitsDraft[fieldName];
-          if (typeof value === "string" && value.trim()) {
-            restoredTraits[fieldName as keyof TraitAnswers] = value;
-          }
-        });
-        setTraits((prev) => ({ ...prev, ...restoredTraits }));
-      }
-
-      const stepValue =
-        typeof parsed?.step === "number" && parsed.step > 0
-          ? parsed.step
-          : null;
-      if (stepValue) {
-        const index = Math.max(
-          0,
-          Math.min(stepDefinitions.length - 1, stepValue - 1)
-        );
-        setCurrentStepIndex(index);
-        setMaxVisitedIndex((prev) => (index > prev ? index : prev));
-      }
-    } finally {
-      setTimeout(() => {
-        setRestoringFlag(false);
-      }, 0);
-    }
-
-    return { step: parsed.step };
-  }, [stepDefinitions.length]);
-
-  // Initial restore
-  useEffect(() => {
-    restoreDraft();
-  }, [restoreDraft]);
-
-  useEffect(() => {
-    if (!sportySnapshot.user?.id) return;
-    const basicGranted = Boolean(sportySnapshot.consents?.basic_processing?.granted);
-    const sensitiveGranted = Boolean(
-      sportySnapshot.consents?.sensitive_health_processing?.granted
-    );
-    const flags = restoredDraftFlagsRef.current;
-
-    if (!basicGranted && flags.hasBasicScopedDraft) {
-      setBasics({ birthday: "", sex: "" });
-      setMeasurements(buildEmptyMeasurements(measurementKeys));
-      setPastSports([]);
-      try {
-        window.localStorage.removeItem(STORAGE_KEY);
-      } catch {
-        // ignore storage errors
-      }
-      flags.hasBasicScopedDraft = false;
-    }
-
-    if (!sensitiveGranted && flags.hasTraitsDraft) {
-      setTraits({});
-      try {
-        window.localStorage.removeItem(STORAGE_KEY);
-      } catch {
-        // ignore storage errors
-      }
-      flags.hasTraitsDraft = false;
-    }
-  }, [
-    measurementKeys,
-    sportySnapshot.consents?.basic_processing?.granted,
-    sportySnapshot.consents?.sensitive_health_processing?.granted,
-    sportySnapshot.user?.id,
-  ]);
-
-  const serverPrefillAppliedRef = useRef(false);
+  }, [sportySnapshot.user?.id]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!sportySnapshot.user?.id) return;
-    if (!sportySnapshot.consents?.basic_processing?.granted) return;
-    if (serverPrefillAppliedRef.current) return;
+    const userId = sportySnapshot.user.id;
+    if (prefillAppliedUserIdRef.current === userId) return;
 
+    prefillAppliedUserIdRef.current = userId;
     const sportyApp = (window as any).SportyApp;
-    const client = sportyApp?.getClient?.();
-    if (!client) return;
-
-    serverPrefillAppliedRef.current = true;
 
     (async () => {
       try {
-        const userId = sportySnapshot.user!.id;
-        const needsPremiumExtremities = mode === "premium";
+        const payload = await sportyApp?.fetchIntakePrefill?.();
+        const prefill = payload?.prefill || {};
+        const basicPrefill = prefill?.basics || {};
+        const measurementPrefill = prefill?.measurements || {};
+        const traitsPrefill = prefill?.traits || {};
+        const pastSportsPrefill = Array.isArray(prefill?.past_sports) ? prefill.past_sports : [];
+        const premiumPrefill = {
+          preferences: Array.isArray(prefill?.preferences) ? prefill.preferences : [],
+          goals: Array.isArray(prefill?.goals) ? prefill.goals : [],
+          injuries: Array.isArray(prefill?.injuries) ? prefill.injuries : [],
+        };
 
-        const profilePromise = client
-          .from("profiles")
-          .select("birthdate,sex,preferred_measurement_system")
-          .eq("id", userId)
-          .maybeSingle();
-
-        const latestMeasurementPromise = client
-          .from("measurements")
-          .select("*")
-          .eq("subject_type", "adult")
-          .eq("subject_user_id", userId)
-          .order("measured_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        const latestCompletePremiumMeasurementPromise = needsPremiumExtremities
-          ? client
-              .from("measurements")
-              .select("*")
-              .eq("subject_type", "adult")
-              .eq("subject_user_id", userId)
-              .not("hand_length_cm", "is", "null")
-              .not("foot_length_cm", "is", "null")
-              .not("ankle_circumference_cm", "is", "null")
-              .order("measured_at", { ascending: false })
-              .limit(1)
-              .maybeSingle()
-          : Promise.resolve({ data: null });
-
-        const pastSportsPromise = client
-          .from("past_sports")
-          .select("id,sport_subcategory_id,years_played,age_started_years,intensity,liked,had_flair,achieved_skill")
-          .eq("subject_type", "adult")
-          .eq("subject_user_id", userId)
-          .order("created_at", { ascending: false });
-
-        const [
-          { data: profile },
-          { data: latestMeasurement },
-          { data: latestCompletePremiumMeasurement },
-          { data: pastSportsRows },
-        ] = await Promise.all([
-          profilePromise,
-          latestMeasurementPromise,
-          latestCompletePremiumMeasurementPromise,
-          pastSportsPromise,
-        ]);
-
-        if (profile) {
-          setBasics((prev) => ({
-            birthday: prev.birthday || profile.birthdate || "",
-            sex: (prev.sex || (profile.sex as Sex) || "") as Sex | "",
-          }));
-          const preferredSystem = resolveMeasurementSystemOnClient(
-            profile.preferred_measurement_system
-          );
-          setMeasurementSystem(preferredSystem);
-          persistMeasurementSystemLocal(preferredSystem);
-        }
-
-        const measurementForPrefill =
-          (needsPremiumExtremities ? latestCompletePremiumMeasurement : null) || latestMeasurement;
-
-        if (measurementForPrefill) {
-          setMeasurements((prev) => {
-            const next = { ...prev };
-            measurementKeys.forEach((id) => {
-              if (typeof next[id] === "number" && Number.isFinite(next[id])) {
-                return;
-              }
-              const value = (measurementForPrefill as any)[id];
-              if (value === null || value === undefined) return;
-              const numVal = Number(value);
-              next[id] = Number.isFinite(numVal) ? numVal : null;
-            });
-            return next;
-          });
-        }
-
-        if (Array.isArray(pastSportsRows) && pastSportsRows.length) {
-          const subcategoryIds = Array.from(
-            new Set(
-              pastSportsRows
-                .map((row: any) => row?.sport_subcategory_id)
-                .filter((value: any) => Boolean(value))
-            )
-          );
-          const labelById = new Map<string, string>();
-          if (subcategoryIds.length) {
-            const { data: categories } = await client
-              .from("sports_subcategories")
-              .select("id,name,slug,category")
-              .in("id", subcategoryIds);
-            (categories || []).forEach((row: any) => {
-              const label = typeof row?.name === "string" ? row.name.trim() : "";
-              if (!label) {
-                console.warn("[Intake] sports_subcategories row missing canonical name", {
-                  subcategoryId: row?.id ?? null,
-                });
-              }
-              labelById.set(String(row.id), label);
-            });
+        setBasics((prev) => {
+          const next = { ...prev };
+          if (!basicsTouchedRef.current.has("birthday")) {
+            const birthday = typeof basicPrefill?.birthday === "string" ? basicPrefill.birthday : "";
+            if (birthday) next.birthday = birthday;
           }
+          if (!basicsTouchedRef.current.has("sex")) {
+            const sex = typeof basicPrefill?.sex === "string" ? basicPrefill.sex : "";
+            if (sex && isSexOption(sex)) next.sex = sex as Sex;
+          }
+          return next;
+        });
 
-          const entries = pastSportsRows.map((row: any) => ({
-            id: String(row.id),
-            sport_subcategory_id: row.sport_subcategory_id || null,
-            sport_label: row.sport_subcategory_id
-              ? labelById.get(String(row.sport_subcategory_id)) || ""
-              : "",
+        setMeasurements((prev) => {
+          const next = { ...prev };
+          measurementKeys.forEach((id) => {
+            if (measurementsTouchedRef.current.has(id)) return;
+            const raw = (measurementPrefill as any)?.[id];
+            if (raw === null || raw === undefined || raw === "") return;
+            const num = Number(raw);
+            if (Number.isFinite(num)) next[id] = num;
+          });
+          return next;
+        });
+
+        setTraits((prev) => {
+          const next = { ...prev };
+          TRAIT_FIELDS.forEach((fieldName) => {
+            if (traitsTouchedRef.current.has(fieldName)) return;
+            const value = (traitsPrefill as any)?.[fieldName];
+            if (typeof value === "string" && value.trim()) {
+              next[fieldName as keyof TraitAnswers] = value.trim();
+            }
+          });
+          return next;
+        });
+
+        if (!pastSportsTouchedRef.current && pastSportsPrefill.length) {
+          const entries = pastSportsPrefill.map((row: any, idx: number) => ({
+            id: `prefill-${idx}-${Date.now()}`,
+            sport_subcategory_id: row?.sport_subcategory_id || null,
+            sport_label: row?.sport_label || "",
             years_played:
-              row.years_played === null || row.years_played === undefined
+              row?.years_played === null || row?.years_played === undefined
                 ? null
                 : Number(row.years_played),
             age_started_years:
-              row.age_started_years === null || row.age_started_years === undefined
+              row?.age_started_years === null || row?.age_started_years === undefined
                 ? null
                 : Number(row.age_started_years),
-            intensity: row.intensity || null,
-            liked:
-              row.liked === null || row.liked === undefined ? null : Boolean(row.liked),
-            had_flair:
-              row.had_flair === null || row.had_flair === undefined
-                ? null
-                : Boolean(row.had_flair),
+            intensity: row?.intensity || null,
+            liked: typeof row?.liked === "boolean" ? row.liked : null,
+            had_flair: typeof row?.had_flair === "boolean" ? row.had_flair : null,
             achieved_skill:
-              row.achieved_skill === null || row.achieved_skill === undefined
-                ? null
-                : Boolean(row.achieved_skill),
+              typeof row?.achieved_skill === "boolean" ? row.achieved_skill : null,
           }));
-
           setPastSports((prev) => (prev.length ? prev : entries));
         }
+
+        premiumControllerRef.current?.prefill?.(premiumPrefill);
       } catch (error) {
-        console.warn("[Intake] Unable to prefill from saved profile/measurements/past sports", error);
+        console.warn("[Intake] Unable to prefill from canonical saved-analysis prefill endpoint", error);
       }
     })();
-  }, [measurementKeys, mode, sportySnapshot.user?.id]);
+  }, [measurementKeys, sportySnapshot.user?.id]);
 
   const validateBasics = useCallback((): StepValidationResult<
     Pick<FreeIntakeData, "birthday" | "sex">
@@ -1312,9 +1079,10 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
                 return (
                   <BasicsStep
                     value={basics}
-                    onChange={(patch) =>
-                      setBasics((prev) => ({ ...prev, ...patch }))
-                    }
+                    onChange={(patch) => {
+                      Object.keys(patch || {}).forEach((key) => basicsTouchedRef.current.add(key));
+                      setBasics((prev) => ({ ...prev, ...patch }));
+                    }}
                   />
                 );
               case "measurements":
@@ -1325,25 +1093,30 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
                     values={measurements}
                     measurementSystem={measurementSystem}
                     onMeasurementSystemChange={handleMeasurementSystemChange}
-                    onChange={(patch) =>
-                      setMeasurements((prev) => ({ ...prev, ...patch }))
-                    }
+                    onChange={(patch) => {
+                      Object.keys(patch || {}).forEach((key) => measurementsTouchedRef.current.add(key));
+                      setMeasurements((prev) => ({ ...prev, ...patch }));
+                    }}
                   />
                 );
               case "traits":
                 return (
                   <TraitsStep
                     value={traits}
-                    onChange={(patch) =>
-                      setTraits((prev) => ({ ...prev, ...patch }))
-                    }
+                    onChange={(patch) => {
+                      Object.keys(patch || {}).forEach((key) => traitsTouchedRef.current.add(key));
+                      setTraits((prev) => ({ ...prev, ...patch }));
+                    }}
                   />
                 );
               case "pastSports":
                 return (
                   <PastSportsStep
                     entries={pastSports}
-                    onUpdate={setPastSports}
+                    onUpdate={(entries) => {
+                      pastSportsTouchedRef.current = true;
+                      setPastSports(entries);
+                    }}
                   />
                 );
               default:

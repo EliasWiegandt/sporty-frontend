@@ -3,16 +3,6 @@ import RadioCards from '../controls/RadioCards';
 import InlineInfoTip from '../InlineInfoTip';
 import type { TraitAnswers } from '../../../data/intakeSchema';
 
-const PREFILL_TRAITS: Record<string, string> = {
-  muscle_fiber: 'fast_twitch_dominant',
-  metabolic_tendency: "don't know",
-  joint_laxity: 'medium',
-  foot_arch: 'neutral',
-  temperature_tolerance: 'balanced',
-  handedness: 'right',
-  footedness: 'right',
-};
-
 type TraitOption = { label: string; value: string; detail?: string };
 type TraitQuestion = {
   name: string;
@@ -123,12 +113,11 @@ const TraitsStep: FunctionalComponent<TraitsStepProps> = ({ value, onChange }) =
               />
             )}
           </legend>
-          <RadioCards
-            name={question.name}
-            value={value[question.name as keyof TraitAnswers] ?? undefined}
-            defaultValue={PREFILL_TRAITS[question.name]}
-            options={question.options}
-            onChange={(nextValue) =>
+              <RadioCards
+                name={question.name}
+                value={value[question.name as keyof TraitAnswers] ?? undefined}
+                options={question.options}
+                onChange={(nextValue) =>
               onChange({
                 [question.name]: nextValue,
               } as Partial<TraitAnswers>)
@@ -157,7 +146,6 @@ const TraitsStep: FunctionalComponent<TraitsStepProps> = ({ value, onChange }) =
               <RadioCards
                 name={field}
                 value={value[field as keyof TraitAnswers] ?? undefined}
-                defaultValue={PREFILL_TRAITS[field]}
                 options={sideOptions}
                 columns="grid-cols-1"
                 onChange={(nextValue) =>

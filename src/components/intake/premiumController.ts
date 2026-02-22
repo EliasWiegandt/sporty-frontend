@@ -20,6 +20,7 @@ export type PremiumController = {
   update: (snapshot: { user: { id: string } | null; consents?: Record<string, { granted?: boolean }> }) => Promise<void>;
   collect: () => { applyCredit: boolean; data: PremiumSelectionData | null; errors: string[] };
   setConsent: (value: boolean) => void;
+  prefill: (data: PremiumSelectionData | null) => void;
   reset: () => void;
 };
 
@@ -460,76 +461,6 @@ async function fetchTaxonomy(client: any) {
   };
 }
 
-async function fetchLatestAdultPremiumSelections(client: any, userId: string) {
-  if (!client || !userId) return null;
-  const { data: inputs, error: inputError } = await client
-    .from('analysis_inputs')
-    .select('id, created_at')
-    .eq('subject_type', 'adult')
-    .eq('subject_user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(10);
-  if (inputError) throw inputError;
-  if (!Array.isArray(inputs) || !inputs.length) return null;
-
-  const inputIds = inputs.map((row: any) => String(row.id)).filter(Boolean);
-  const [prefRes, goalRes, injuryRes] = await Promise.all([
-    client
-      .from('analysis_input_preferences')
-      .select('analysis_input_id, preference_id')
-      .in('analysis_input_id', inputIds),
-    client
-      .from('analysis_input_goals')
-      .select('analysis_input_id, goal_id')
-      .in('analysis_input_id', inputIds),
-    client
-      .from('analysis_input_injuries')
-      .select('analysis_input_id, injury_subcategory_id')
-      .in('analysis_input_id', inputIds),
-  ]);
-  if (prefRes.error || goalRes.error || injuryRes.error) {
-    throw prefRes.error || goalRes.error || injuryRes.error;
-  }
-
-  const prefRows = Array.isArray(prefRes.data) ? prefRes.data : [];
-  const goalRows = Array.isArray(goalRes.data) ? goalRes.data : [];
-  const injuryRows = Array.isArray(injuryRes.data) ? injuryRes.data : [];
-
-  for (const inputId of inputIds) {
-    const preferences = Array.from(
-      new Set(
-        prefRows
-          .filter((row: any) => String(row.analysis_input_id) === inputId)
-          .map((row: any) => (row.preference_id ? String(row.preference_id) : ''))
-          .filter(Boolean)
-      )
-    );
-    const goals = Array.from(
-      new Set(
-        goalRows
-          .filter((row: any) => String(row.analysis_input_id) === inputId)
-          .map((row: any) => (row.goal_id ? String(row.goal_id) : ''))
-          .filter(Boolean)
-      )
-    );
-    const injuries = Array.from(
-      new Set(
-        injuryRows
-          .filter((row: any) => String(row.analysis_input_id) === inputId)
-          .map((row: any) =>
-            row.injury_subcategory_id ? String(row.injury_subcategory_id) : ''
-          )
-          .filter(Boolean)
-      )
-    );
-    if (preferences.length || goals.length || injuries.length) {
-      return { preferences, goals, injuries };
-    }
-  }
-
-  return null;
-}
-
 const toPreferenceInputs = (entries: Array<Record<string, unknown>>): PreferenceInput[] =>
   entries.map((entry) => ({
     preference_id: String(entry.preference_id),
@@ -600,11 +531,28 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
   let lastUserId: string | null = null;
   let updateToken = 0;
   let prefilledUserId: string | null = null;
-  let restoredUserId: string | null = null;
   let lastAdultSensitiveConsentGranted: boolean | null = null;
+  let userEditedSelections = false;
+  let applyingPrefill = false;
+  let pendingPrefillData: PremiumSelectionData | null = null;
 
   const toggleWrapper = null;
   const applyToggle = null;
+
+  if (block) {
+    const markDirty = () => {
+      if (applyingPrefill) return;
+      userEditedSelections = true;
+    };
+    block.addEventListener('input', markDirty);
+    block.addEventListener('change', markDirty);
+    block.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest?.('[data-add]') || target?.closest?.('[data-remove]')) {
+        markDirty();
+      }
+    });
+  }
 
   const updateSummary = () => {
     if (!summary) return;
@@ -633,6 +581,41 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
     preferenceList.reset();
     goalList.reset();
     injuryList.reset();
+  };
+
+  const applyPrefillSelectionsIfPossible = () => {
+    if (!pendingPrefillData) return;
+    if (userEditedSelections) return;
+    applyingPrefill = true;
+    try {
+      preferenceList.reset();
+      goalList.reset();
+      injuryList.reset();
+
+      (pendingPrefillData.preferences || []).forEach((item) => {
+        if (item?.preference_id) {
+          (preferenceList as any).addEntry?.(String(item.preference_id));
+        }
+      });
+      (pendingPrefillData.goals || []).forEach((item) => {
+        if (item?.goal_id) {
+          (goalList as any).addEntry?.(String(item.goal_id));
+        }
+      });
+      (pendingPrefillData.injuries || []).forEach((item) => {
+        const subcategoryId = item?.injury_subcategory_id ? String(item.injury_subcategory_id) : null;
+        const injuryId = item?.injury_id ? String(item.injury_id) : null;
+        if (!injuryId) return;
+        (injuryList as any).addEntry?.({
+          injury_id: injuryId,
+          injury_subcategory_id: subcategoryId,
+          severity: item?.severity || 'somewhat_bad',
+        });
+      });
+      prefilledUserId = lastUserId;
+    } finally {
+      applyingPrefill = false;
+    }
   };
 
   return {
@@ -669,7 +652,8 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
       if (lastUserId !== userId) {
         applyCredit = false;
         prefilledUserId = null;
-        restoredUserId = null;
+        userEditedSelections = false;
+        pendingPrefillData = null;
       }
       lastUserId = userId;
       let taxonomy;
@@ -709,33 +693,14 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
       }
       lastAdultSensitiveConsentGranted = adultSensitiveConsentGranted;
 
-      if (creditType === 'adult' && adultSensitiveConsentGranted && restoredUserId !== userId) {
-        try {
-          const restored = await fetchLatestAdultPremiumSelections(client, userId);
-          if (token !== updateToken) return;
-          if (restored) {
-            preferenceList.reset();
-            goalList.reset();
-            injuryList.reset();
-            restored.preferences.forEach((id) => {
-              (preferenceList as any).addEntry?.(id);
-            });
-            restored.goals.forEach((id) => {
-              (goalList as any).addEntry?.(id);
-            });
-            restored.injuries.forEach((id) => {
-              (injuryList as any).addEntry?.(id);
-            });
-          }
-          restoredUserId = userId;
-        } catch (error) {
-          console.error('Failed to restore latest premium selections', error);
-        }
+      if (creditType === 'adult' && adultSensitiveConsentGranted && pendingPrefillData && !userEditedSelections) {
+        applyPrefillSelectionsIfPossible();
       }
       if (
         prefillForTesting &&
         prefilledUserId !== userId &&
-        restoredUserId !== userId &&
+        !pendingPrefillData &&
+        !userEditedSelections &&
         adultSensitiveConsentGranted
       ) {
         // Prefill a couple of entries for faster local testing.
@@ -783,8 +748,15 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
       consentGranted = Boolean(value);
       updateSummary();
     },
+    prefill(data) {
+      pendingPrefillData = data ? { ...data } : null;
+      if (!pendingPrefillData) return;
+      applyPrefillSelectionsIfPossible();
+    },
     reset() {
       deactivate();
+      userEditedSelections = false;
+      pendingPrefillData = null;
     },
   };
 }

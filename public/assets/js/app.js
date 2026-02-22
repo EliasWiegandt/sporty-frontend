@@ -72,6 +72,7 @@
     fetchRecommendations: (limit) => fetchRecommendations(limit),
     refreshConsent: () => loadConsent(),
     getConsentStatus: () => fetchConsentStatus(),
+    fetchIntakePrefill: () => fetchIntakePrefill(),
     grantConsent: (consentType, policyVersion, jurisdiction) =>
       grantConsent(consentType, policyVersion, jurisdiction),
     fetchConsents: () => fetchConsents(),
@@ -736,6 +737,18 @@
     }
     if (!response.ok) {
       throw new Error('Unable to fetch account deletion status');
+    }
+    return response.json();
+  }
+
+  async function fetchIntakePrefill() {
+    if (!state.user) return null;
+    const response = await authFetch('/api/intake/prefill', {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) {
+      throw new Error(`Unable to fetch intake prefill (${response.status})`);
     }
     return response.json();
   }
