@@ -2,32 +2,33 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 <BaseLayout
-  title="Sporty — Privacy (Operational Draft)"
-  description="Operational draft privacy notice for Sporty."
+  title="Sporty — Privacy Notice"
+  description="Privacy notice for Sporty (founder-approved operational baseline; legal review pending)."
 >
   <main class="policy-page">
-    <h1>Privacy Notice (Operational Draft)</h1>
+    <h1>Privacy Notice</h1>
     <p>
-      This page summarizes how Sporty currently handles personal data. It is an operational draft pending lawyer review.
-      It is not a legal certification statement.
+      This page summarizes how Sporty currently handles personal data. This is a founder-approved operational baseline and remains
+      subject to legal review. It is not a legal certification statement.
     </p>
 
     <section class="policy-callout">
       <h2>1. Who controls your data</h2>
       <p>
-        Data controller (placeholder): Sporty EU entity (final legal name/address TODO).
+        Data controller (placeholder): Sporty EU entity (final legal name/address still to be inserted).
       </p>
     </section>
 
     <section class="policy-callout">
       <h2>2. Data categories we process</h2>
       <ul>
-        <li>Basic profile and measurements.</li>
+        <li>Basic profile data, including birthday/date of birth, sex, and measurements.</li>
         <li>Optional sports history and recommendation outputs.</li>
         <li>Sensitive health-related context in premium flows (for example injury context).</li>
         <li>Child-related profile and forecast data in guardian-mediated flows.</li>
         <li>Billing and credit metadata, plus pseudonymous billing ledger records.</li>
         <li>Operational security, deletion, and incident metadata.</li>
+        <li>Signup legal-acceptance records (for example Terms/Privacy acknowledgments and age/guardian attestation evidence).</li>
       </ul>
     </section>
 
@@ -36,6 +37,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <ul>
         <li>Deliver free and premium sport recommendations.</li>
         <li>Operate user accounts, credits, billing, and support operations.</li>
+        <li>Operate signup eligibility and legal-acceptance controls (including launch country gating and age/guardian attestation).</li>
         <li>Store and manage recommendation history where applicable.</li>
         <li>Run deletion, rights-handling, and incident response workflows.</li>
         <li>Maintain de-identified learning events for adult flows as implemented.</li>
@@ -43,7 +45,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     </section>
 
     <section class="policy-callout">
-      <h2>4. Legal-basis snapshot (draft)</h2>
+      <h2>4. Legal-basis snapshot</h2>
       <ul>
         <li>
           Strictly necessary operations (for example account operation, billing/accounting, core service delivery, and security operations)
@@ -60,14 +62,20 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <li>
           <code>basic_processing</code> is used as a user-facing consent/control gate for identifiable persistence features.
         </li>
+        <li>
+          Legal acceptance of Terms/Privacy and age/guardian attestation at signup is a separate control from processing-consent categories.
+        </li>
       </ul>
     </section>
 
     <section class="policy-callout">
       <h2>5. Consent controls and withdrawal</h2>
       <p>
-        You can manage consent categories in Account settings. You can revoke categories at any time.
+        You can manage processing-consent categories in Account settings. You can revoke categories at any time.
         Revocation triggers scoped purge behavior for affected data classes under current runtime behavior.
+      </p>
+      <p>
+        Terms/Privacy acceptance and signup attestations are recorded separately from these processing-consent toggles.
       </p>
       <ul>
         <li><code>basic_processing</code></li>
@@ -100,7 +108,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     </section>
 
     <section class="policy-callout">
-      <h2>8b. Child-data commercialization policy</h2>
+      <h2>8. Child-data commercialization policy</h2>
       <p>
         Sporty does not sell, license, or otherwise monetize child-derived data, including child-derived aggregates, under current policy.
       </p>
@@ -110,7 +118,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     </section>
 
     <section class="policy-callout">
-      <h2>8. Data subject rights and requests</h2>
+      <h2>9. Data subject rights and requests</h2>
       <p>
         You can request access, deletion, portability, objection/restriction, and correction where applicable.
         Current request handling follows our operational DSAR workflow.
@@ -121,7 +129,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     </section>
 
     <section class="policy-callout">
-      <h2>9. Security and incident response</h2>
+      <h2>10. Security and incident response</h2>
       <p>
         Sporty uses technical and operational controls designed to reduce risk, including consent gating, scoped deletion controls,
         and incident-response procedures. No system can guarantee absolute security.
@@ -129,15 +137,20 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     </section>
 
     <section class="policy-callout">
-      <h2>10. Vendors and transfers</h2>
+      <h2>11. Vendors and transfers</h2>
       <p>
-        Core vendors include Supabase, Cloudflare, Render, Stripe, and GitHub (development/operations context).
-        Primary data storage region is Sweden (Stockholm, EU). Transfer and contract controls are tracked in internal compliance artifacts.
+        Core vendors include Supabase, Cloudflare, Render, Stripe, and GitHub (development/operations context). Primary data storage
+        region is Sweden (Stockholm, EU), and backend runtime is hosted in Frankfurt (EU) on Render. Some vendors (for example Cloudflare,
+        Stripe, and GitHub) may still involve international processing or access depending on service operation. Vendor contract and
+        transfer controls are tracked in internal compliance artifacts.
+      </p>
+      <p>
+        Sporty currently supports signups in the EU and United States at launch.
       </p>
     </section>
 
     <section class="policy-callout">
-      <h2>11. Contact</h2>
+      <h2>12. Contact</h2>
       <ul>
         <li>Privacy contact: legal@plyml.com</li>
         <li>Security incident contact: legal@plyml.com</li>
@@ -146,7 +159,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     </section>
 
     <p>
-      Operational draft; legal review pending.
+      Founder-approved operational baseline; legal review pending.
     </p>
   </main>
 

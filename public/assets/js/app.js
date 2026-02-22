@@ -853,13 +853,13 @@
     if (titleEl && bodyEl) {
       if (consentType === 'sensitive_health_processing') {
         titleEl.textContent = 'Allow sensitive-health processing?';
-        bodyEl.textContent = 'This enables injury and health-related premium inputs for analysis. You can revoke this later in your profile.';
+        bodyEl.textContent = 'This enables injury and health-related premium inputs for analysis. If you revoke later, Sporty deletes saved adult premium analysis history and premium input memory.';
       } else if (consentType === 'child_data_processing') {
         titleEl.textContent = 'Allow child-data processing?';
-        bodyEl.textContent = 'This enables child profiles, forecasts, and child-linked analysis. You can revoke this later in your profile.';
+        bodyEl.textContent = 'This enables child profiles, forecasts, and child-linked analysis. If you revoke later, Sporty deletes stored child results immediately, including runs still inside the 7-day window.';
       } else {
         titleEl.textContent = 'Allow Sporty to store your results?';
-        bodyEl.textContent = 'We only save your measurements and recommendations after you consent. You can revoke this later from your profile.';
+        bodyEl.textContent = 'We only save your measurements and recommendations after you consent. If you revoke later, Sporty deletes your saved adult measurements and quick/premium adult history.';
       }
     }
     if (confirmBtn) confirmBtn.disabled = false;

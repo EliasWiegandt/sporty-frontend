@@ -99,7 +99,7 @@ export const offerings = [
     },
   },
   {
-    ribbon: "1$",
+    ribbon: "$1",
     title: "Identity verification required",
     price: "Child Forecast and Analysis",
     summary: "Forecast a child's growth and match its future body to sports.",

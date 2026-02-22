@@ -42,6 +42,11 @@ Signup legal gate posture: sign-up now requires Terms acceptance, Privacy acknow
 - Logged-in free users can run and store analyses once `basic_processing` consent is granted; anonymous free runs are preview-only and not persisted as identifiable history.
 - The dashboard views stored recommendations (free + premium) alongside updated credit balances so users and guardians can revisit previous analyses.
 - The dashboard exposes consent-category controls (`basic_processing`, `sensitive_health_processing`, `child_data_processing`) plus account deletion (permanent account closure with immediate sign-out).
+- Dashboard consent revoke behavior now waits for backend purge completion and then refreshes history so visible cards match the final deletion outcome.
+- Consent revoke deletion mapping (UI contract):
+  - `basic_processing`: removes saved adult measurements plus quick/premium adult history.
+  - `sensitive_health_processing`: removes saved adult premium analyses and premium input memory.
+  - `child_data_processing`: removes stored child forecast/match results immediately, including runs still inside the 7-day window.
 - Dashboard privacy now includes a third control for signed-in users: delete all saved measurements/results while keeping account access and consent.
 - History cards use a neutral `...` overflow menu for per-run deletion actions; keep destructive emphasis in confirmations/modals rather than always-on red card buttons.
 - Dashboard history menus intentionally use visible card overflow plus elevated menu z-layer so the `Delete run` dropdown is never clipped by the card boundary.

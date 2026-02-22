@@ -957,6 +957,35 @@
     return 'Consent';
   }
 
+  async function pollConsentPurgeUntilSettled(consentType, options = {}) {
+    const timeoutMs = Number(options.timeoutMs || 20000);
+    const intervalMs = Number(options.intervalMs || 1200);
+    const startedAt = Date.now();
+    let lastSnapshot = null;
+
+    while (Date.now() - startedAt < timeoutMs) {
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+      try {
+        if (typeof sportyApp.refreshConsent === 'function') {
+          await sportyApp.refreshConsent();
+        }
+        const status =
+          typeof sportyApp.getConsentStatus === 'function' ? await sportyApp.getConsentStatus() : null;
+        if (status && typeof status === 'object') {
+          lastSnapshot = status;
+          const purgeStatus = String(status?.consents?.[consentType]?.purge_status || '').toLowerCase();
+          if (purgeStatus === 'done' || purgeStatus === 'failed') {
+            return { done: true, snapshot: status, purgeStatus };
+          }
+        }
+      } catch (error) {
+        console.warn('[Dashboard] Consent purge poll failed', error);
+      }
+    }
+
+    return { done: false, snapshot: lastSnapshot, purgeStatus: String(lastSnapshot?.consents?.[consentType]?.purge_status || '').toLowerCase() };
+  }
+
   function clearConsentActionStatus() {
     if (!consentStatusEl) return;
     consentStatusEl.className = 'status-area mt-2';
@@ -1255,7 +1284,38 @@
             type: 'info',
             text: `${label} turned off successfully. Data cleanup is in progress.`,
           });
+          const pollResult = await pollConsentPurgeUntilSettled(consentType, { timeoutMs: 25000, intervalMs: 1200 });
+          if (pollResult?.snapshot) {
+            snap = pollResult.snapshot;
+            updateToggleHelp(snap);
+            syncConsentToggles(snap);
+          }
+          const finalPurgeStatus = String(
+            pollResult?.snapshot?.consents?.[consentType]?.purge_status || pollResult?.purgeStatus || ''
+          ).toLowerCase();
+          if (finalPurgeStatus === 'done') {
+            if (lastUserId) {
+              await loadHistory(lastUserId);
+            }
+            showConsentActionStatus({
+              type: 'success',
+              text: `${label} turned off successfully. Data cleanup finished and history was refreshed.`,
+            });
+          } else if (finalPurgeStatus === 'failed') {
+            showConsentActionStatus({
+              type: 'error',
+              text: `${label} turned off, but cleanup failed. Please try again.`,
+            });
+          } else {
+            showConsentActionStatus({
+              type: 'info',
+              text: `${label} turned off successfully. Cleanup is still running; refresh in a moment.`,
+            });
+          }
         } else {
+          if (lastUserId) {
+            await loadHistory(lastUserId);
+          }
           showConsentActionStatus({ type: 'success', text: `${label} turned off successfully.` });
         }
       } catch (error) {

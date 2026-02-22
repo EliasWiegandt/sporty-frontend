@@ -36,6 +36,10 @@ Child anonymized event collection is disabled; child identifiable analysis data 
 Child results persistence strategy: no retention-extension option at launch; guardians should export the top-3 results PDF from `/child-results` if they need records beyond 7 days.
 
 Users can manage or revoke consent anytime in **Account → Data & Privacy**.
+Revocation deletion contract:
+- revoke `basic_processing` -> delete saved adult measurements + quick/premium adult history
+- revoke `sensitive_health_processing` -> delete saved adult premium analyses + premium input memory
+- revoke `child_data_processing` -> delete stored child results immediately (including within the 7-day retention window)
 Signup legal gate is separate from processing consent: account creation requires Terms acceptance, Privacy acknowledgment, 18+/guardian attestation, and country-of-residence selection. Launch signup scope is EU+US only.
 
 ---
