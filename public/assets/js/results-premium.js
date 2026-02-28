@@ -42,6 +42,11 @@
   })();
 
   const STICKY_MIN_ITEMS = 8;
+  const RATIO_MEASUREMENT_KEYS = new Set([
+    'ape_index',
+    'shoulder_hip_ratio',
+    'leg_torso_ratio',
+  ]);
 
   init().catch((error) => {
     console.error('[Sporty] Failed to init premium results page', error);
@@ -247,24 +252,6 @@
       });
     }
 
-    if (breakdown.details && breakdown.details.traits && breakdown.details.traits.body) {
-      Object.entries(breakdown.details.traits.body).forEach(([key, val]) => {
-        const score = val.fit_score ?? val.score;
-        if (score !== undefined) {
-          factors.push({
-            key,
-            label: formatLabel(key),
-            score: score,
-            match_contribution: 0,
-            user_value: val.value,
-            importance: val.importance,
-            reasoning: val.reasoning,
-            type: 'trait',
-          });
-        }
-      });
-    }
-
     return factors.sort((a, b) => b.match_contribution - a.match_contribution);
   }
 
@@ -306,6 +293,13 @@
     const numeric = Number(value);
     if (Number.isNaN(numeric)) return '0%';
     return `${numeric.toFixed(1)}%`;
+  }
+
+  function formatRatioDisplayValue(key, value) {
+    if (!RATIO_MEASUREMENT_KEYS.has(String(key || '').trim())) return value;
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return value;
+    return numeric.toFixed(2);
   }
 
   function slugify(value) {
@@ -1333,11 +1327,13 @@
     } else {
       const values = document.createElement('div');
       values.className = 'text-xs text-slate-500 mb-1';
+      const userValue = formatRatioDisplayValue(factor.key, factor.user_value);
+      const cohortMean = formatRatioDisplayValue(factor.key, factor.cohort_mean);
       let valueHtml = `${escapeHtml(subjectLabel)}: <span class="font-bold">${escapeHtml(
-        factor.user_value
+        userValue
       )}</span>`;
-      if (factor.cohort_mean) {
-        valueHtml += ` - Ideal: <span class="font-bold">${escapeHtml(factor.cohort_mean)}</span>`;
+      if (factor.cohort_mean !== undefined && factor.cohort_mean !== null && factor.cohort_mean !== '') {
+        valueHtml += ` - Ideal: <span class="font-bold">${escapeHtml(cohortMean)}</span>`;
       }
       values.innerHTML = valueHtml;
       leftCol.appendChild(values);
@@ -1562,7 +1558,7 @@
     measurementsContainer.innerHTML = '';
     if (!matches.length) return;
     matches.forEach((match, index) => {
-      const detailEntries = match.score_breakdown?.measurements_detail || match.measurements_detail || [];
+      const detailEntries = resolveMeasurementDetailEntries(match);
       const factors = extractFactors(match);
       match.factors = factors;
       const tableHtml = detailEntries.length
@@ -1614,6 +1610,27 @@
     });
   }
 
+  function resolveMeasurementDetailEntries(match) {
+    const explicit =
+      (Array.isArray(match?.score_breakdown?.measurements_detail) && match.score_breakdown.measurements_detail) ||
+      (Array.isArray(match?.measurements_detail) && match.measurements_detail) ||
+      [];
+    if (explicit.length) return explicit;
+
+    const metrics = match?.score_breakdown?.metrics || {};
+    if (!metrics || typeof metrics !== 'object') return [];
+
+    return Object.entries(metrics).map(([key, value]) => ({
+      key,
+      label: key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+      user_value: value?.user_value,
+      cohort_mean: value?.cohort_mean,
+      cohort_std_dev: value?.cohort_std_dev,
+      fit_score: value?.fit_score,
+      reasoning_short: value?.reasoning || '',
+    }));
+  }
+
   function buildFactorListHtml(factorList) {
     if (!Array.isArray(factorList)) return '';
     if (!Array.isArray(factorList) || !factorList.length) return '';
@@ -1638,13 +1655,32 @@
 
   function buildMeasurementComparisonTableHtml(entries) {
     if (!entries.length) return '';
-    const rows = entries
-      .slice(0, 5)
+    const ordered = entries.slice().sort((a, b) => {
+      const aFit = Number(a?.fit_score ?? a?.fit ?? -1);
+      const bFit = Number(b?.fit_score ?? b?.fit ?? -1);
+      return bFit - aFit;
+    });
+
+    const topFive = ordered.slice(0, 5);
+    const existingKeys = new Set(topFive.map((entry) => String(entry?.key || '').trim()));
+    const ratioExtras = ordered.filter((entry) => {
+      const key = String(entry?.key || '').trim();
+      return RATIO_MEASUREMENT_KEYS.has(key) && !existingKeys.has(key);
+    });
+    const displayRows = [...topFive, ...ratioExtras];
+
+    const rows = displayRows
       .map((entry) => {
+        const key = String(entry?.key || '').trim();
         const label = escapeHtml(entry.label || entry.key || 'Measurement');
-        const userValue = escapeHtml(String(entry.user_value ?? entry.user_value_display ?? '—'));
-        const cohortMean = escapeHtml(String(typeof entry.cohort_mean !== 'undefined' ? entry.cohort_mean : '—'));
-        const cohortStd = entry.cohort_std_dev ? escapeHtml(String(entry.cohort_std_dev)) : null;
+        const rawUserValue = entry.user_value ?? entry.user_value_display ?? '—';
+        const rawCohortMean = typeof entry.cohort_mean !== 'undefined' ? entry.cohort_mean : '—';
+        const rawCohortStdDev = entry.cohort_std_dev;
+        const userValue = escapeHtml(String(formatRatioDisplayValue(key, rawUserValue)));
+        const cohortMean = escapeHtml(String(formatRatioDisplayValue(key, rawCohortMean)));
+        const cohortStd = rawCohortStdDev
+          ? escapeHtml(String(formatRatioDisplayValue(key, rawCohortStdDev)))
+          : null;
         const cohortText = cohortStd ? `${cohortMean} ± ${cohortStd}` : cohortMean;
         const fitValue = typeof entry.fit_score === 'number' ? entry.fit_score : typeof entry.fit === 'number' ? entry.fit : null;
         const fitPercent = fitValue !== null && Number.isFinite(fitValue) ? Math.max(0, Math.min(100, Math.round(fitValue))) : 0;
