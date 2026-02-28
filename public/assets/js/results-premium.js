@@ -760,8 +760,8 @@
     const bodyHref = buildSportBodyHref(body, subcategory);
     if (bodyHref) {
       const ctaWrap = document.createElement('div');
-      ctaWrap.className = 'mt-4';
-      ctaWrap.innerHTML = `<a class="btn-pill btn-pill-secondary btn-pill-sm" href="${escapeHtml(bodyHref)}">Read about this sport body</a>`;
+      ctaWrap.className = 'mt-4 flex justify-center';
+      ctaWrap.innerHTML = `<a class="btn-pill btn-pill-secondary btn-pill-sm" href="${escapeHtml(bodyHref)}">Read more about this body</a>`;
       card.appendChild(ctaWrap);
     }
 

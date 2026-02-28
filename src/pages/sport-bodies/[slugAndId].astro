@@ -70,10 +70,17 @@ function asList(value: any): any[] {
 function sourceKey(source: any): string {
   return [
     String(source?.url || '').trim().toLowerCase(),
-    String(source?.short_name || source?.title || '').trim().toLowerCase(),
+    String(source?.title || '').trim().toLowerCase(),
     String(source?.publisher || '').trim().toLowerCase(),
     String(source?.year || '').trim().toLowerCase(),
   ].join('|');
+}
+
+function formatAuthors(source: any): string {
+  const authors = asList(source?.authors)
+    .map((entry) => String(entry || '').trim())
+    .filter(Boolean);
+  return authors.length ? authors.join(', ') : 'Authors n/a';
 }
 
 function collectSources(rows: any[], getSources: (row: any) => any[]): { list: any[]; indexMap: Map<string, number> } {
@@ -530,7 +537,10 @@ const ldBreadcrumb = {
                     <thead>
                       <tr>
                         <th>#</th>
-                        <th>Source</th>
+                        <th>Title</th>
+                        <th>Authors</th>
+                        <th>Year</th>
+                        <th>Publisher</th>
                         <th>Use</th>
                         <th>URL</th>
                       </tr>
@@ -540,10 +550,11 @@ const ldBreadcrumb = {
                         <tr id={sourceRowAnchorId(sectionKey, idx + 1)}>
                           <td>[{(sourceSectionOffsets.get(sectionKey) ?? 0) + idx + 1}]</td>
                           <td>
-                            <strong>{source?.short_name || source?.title || 'Source'}</strong>
-                            <br />
-                            <span>{source?.publisher || 'Publisher n/a'} · {source?.year || 'Year n/a'}</span>
+                            <strong>{source?.title || 'Source'}</strong>
                           </td>
+                          <td>{formatAuthors(source)}</td>
+                          <td>{source?.year || 'Year n/a'}</td>
+                          <td>{source?.publisher || 'Publisher n/a'}</td>
                           <td>{source?.use || 'No usage note provided.'}</td>
                           <td>
                             {source?.url ? (

@@ -1,6 +1,6 @@
 # Sporty Frontend Handbook
 
-_Last updated: 2025-11-19_
+_Last updated: 2026-02-28_
 
 This handbook tracks how the Sporty frontend is assembled and deployed. Pair it with the backend handbook (`../sporty-backend/docs/handbook.md`) for API and entitlement details. (`../sporty-backend/docs/handbook.md`) for API details and shared operational notes.
 
@@ -37,6 +37,7 @@ Signup legal gate posture: sign-up now requires Terms acceptance, Privacy acknow
 - Drill-down `Injuries` now renders three tables (`Risk`, `Prevention`, `Heal`) with taxonomy `Definition` (from `injury_subcategories_catalog`), full reasoning, and clickable source refs that deep-link into the shared `Sources` accordion.
 - Drill-down past-sport transfer table reads backend correlation research fields (`correlation_average`, `correlation_std_dev`, `correlation_reasoning`, `correlation_sources`) and shows clickable source refs.
 - Drill-down source numbering is global across sections (Measurements -> Traits -> Goals -> Preferences -> Injuries -> Past-sport transfer) so refs never reset per subsection.
+- Drill-down `Sources` table now renders canonical citation columns (`Title`, `Authors`, `Year`, `Publisher`, `Use`, `URL`); `short_name` is intentionally not rendered.
 - Drill-down disclaimer policy: strong safety/liability notice at top and repeated in footer; pages are indexable and intended for public transparency.
 - Child intake primes the deterministic test family (prefilled on preview branches) and collects child + parent measurements plus premium inputs; once a child credit is applied we post to `/api/forecast-child`, capture the forecast, and render both premium matches and forecast details in `/child-results` (tabs).
 - Logged-in intakes also capture past sports (searchable `sports_subcategories`, using the long-form subcategory `name` such as "Soccer - Forward - Winger", plus intensity and enjoyment/flair/skill flags) and sync them to Supabase before saving recommendations.
