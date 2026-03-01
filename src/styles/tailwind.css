@@ -992,6 +992,27 @@
     flex: 1;
   }
 
+  .match-card__accordion-content {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 180ms ease, opacity 180ms ease;
+  }
+
+  .match-card__accordion-content.is-open {
+    opacity: 1;
+  }
+
+  .match-card__accordion-content.is-closed {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .match-card__accordion-content {
+      transition: none;
+    }
+  }
+
   .match-card__factors-heading {
     margin: 0 0 0.2rem;
     font-size: 1.55rem;

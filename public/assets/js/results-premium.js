@@ -46,6 +46,7 @@
   })();
 
   const STICKY_MIN_ITEMS = 8;
+  const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
   const RATIO_MEASUREMENT_KEYS = new Set([
     'ape_index',
     'shoulder_hip_ratio',
@@ -835,19 +836,106 @@
 
       const content = document.createElement('div');
       content.id = contentId;
-      content.className = 'px-2 pb-2';
-      content.hidden = !isOpen;
+      content.className = 'match-card__accordion-content px-2 pb-2';
+      let animationFrameId = null;
+      let transitionHandler = null;
       wrapper.appendChild(content);
 
       if (isLong && isOpen) header.classList.add(...stickyClasses);
 
       if (isOpen && chevron) chevron.classList.add('rotate-180');
 
+      const prefersReducedMotion =
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia(REDUCED_MOTION_QUERY).matches;
+
+      function clearAnimationHooks() {
+        if (animationFrameId !== null) {
+          window.cancelAnimationFrame(animationFrameId);
+          animationFrameId = null;
+        }
+        if (transitionHandler) {
+          content.removeEventListener('transitionend', transitionHandler);
+          transitionHandler = null;
+        }
+      }
+
+      function setClasses(open) {
+        content.classList.toggle('is-open', open);
+        content.classList.toggle('is-closed', !open);
+      }
+
+      function applyImmediate(open) {
+        clearAnimationHooks();
+        setClasses(open);
+        content.hidden = !open;
+        content.style.maxHeight = open ? 'none' : '0px';
+        content.style.opacity = open ? '1' : '0';
+      }
+
+      function animateOpen() {
+        clearAnimationHooks();
+        content.hidden = false;
+        setClasses(true);
+        content.style.maxHeight = '0px';
+        content.style.opacity = '0';
+        // Force style flush so the next frame transitions cleanly.
+        content.offsetHeight;
+        animationFrameId = window.requestAnimationFrame(() => {
+          animationFrameId = null;
+          content.style.maxHeight = `${content.scrollHeight}px`;
+          content.style.opacity = '1';
+        });
+        transitionHandler = (event) => {
+          if (event.target !== content || event.propertyName !== 'max-height') return;
+          content.style.maxHeight = 'none';
+          clearAnimationHooks();
+        };
+        content.addEventListener('transitionend', transitionHandler);
+      }
+
+      function animateClose() {
+        clearAnimationHooks();
+        content.hidden = false;
+        setClasses(false);
+        const startHeight = content.scrollHeight;
+        content.style.maxHeight = `${startHeight}px`;
+        content.style.opacity = '1';
+        // Force style flush so collapse animation starts from measured height.
+        content.offsetHeight;
+        animationFrameId = window.requestAnimationFrame(() => {
+          animationFrameId = null;
+          content.style.maxHeight = '0px';
+          content.style.opacity = '0';
+        });
+        transitionHandler = (event) => {
+          if (event.target !== content || event.propertyName !== 'max-height') return;
+          content.hidden = true;
+          clearAnimationHooks();
+        };
+        content.addEventListener('transitionend', transitionHandler);
+      }
+
+      function setOpenAnimated(open) {
+        if (prefersReducedMotion) {
+          applyImmediate(open);
+          return;
+        }
+        if (open) {
+          animateOpen();
+          return;
+        }
+        animateClose();
+      }
+
+      // Initialize state without first-render flicker.
+      applyImmediate(isOpen);
+
       const setOpen = (open, options = {}) => {
         const shouldRealign = options.realign !== false;
         SECTION_STATE.set(matchKey, sectionKey, open);
         header.setAttribute('aria-expanded', String(open));
-        content.hidden = !open;
+        setOpenAnimated(open);
         if (isLong) stickyClasses.forEach((cls) => header.classList.toggle(cls, open));
         if (chevron) chevron.classList.toggle('rotate-180', open);
         if (shouldRealign) scheduleCardRealign();
