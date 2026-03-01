@@ -2,6 +2,7 @@
   const STORAGE_KEY = "sporty:lastResult";
   const container = document.querySelector("[data-results-container]");
   const emptyState = document.querySelector("[data-empty-state]");
+  const cardAlignment = window.SportyResultCardAlignment || null;
 
   // Configuration
   const storageBase = resolveStorageBase();
@@ -177,11 +178,14 @@
         console.error("Error rendering match index:", index, e);
       }
     });
+
+    initCardAlignment();
   }
 
   function buildMatchCard(match, rank) {
     const card = document.createElement("article");
     card.className = "match-card";
+    card.setAttribute("data-match-card", "");
 
     const body = match.optimal_body || {};
     const spec = body.spec || {};
@@ -235,6 +239,7 @@
     // 3. Descriptions
     const descriptions = document.createElement("div");
     descriptions.className = "match-card__descriptions";
+    descriptions.setAttribute("data-card-desc-stack", "");
 
     // 2.5 Sport Details (Category Hierarchy in canonical YAML order)
     const hierarchy = Array.isArray(subcategory.hierarchy)
@@ -329,12 +334,22 @@
 
     const bodyHref = buildSportBodyHref(body, subcategory);
     if (bodyHref) {
+      const ctaSpacer = document.createElement("div");
+      ctaSpacer.className = "match-card__cta-spacer";
+      ctaSpacer.setAttribute("data-card-cta-spacer", "");
+      card.appendChild(ctaSpacer);
+
       const ctaWrap = document.createElement("div");
       ctaWrap.className = "mt-4 flex justify-center";
+      ctaWrap.setAttribute("data-card-read-more", "");
       ctaWrap.innerHTML = `<a class="btn-pill btn-pill-secondary btn-pill-sm" href="${escapeHtml(
         bodyHref
       )}">Read more about this body</a>`;
       card.appendChild(ctaWrap);
+
+      const ctaSeparator = document.createElement("div");
+      ctaSeparator.className = "match-card__cta-separator";
+      card.appendChild(ctaSeparator);
     }
 
     // 4. Factors (Top 5 + Expand)
@@ -722,6 +737,17 @@
       return self.SPORTY_CONFIG.SUPABASE_STORAGE_URL.replace(/\/$/, "");
     }
     return "";
+  }
+
+  function initCardAlignment() {
+    if (
+      !container ||
+      !cardAlignment ||
+      typeof cardAlignment.init !== "function"
+    ) {
+      return;
+    }
+    cardAlignment.init(container);
   }
 
   function resolveMediaUrl(card, base) {

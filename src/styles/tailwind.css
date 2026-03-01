@@ -720,11 +720,6 @@
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   }
 
-  .match-card__descriptions {
-    display: grid;
-    gap: 0.5rem;
-  }
-
   .match-card__desc-block {
     padding: 0.75rem 0.85rem;
     border-radius: var(--radius-lg);
@@ -975,9 +970,19 @@
   }
 
   .match-card__descriptions {
+    display: grid;
+    gap: 0.5rem;
     padding: 1.5rem;
     /* Restored full padding */
-    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .match-card__cta-spacer {
+    min-height: 0;
+  }
+
+  .match-card__cta-separator {
+    border-top: 1px solid #e2e8f0;
+    margin-top: 0.9rem;
   }
 
   .match-card__factors {
@@ -985,6 +990,14 @@
     /* Restored full padding */
     background: #fff;
     flex: 1;
+  }
+
+  .match-card__factors-heading {
+    margin: 0 0 0.2rem;
+    font-size: 1.55rem;
+    line-height: 1.2;
+    font-weight: 800;
+    color: var(--color-text);
   }
 
   .match-card__factors h4,

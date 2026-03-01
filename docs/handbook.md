@@ -59,6 +59,10 @@ Signup legal gate posture: sign-up now requires Terms acceptance, Privacy acknow
 - Ratio scoring contract: adult quick matching is ratio-free; adult premium and child premium include derived ratios (`ape_index`, `shoulder_hip_ratio`, `leg_torso_ratio`) in premium body-fit scoring and premium factor breakdowns.
 - Premium results presentation contract: `Body Proportion Factors` renders measurement/ratio metrics only; trait items render only in `Trait Factors` (no duplication across sections).
 - Premium ratio display contract: ratio values (`ape_index`, `shoulder_hip_ratio`, `leg_torso_ratio`) are rounded to 2 decimals in premium results UI cards/tables; backend payload precision remains unchanged.
+- Result-card CTA alignment contract: free, premium, and child-premium result grids now equalize an unboxed CTA spacer per visual row (helper: `public/assets/js/results-card-alignment.js`) so the `Read more about this body` CTA and the separator line below it align horizontally without stretching the boxed `Sport`/`Athletes' bodies` panels.
+- Premium drill-down controls contract: per-card `Collapse all` control is removed; factor accordions now sit under a static section header titled `Match factors`.
+- Premium drill-down default-open contract: `Body Proportion Factors` starts expanded by default on initial render for both adult premium and child premium results; other factor sections remain collapsed until opened.
+- Premium drill-down heading contract: `Match factors` is styled as a prominent section title with compact spacing to the first accordion panel (no oversized whitespace gap).
 - Surface Supabase-powered auth/consent flows without persisting any sensitive keys client-side.
 - Honour explicit consent before storing measurements, preferences/goals, injuries, or child data; provide preview mode if consent is declined.
 - _Current UX scope: design the MVP as a desktop web-first experience; responsive/mobile treatments will follow in subsequent iterations._

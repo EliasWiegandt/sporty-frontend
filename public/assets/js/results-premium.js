@@ -6,6 +6,7 @@
   const reasonEl = hero ? hero.querySelector('[data-reason]') : null;
   const container = root.querySelector('[data-results-container]');
   const emptyState = root.querySelector('[data-empty-state]');
+  const cardAlignment = window.SportyResultCardAlignment || null;
   const emptyTitle = emptyState ? emptyState.querySelector('h2') : null;
   const emptyMessage = emptyState ? emptyState.querySelector('p') : null;
   const exportPdfButton = root.querySelector('[data-child-export-pdf]');
@@ -32,6 +33,9 @@
       window.__sportyPremiumSectionState ||
       (window.__sportyPremiumSectionState = Object.create(null));
     return {
+      has(matchKey, sectionKey) {
+        return Object.prototype.hasOwnProperty.call(store, `${matchKey}:${sectionKey}`);
+      },
       get(matchKey, sectionKey) {
         return Boolean(store[`${matchKey}:${sectionKey}`]);
       },
@@ -526,6 +530,7 @@
       setChildExportState([]);
       return;
     }
+    initCardAlignment();
     setChildExportState(matches);
   }
 
@@ -615,6 +620,7 @@
   function buildMatchCard(match, rank) {
     const card = document.createElement('article');
     card.className = 'match-card';
+    card.setAttribute('data-match-card', '');
 
     const body = match.optimal_body || {};
     const spec = body.spec || {};
@@ -666,6 +672,7 @@
 
     const descriptions = document.createElement('div');
     descriptions.className = 'match-card__descriptions';
+    descriptions.setAttribute('data-card-desc-stack', '');
 
     // Sport Details (Category Hierarchy in canonical YAML order)
     const hierarchy = Array.isArray(subcategory.hierarchy) ? subcategory.hierarchy : [];
@@ -753,22 +760,40 @@
 
     const bodyHref = buildSportBodyHref(body, subcategory);
     if (bodyHref) {
+      const ctaSpacer = document.createElement('div');
+      ctaSpacer.className = 'match-card__cta-spacer';
+      ctaSpacer.setAttribute('data-card-cta-spacer', '');
+      card.appendChild(ctaSpacer);
+
       const ctaWrap = document.createElement('div');
       ctaWrap.className = 'mt-4 flex justify-center';
+      ctaWrap.setAttribute('data-card-read-more', '');
       ctaWrap.innerHTML = `<a class="btn-pill btn-pill-secondary btn-pill-sm" href="${escapeHtml(bodyHref)}">Read more about this body</a>`;
       card.appendChild(ctaWrap);
+
+      const ctaSeparator = document.createElement('div');
+      ctaSeparator.className = 'match-card__cta-separator';
+      card.appendChild(ctaSeparator);
     }
 
     const sectionsContainer = document.createElement('div');
-    sectionsContainer.className = 'mt-4 flex flex-col gap-4';
-    const sectionControllers = [];
+    sectionsContainer.className = 'mt-1 flex flex-col gap-3';
 
-    function createExpandableSection({ sectionKey, title, totalPct, isLong, contentEl }) {
+    function createExpandableSection({
+      sectionKey,
+      title,
+      totalPct,
+      isLong,
+      contentEl,
+      defaultOpen = false,
+    }) {
       const wrapper = document.createElement('section');
       wrapper.className = 'match-card__factors';
 
       const contentId = `premium-${matchKey}-${sectionKey}-content`;
-      const isOpen = SECTION_STATE.get(matchKey, sectionKey);
+      const isOpen = SECTION_STATE.has(matchKey, sectionKey)
+        ? SECTION_STATE.get(matchKey, sectionKey)
+        : defaultOpen;
       const stickyClasses = [
         'sticky',
         'top-2',
@@ -818,19 +843,21 @@
 
       if (isOpen && chevron) chevron.classList.add('rotate-180');
 
-      const setOpen = (open) => {
+      const setOpen = (open, options = {}) => {
+        const shouldRealign = options.realign !== false;
         SECTION_STATE.set(matchKey, sectionKey, open);
         header.setAttribute('aria-expanded', String(open));
         content.hidden = !open;
         if (isLong) stickyClasses.forEach((cls) => header.classList.toggle(cls, open));
         if (chevron) chevron.classList.toggle('rotate-180', open);
+        if (shouldRealign) scheduleCardRealign();
       };
 
       header.addEventListener('click', () => setOpen(content.hidden));
 
       content.appendChild(contentEl);
 
-      return { el: wrapper, setOpen };
+      return wrapper;
     }
 
     // Body Proportion Factors (mirror free results)
@@ -852,9 +879,9 @@
         totalPct,
         isLong: factors.length >= STICKY_MIN_ITEMS,
         contentEl: list,
+        defaultOpen: true,
       });
-      sectionControllers.push(section);
-      sectionsContainer.appendChild(section.el);
+      sectionsContainer.appendChild(section);
     }
 
     // Past Sport Factors (mirror free results)
@@ -877,8 +904,7 @@
         isLong: pastSports.length >= STICKY_MIN_ITEMS,
         contentEl: list,
       });
-      sectionControllers.push(section);
-      sectionsContainer.appendChild(section.el);
+      sectionsContainer.appendChild(section);
     }
 
     // Trait Factors (premium-only)
@@ -901,8 +927,7 @@
         isLong: traitFactors.length >= STICKY_MIN_ITEMS,
         contentEl: list,
       });
-      sectionControllers.push(section);
-      sectionsContainer.appendChild(section.el);
+      sectionsContainer.appendChild(section);
     }
 
     // Goal Factors (premium-only)
@@ -922,8 +947,7 @@
         isLong: goalFactors.length >= STICKY_MIN_ITEMS,
         contentEl: list,
       });
-      sectionControllers.push(section);
-      sectionsContainer.appendChild(section.el);
+      sectionsContainer.appendChild(section);
     }
 
     // Preference Factors (premium-only)
@@ -943,8 +967,7 @@
         isLong: preferenceFactors.length >= STICKY_MIN_ITEMS,
         contentEl: list,
       });
-      sectionControllers.push(section);
-      sectionsContainer.appendChild(section.el);
+      sectionsContainer.appendChild(section);
     }
 
     // Injury Factors (premium-only)
@@ -970,24 +993,14 @@
         isLong: injuryEntries.length >= STICKY_MIN_ITEMS,
         contentEl: list,
       });
-      sectionControllers.push(section);
-      sectionsContainer.appendChild(section.el);
+      sectionsContainer.appendChild(section);
     }
 
-    if (sectionControllers.length > 0) {
-      const controls = document.createElement('div');
-      controls.className = 'flex justify-end mt-2';
-
-      const collapseAllBtn = document.createElement('button');
-      collapseAllBtn.type = 'button';
-      collapseAllBtn.className = 'btn-ghost btn-sm';
-      collapseAllBtn.textContent = 'Collapse all';
-      collapseAllBtn.addEventListener('click', () => {
-        sectionControllers.forEach((controller) => controller.setOpen(false));
-      });
-
-      controls.appendChild(collapseAllBtn);
-      card.appendChild(controls);
+    if (sectionsContainer.children.length > 0) {
+      const factorsHeading = document.createElement('h3');
+      factorsHeading.className = 'match-card__factors-heading';
+      factorsHeading.textContent = 'Match factors';
+      card.appendChild(factorsHeading);
       card.appendChild(sectionsContainer);
     }
 
@@ -1015,6 +1028,20 @@
         type: 'trait',
       }))
       .sort((a, b) => (b.match_contribution || 0) - (a.match_contribution || 0));
+  }
+
+  function initCardAlignment() {
+    if (!container || !cardAlignment || typeof cardAlignment.init !== 'function') {
+      return;
+    }
+    cardAlignment.init(container);
+  }
+
+  function scheduleCardRealign() {
+    if (!container || !cardAlignment || typeof cardAlignment.realign !== 'function') {
+      return;
+    }
+    window.requestAnimationFrame(() => cardAlignment.realign(container));
   }
 
   function extractGoalFactors(match) {
