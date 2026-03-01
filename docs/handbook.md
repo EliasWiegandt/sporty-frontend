@@ -64,6 +64,7 @@ Signup legal gate posture: sign-up now requires Terms acceptance, Privacy acknow
 - Premium drill-down default-open contract: `Body Proportion Factors` starts expanded by default on initial render for both adult premium and child premium results; other factor sections remain collapsed until opened.
 - Premium drill-down heading contract: `Match factors` is styled as a prominent section title with compact spacing to the first accordion panel (no oversized whitespace gap).
 - Premium drill-down animation contract: factor accordion bodies use `match-card__accordion-content` with a subtle 180ms `max-height + opacity` transition; users with `prefers-reduced-motion: reduce` get instant open/close (no motion).
+- Family dashboard grouping contract: each child now renders as a distinct `family-child-card` (medium-contrast border, subtle tint, and compact child-name header row) with light per-section separators so multi-child lists have clear start/end boundaries.
 - Surface Supabase-powered auth/consent flows without persisting any sensitive keys client-side.
 - Honour explicit consent before storing measurements, preferences/goals, injuries, or child data; provide preview mode if consent is declined.
 - _Current UX scope: design the MVP as a desktop web-first experience; responsive/mobile treatments will follow in subsequent iterations._

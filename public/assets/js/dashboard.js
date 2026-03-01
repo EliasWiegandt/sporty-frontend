@@ -637,16 +637,17 @@
 
       childrenSorted.forEach((child) => {
         const li = document.createElement('li');
-        li.className = 'rounded-lg border border-slate-100 bg-white px-4 py-3';
+        li.className = 'family-child-card';
 
         const titleRow = document.createElement('div');
-        titleRow.className = 'flex items-start justify-between gap-3';
+        titleRow.className = 'family-child-card__header';
 
         const name = child.name || 'Child';
         const age = formatChildAge(child.birthdate);
         const sex = child.sex ? String(child.sex).replace(/_/g, ' ') : null;
 
         const left = document.createElement('div');
+        left.className = 'family-child-card__identity';
         left.innerHTML = `
           <div class="flex items-center gap-2">
             <h4 class="m-0 text-slate-900 font-medium">${escapeHtml(name)}</h4>
@@ -677,7 +678,8 @@
         const myBio = myGuardianship && myGuardianship.biological_role ? String(myGuardianship.biological_role) : null;
         if (myBio === 'mother' || myBio === 'father') {
           const sharingBlock = document.createElement('div');
-          sharingBlock.className = 'mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3';
+          sharingBlock.className =
+            'family-child-card__section family-child-card__section--row flex items-center justify-between gap-3';
 
           const leftCopy = document.createElement('div');
           leftCopy.className = 'min-w-0';
@@ -732,12 +734,12 @@
           sharingBlock.appendChild(leftCopy);
           sharingBlock.appendChild(wrapper);
           li.appendChild(sharingBlock);
-          li.appendChild(status);
+          sharingBlock.appendChild(status);
         }
 
         // Invite co-guardian (creator-driven assignment)
         const inviteBlock = document.createElement('div');
-        inviteBlock.className = 'mt-3';
+        inviteBlock.className = 'family-child-card__section';
         inviteBlock.innerHTML = `
           <div class="text-xs text-slate-500 uppercase tracking-wider font-medium">Invite co-guardian</div>
           <div class="mt-1 grid gap-2 sm:grid-cols-[1fr_auto_auto] items-center">
@@ -803,7 +805,7 @@
 
         if (myGuardianship) {
           const relBlock = document.createElement('div');
-          relBlock.className = 'mt-3';
+          relBlock.className = 'family-child-card__section';
           relBlock.innerHTML = `
             <div class="text-xs text-slate-500 uppercase tracking-wider font-medium">Your relation</div>
             <div class="mt-1 grid gap-2 sm:grid-cols-[1fr_auto] items-center">
@@ -867,7 +869,7 @@
         const guardians = guardiansByChild.get(child.id) || [];
         if (guardians.length) {
           const gWrap = document.createElement('div');
-          gWrap.className = 'mt-2';
+          gWrap.className = 'family-child-card__section';
 
           const label = document.createElement('div');
           label.className = 'text-xs text-slate-500 uppercase tracking-wider font-medium';
@@ -897,7 +899,7 @@
         const pending = pendingInvitesByChild.get(child.id) || [];
         if (pending.length) {
           const pendingWrap = document.createElement('div');
-          pendingWrap.className = 'mt-2';
+          pendingWrap.className = 'family-child-card__section';
 
           const label = document.createElement('div');
           label.className = 'text-xs text-slate-500 uppercase tracking-wider font-medium';
