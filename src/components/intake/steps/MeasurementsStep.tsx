@@ -1,5 +1,5 @@
 import type { FunctionalComponent } from 'preact';
-import type { MeasurementFieldConfig } from '../../../data/measurementFields';
+import type { MeasurementFieldConfig } from '../../../lib/intakeCatalog';
 import MeasurementField from '../MeasurementField';
 import InlineInfoTip from '../InlineInfoTip';
 import type { MeasurementSystem } from '../../../lib/units';

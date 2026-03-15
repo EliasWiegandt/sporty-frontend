@@ -5,10 +5,6 @@ import MeasurementsStep from "./steps/MeasurementsStep";
 import PastSportsStep from "./steps/PastSportsStep";
 import TraitsStep from "./steps/TraitsStep";
 import PremiumBlock, { type PremiumSectionKey } from "./PremiumBlock";
-import {
-  freeMeasurementFields,
-  premiumMeasurementFields,
-} from "../../data/measurementFields";
 import { formatBoundaryValue, type MeasurementSystem } from "../../lib/units";
 import {
   persistMeasurementSystemForUser,
@@ -20,6 +16,13 @@ import {
   type PremiumController,
 } from "./premiumController";
 import { buildFreePayload, buildPremiumPayload } from "../../data/intakeSchema";
+import {
+  fetchIntakeCatalog,
+  type MeasurementFieldConfig,
+  type PastSportBooleanFieldConfig,
+  type PastSportIntensityOption,
+  type TraitCatalogQuestion,
+} from "../../lib/intakeCatalog";
 import type {
   FreeIntakeData,
   PremiumIntakeData,
@@ -41,16 +44,6 @@ export type PastSportsEntry = PastSportInput & {
   id: string;
   sport_label?: string | null;
 };
-
-const TRAIT_FIELDS = [
-  "muscle_fiber",
-  "metabolic_tendency",
-  "joint_laxity",
-  "foot_arch",
-  "temperature_tolerance",
-  "handedness",
-  "footedness",
-] as const;
 
 type StepKey =
   | "basics"
@@ -160,17 +153,7 @@ type IntakeAppProps = {
 };
 
 const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
-  const activeMeasurementFields = useMemo(
-    () =>
-      mode === "premium"
-        ? premiumMeasurementFields
-        : [...freeMeasurementFields].sort(
-            (a, b) =>
-              (a.quick_order ?? Number.MAX_SAFE_INTEGER) -
-              (b.quick_order ?? Number.MAX_SAFE_INTEGER)
-          ),
-    [mode]
-  );
+  const [activeMeasurementFields, setActiveMeasurementFields] = useState<MeasurementFieldConfig[]>([]);
   const measurementKeys = useMemo(
     () => activeMeasurementFields.map((field) => field.id),
     [activeMeasurementFields]
@@ -194,6 +177,13 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
     Record<string, number | null>
   >(() => buildEmptyMeasurements(measurementKeys));
   const [traits, setTraits] = useState<TraitAnswers>({});
+  const [traitQuestions, setTraitQuestions] = useState<TraitCatalogQuestion[]>([]);
+  const [pastSportIntensityOptions, setPastSportIntensityOptions] = useState<PastSportIntensityOption[]>([]);
+  const [pastSportBooleanFields, setPastSportBooleanFields] = useState<
+    Record<string, PastSportBooleanFieldConfig>
+  >({});
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [consentGiven, setConsentGiven] = useState(false);
   const consentIntentRef = useRef(false);
   const [consentSaving, setConsentSaving] = useState(false);
@@ -228,6 +218,46 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
       });
     }
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setCatalogLoading(true);
+        setCatalogError(null);
+        const catalog = await fetchIntakeCatalog();
+        if (cancelled) return;
+        const measurementFields =
+          mode === "premium"
+            ? catalog.measurements.adult_premium
+            : catalog.measurements.adult_free;
+        setActiveMeasurementFields(
+          [...measurementFields].sort(
+            (a, b) =>
+              (a.quick_order ?? Number.MAX_SAFE_INTEGER) -
+              (b.quick_order ?? Number.MAX_SAFE_INTEGER)
+          )
+        );
+        setTraitQuestions(catalog.traits.intake.questions || []);
+        setPastSportIntensityOptions(catalog.past_sports.intensity_options || []);
+        setPastSportBooleanFields(catalog.past_sports.boolean_options.fields || {});
+      } catch (error) {
+        if (cancelled) return;
+        console.error("[Intake] Failed to load intake catalog", error);
+        setCatalogError("We could not load intake options right now. Refresh and try again.");
+      } finally {
+        if (!cancelled) setCatalogLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mode]);
+
+  const traitFieldNames = useMemo(
+    () => traitQuestions.map((q) => q.field).filter(Boolean),
+    [traitQuestions]
+  );
 
   const premiumSectionIndexMap = new Map<PremiumSectionKey, number>();
   if (mode === "premium") {
@@ -416,7 +446,7 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
 
         setTraits((prev) => {
           const next = { ...prev };
-          TRAIT_FIELDS.forEach((fieldName) => {
+          traitFieldNames.forEach((fieldName) => {
             if (traitsTouchedRef.current.has(fieldName)) return;
             const value = (traitsPrefill as any)?.[fieldName];
             if (typeof value === "string" && value.trim()) {
@@ -453,7 +483,7 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
         console.warn("[Intake] Unable to prefill from canonical saved-analysis prefill endpoint", error);
       }
     })();
-  }, [measurementKeys, sportySnapshot.user?.id]);
+  }, [measurementKeys, sportySnapshot.user?.id, traitFieldNames]);
 
   const validateBasics = useCallback((): StepValidationResult<
     Pick<FreeIntakeData, "birthday" | "sex">
@@ -480,6 +510,12 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
 
   const validateMeasurements = useCallback((): StepValidationResult<Record<string, number>> => {
     const data: Record<string, number> = {};
+    if (!measurementKeys.length) {
+      return {
+        ok: false,
+        message: "Measurement catalog not loaded yet. Try again in a moment.",
+      };
+    }
 
     for (const id of measurementKeys) {
       const field = measurementFieldById.get(id);
@@ -1103,6 +1139,9 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
                 return (
                   <TraitsStep
                     value={traits}
+                    questions={traitQuestions}
+                    loading={catalogLoading}
+                    error={catalogError}
                     onChange={(patch) => {
                       Object.keys(patch || {}).forEach((key) => traitsTouchedRef.current.add(key));
                       setTraits((prev) => ({ ...prev, ...patch }));
@@ -1113,6 +1152,8 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
                 return (
                   <PastSportsStep
                     entries={pastSports}
+                    intensityOptions={pastSportIntensityOptions}
+                    booleanFields={pastSportBooleanFields}
                     onUpdate={(entries) => {
                       pastSportsTouchedRef.current = true;
                       setPastSports(entries);

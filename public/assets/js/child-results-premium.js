@@ -129,6 +129,7 @@
       const meta = document.createElement('div');
       meta.className = 'meta-muted';
       meta.appendChild(createMetaChip(`Weight ${formatPercent(item.weight_percent)}`));
+      meta.appendChild(createMetaChip(`Contribution ${formatPercent(item.contribution_percent)}`));
       if (item.score_percent != null) {
         meta.appendChild(createMetaChip(`Score ${formatPercent(item.score_percent)}`));
       }
@@ -165,7 +166,7 @@
       title.textContent = item.name || item.preference_id || item.goal_id || 'Entry';
       const meta = document.createElement('div');
       meta.className = 'meta-muted';
-      if (item.priority) meta.appendChild(createMetaChip(`Priority: ${item.priority}`));
+      if (item.priority) meta.appendChild(createMetaChip(`Priority: ${item.priority_label || item.priority}`));
       if (item.alignment) meta.appendChild(createMetaChip(`Alignment: ${item.alignment}`));
       if (item.score_percent != null) meta.appendChild(createMetaChip(`Score ${formatPercent(item.score_percent)}`));
       const summary = document.createElement('p');
@@ -193,7 +194,7 @@
       title.textContent = item.injury_name || item.injury_id || 'Injury';
       const meta = document.createElement('div');
       meta.className = 'meta-muted';
-      if (item.severity) meta.appendChild(createMetaChip(`Severity: ${item.severity}`));
+      if (item.severity) meta.appendChild(createMetaChip(`Severity: ${item.severity_label || item.severity}`));
       if (item.alignment) {
         Object.entries(item.alignment).forEach(([key, value]) => {
           meta.appendChild(createMetaChip(`${key}: ${value}`));

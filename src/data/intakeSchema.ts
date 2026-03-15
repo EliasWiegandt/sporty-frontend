@@ -4,7 +4,7 @@ export type Sex =
   | 'other'
   | 'prefer_not_to_say';
 
-export type PastSportIntensity = 'light' | 'moderate' | 'intense' | 'elite';
+export type PastSportIntensity = string;
 
 export type PastSportDraft = {
   sport_subcategory_id: string | null;
@@ -55,18 +55,18 @@ export type TraitAnswers = {
 
 export type PreferenceInput = {
   preference_id: string;
-  priority: 'must_have' | 'nice_to_have';
+  priority: 'must_have' | 'important' | 'nice_to_have';
 };
 
 export type GoalInput = {
   goal_id: string;
-  priority: 'must_have' | 'nice_to_have';
+  priority: 'must_have' | 'important' | 'nice_to_have';
 };
 
 export type InjuryInput = {
   injury_id: string;
   injury_subcategory_id?: string | null;
-  severity: 'severe' | 'somewhat_bad' | 'mostly_healed';
+  severity: string;
   notes?: string | null;
 };
 

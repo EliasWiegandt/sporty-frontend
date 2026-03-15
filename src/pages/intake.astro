@@ -1,16 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import IntakeApp from '../components/intake/IntakeApp';
-import { freeMeasurementFields } from '../data/measurementFields';
-
-const measurementMeta = freeMeasurementFields.map((field) => ({
-  id: field.id,
-  label: `${field.label} (${field.unit})`,
-  unit: field.unit,
-  min: field.min,
-  max: field.max,
-  step: field.step ?? 1,
-}));
 ---
 <BaseLayout
   title="Sporty — Quick Adult Intake"
@@ -23,7 +13,6 @@ const measurementMeta = freeMeasurementFields.map((field) => ({
           id="intake-form"
           class="space-y-10"
           data-intake-form
-          data-measurements={JSON.stringify(measurementMeta)}
         >
           <IntakeApp client:load mode="free" />
 

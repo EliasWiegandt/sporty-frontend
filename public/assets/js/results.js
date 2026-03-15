@@ -611,11 +611,12 @@
         const score = val.fit_score ?? val.score;
         if (score !== undefined) {
           factors.push({
-            key,
-            label: formatLabel(key),
+            key: val.trait_key || key,
+            label: val.trait_label,
             score: score,
             match_contribution: 0, // Traits don't have this yet in free match
-            user_value: val.value,
+            user_value: val.user_value_label ?? "-",
+            cohort_mean: val.ideal_value_label ?? "",
             importance: val.importance,
             reasoning: val.reasoning,
             type: "trait",

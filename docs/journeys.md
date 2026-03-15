@@ -84,9 +84,9 @@ Discover which sports match your body without paying or storing data.
 
 1. **Home ➝ Intake (Free Mode)**
 
-  - The `/intake` page mounts `IntakeApp`, a three-step Preact island that collects Basics, Measurements (the twelve metrics defined in `src/data/measurementFields.ts`), and Past Sports, validates each input, and auto-saves drafts to `localStorage` so visitors can pick up where they left off.
+  - The `/intake` page mounts `IntakeApp`, a three-step Preact island that collects Basics, Measurements (catalog-driven from `/api/intake-catalog`), and Past Sports, validates each input, and for signed-in users prefills from the backend canonical saved-analysis endpoint (`/api/intake/prefill`), which uses the latest saved analysis data per field/group.
   - Past sports entries are optional (up to five) and source their labels from Supabase’s `sports_subcategories`; they capture years played, starting age, intensity, and the liked/flair/skill flags that feed the matching backend even for anonymous runs.
-  - Logged-in users keep their drafts in sync with session storage so saved runs appear automatically when they revisit.
+  - Anonymous users get a preview-only flow with no saved-intake restore path; signed-in users see their latest saved analysis values when available.
 
 2. **Submit ➝ Results Page (Quick Match)**
 

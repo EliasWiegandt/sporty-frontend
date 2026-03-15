@@ -9,6 +9,7 @@ export type PremiumControllerConfig = {
 };
 
 import type { PreferenceInput, GoalInput, InjuryInput } from '../../data/intakeSchema';
+import { fetchIntakeCatalog } from '../../lib/intakeCatalog';
 
 export type PremiumSelectionData = {
   preferences: PreferenceInput[];
@@ -32,6 +33,8 @@ type PriorityEntry = {
   priority: HTMLSelectElement | null;
   labelEl: HTMLElement | null;
 };
+
+type PriorityOptionConfig = { value: string; label: string };
 type InjuryEntry = {
   node: HTMLElement;
   subcatSearch: HTMLInputElement | null;
@@ -48,7 +51,7 @@ function createPriorityList(
     keyField: string;
     max: number;
     priorityField?: string;
-    priorityOptions?: Array<{ value: string; label: string }>;
+    priorityOptions?: PriorityOptionConfig[];
     defaultPriority?: string;
     parentField?: string;
   }
@@ -79,6 +82,19 @@ function createPriorityList(
   const state = {
     options: [] as Array<{ id: string; name?: string; description?: string; searchText?: string; parentId?: string }>,
     entries: [] as PriorityEntry[],
+  };
+
+  const renderPriorityOptions = (select: HTMLSelectElement | null) => {
+    if (!select || !Array.isArray(config.priorityOptions) || !config.priorityOptions.length) return;
+    const currentValue = select.value;
+    select.innerHTML = '';
+    config.priorityOptions.forEach((option) => {
+      const opt = document.createElement('option');
+      opt.value = option.value;
+      opt.textContent = option.label;
+      select.appendChild(opt);
+    });
+    select.value = currentValue || config.defaultPriority || config.priorityOptions[0]?.value || '';
   };
 
   const updateUI = () => {
@@ -187,6 +203,7 @@ function createPriorityList(
     state.entries.push(entry);
     itemsContainer.appendChild(node);
     wireSearch(entry, defaultId);
+    renderPriorityOptions(priority);
     if (priority && !priority.value) priority.value = config.defaultPriority || 'must_have';
     updateUI();
   };
@@ -204,6 +221,11 @@ function createPriorityList(
       state.options = Array.isArray(options) ? [...options] : [];
       refresh();
       updateUI();
+    },
+    setPriorityOptions(options: PriorityOptionConfig[], defaultPriority?: string) {
+      config.priorityOptions = Array.isArray(options) ? [...options] : [];
+      if (defaultPriority) config.defaultPriority = defaultPriority;
+      state.entries.forEach((entry) => renderPriorityOptions(entry.priority));
     },
     collect() {
       const data: Array<Record<string, unknown>> = [];
@@ -244,6 +266,7 @@ const createInjuryList = (root: HTMLElement | null, config: { max: number }) => 
   if (!root) {
     return {
       setOptions: (_injuries: any[], _subs: any) => {},
+      setPriorityOptions: (_options: PriorityOptionConfig[], _defaultPriority?: string) => {},
       collect: () => ({ data: [], errors: [] as string[] }),
       reset: () => {},
       addEntry: () => {},
@@ -258,6 +281,7 @@ const createInjuryList = (root: HTMLElement | null, config: { max: number }) => 
   if (!itemsContainer || !template) {
     return {
       setOptions: (_injuries: any[], _subs: any) => {},
+      setPriorityOptions: (_options: PriorityOptionConfig[], _defaultPriority?: string) => {},
       collect: () => ({ data: [], errors: [] as string[] }),
       reset: () => {},
       addEntry: () => {},
@@ -267,12 +291,27 @@ const createInjuryList = (root: HTMLElement | null, config: { max: number }) => 
   const state = {
     subcats: [] as Array<{ id: string; injury_id: string; name: string; description?: string }>,
     entries: [] as InjuryEntry[],
+    severityOptions: [] as PriorityOptionConfig[],
+    defaultSeverity: '',
   };
 
   const updateUI = () => {
     const count = state.entries.length;
     if (countEl) countEl.textContent = `${count} / ${config.max}`;
     if (addBtn) addBtn.disabled = count >= config.max || state.subcats.length === 0;
+  };
+
+  const renderSeverityOptions = (select: HTMLSelectElement | null) => {
+    if (!select || !state.severityOptions.length) return;
+    const currentValue = select.value;
+    select.innerHTML = '';
+    state.severityOptions.forEach((option) => {
+      const opt = document.createElement('option');
+      opt.value = option.value;
+      opt.textContent = option.label;
+      select.appendChild(opt);
+    });
+    select.value = currentValue || state.defaultSeverity || state.severityOptions[0]?.value || '';
   };
 
   if (addBtn) {
@@ -374,8 +413,9 @@ const createInjuryList = (root: HTMLElement | null, config: { max: number }) => 
     };
     state.entries.push(entry);
     itemsContainer.appendChild(node);
-    if (severity && !severity.value) severity.value = 'somewhat_bad';
+    renderSeverityOptions(severity);
     wireSearch(entry, defaults);
+    if (severity && defaults?.severity) severity.value = defaults.severity;
     updateUI();
   };
 
@@ -404,6 +444,11 @@ const createInjuryList = (root: HTMLElement | null, config: { max: number }) => 
       state.subcats = flat;
       updateUI();
     },
+    setPriorityOptions(options: PriorityOptionConfig[], defaultPriority?: string) {
+      state.severityOptions = Array.isArray(options) ? [...options] : [];
+      state.defaultSeverity = defaultPriority || '';
+      state.entries.forEach((entry) => renderSeverityOptions(entry.severitySelect));
+    },
     collect() {
       const data: Array<Record<string, unknown>> = [];
       const errors: string[] = [];
@@ -420,13 +465,13 @@ const createInjuryList = (root: HTMLElement | null, config: { max: number }) => 
           return;
         }
         seen.add(subcatId);
-      const severity = entry.severitySelect?.value || 'somewhat_bad';
-      data.push({
-        injury_id: injuryId || null,
-        injury_subcategory_id: subcatId,
-        severity,
+        const severity = entry.severitySelect?.value || state.defaultSeverity;
+        data.push({
+          injury_id: injuryId || null,
+          injury_subcategory_id: subcatId,
+          severity,
+        });
       });
-    });
       return { data, errors };
     },
     reset,
@@ -464,13 +509,19 @@ async function fetchTaxonomy(client: any) {
 const toPreferenceInputs = (entries: Array<Record<string, unknown>>): PreferenceInput[] =>
   entries.map((entry) => ({
     preference_id: String(entry.preference_id),
-    priority: entry.priority === 'must_have' ? 'must_have' : 'nice_to_have',
+    priority:
+      entry.priority === 'must_have' || entry.priority === 'important'
+        ? entry.priority
+        : 'nice_to_have',
   }));
 
 const toGoalInputs = (entries: Array<Record<string, unknown>>): GoalInput[] =>
   entries.map((entry) => ({
     goal_id: String(entry.goal_id),
-    priority: entry.priority === 'must_have' ? 'must_have' : 'nice_to_have',
+    priority:
+      entry.priority === 'must_have' || entry.priority === 'important'
+        ? entry.priority
+        : 'nice_to_have',
   }));
 
 const toInjuryInputs = (entries: Array<Record<string, unknown>>): InjuryInput[] =>
@@ -478,7 +529,7 @@ const toInjuryInputs = (entries: Array<Record<string, unknown>>): InjuryInput[] 
     .map((entry) => {
       const injuryId = entry.injury_id ? String(entry.injury_id) : '';
       const injurySub = entry.injury_subcategory_id ? String(entry.injury_subcategory_id) : null;
-      const severity = (entry.severity as InjuryInput['severity']) || 'somewhat_bad';
+      const severity = entry.severity ? String(entry.severity) : '';
       return {
         injury_id: injuryId,
         injury_subcategory_id: injurySub,
@@ -509,18 +560,18 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
   const goalRoot = block ? block.querySelector<HTMLElement>('[data-list="goals"]') : null;
   const injuryRoot = block ? block.querySelector<HTMLElement>('[data-list="injuries"]') : null;
   const preferenceList = createPriorityList(preferenceRoot, { label: 'Preference', keyField: 'preference_id', max: 20 });
-  const goalList = createPriorityList(goalRoot, { label: 'Goal', keyField: 'goal_id', max: 20 });
+  const goalList = createPriorityList(goalRoot, {
+    label: 'Goal',
+    keyField: 'goal_id',
+    max: 20,
+  });
   const injuryList = createPriorityList(injuryRoot, {
     label: 'Injury area',
     keyField: 'injury_subcategory_id',
     max: 20,
     priorityField: 'severity',
-    defaultPriority: 'somewhat_bad',
-    priorityOptions: [
-      { value: 'severe', label: 'Severe' },
-      { value: 'somewhat_bad', label: 'Somewhat bad' },
-      { value: 'mostly_healed', label: 'Mostly healed' },
-    ],
+    defaultPriority: '',
+    priorityOptions: [],
     parentField: 'injury_id',
   });
 
@@ -535,6 +586,7 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
   let userEditedSelections = false;
   let applyingPrefill = false;
   let pendingPrefillData: PremiumSelectionData | null = null;
+  let latestIntakeCatalog: Awaited<ReturnType<typeof fetchIntakeCatalog>> | null = null;
 
   const toggleWrapper = null;
   const applyToggle = null;
@@ -609,7 +661,7 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
         (injuryList as any).addEntry?.({
           injury_id: injuryId,
           injury_subcategory_id: subcategoryId,
-          severity: item?.severity || 'somewhat_bad',
+          severity: item?.severity || latestIntakeCatalog?.injuries?.default_severity || '',
         });
       });
       prefilledUserId = lastUserId;
@@ -657,22 +709,48 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
       }
       lastUserId = userId;
       let taxonomy;
+      let intakeCatalog;
       try {
-        taxonomy = await fetchTaxonomy(client);
+        [taxonomy, intakeCatalog] = await Promise.all([
+          fetchTaxonomy(client),
+          fetchIntakeCatalog(),
+        ]);
       } catch (error) {
         console.error('Failed to load premium taxonomy', error);
-        if (token === updateToken) {
+      if (token === updateToken) {
           deactivate('We could not load premium input options. Refresh and try again.');
         }
         return;
       }
+      latestIntakeCatalog = intakeCatalog;
       if (!taxonomy) {
         deactivate('We could not load premium input options. Refresh and try again.');
         return;
       }
       if (token !== updateToken) return;
+      (preferenceList as any).setPriorityOptions?.(
+        (intakeCatalog.preferences.priority_options || []).map((option) => ({
+          value: option.id,
+          label: option.label,
+        })),
+        intakeCatalog.preferences.default_priority,
+      );
       preferenceList.setOptions(taxonomy.preferences);
+      (goalList as any).setPriorityOptions?.(
+        (intakeCatalog.goals.priority_options || []).map((option) => ({
+          value: option.id,
+          label: option.label,
+        })),
+        intakeCatalog.goals.default_priority,
+      );
       goalList.setOptions(taxonomy.goals);
+      (injuryList as any).setPriorityOptions?.(
+        (intakeCatalog.injuries.severity_options || []).map((option) => ({
+          value: option.id,
+          label: option.label,
+        })),
+        intakeCatalog.injuries.default_severity,
+      );
       const flatSubcats = Object.entries(taxonomy.injurySubcategories || {}).flatMap(([injuryId, subs]) =>
         (subs || []).map((sub: any) => ({
           id: sub.id,
@@ -736,7 +814,7 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
       const goalListData = toGoalInputs(goals.data);
       const injuryListData = toInjuryInputs(injuries.data);
       const hasData = preferences.length || goalListData.length || injuryListData.length;
-      return {
+  return {
         applyCredit,
         data: hasData
           ? { preferences, goals: goalListData, injuries: injuryListData }

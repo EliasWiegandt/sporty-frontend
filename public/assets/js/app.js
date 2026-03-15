@@ -1171,11 +1171,13 @@
         const uniqueKey = subcategoryId || injuryId;
         if (seen.has(uniqueKey)) return acc;
         seen.add(uniqueKey);
+        const severity = normalizeSeverity(item.severity);
+        if (!severity) return acc;
         acc.push({
           analysis_input_id: analysisInputId,
           injury_id: injuryId,
           injury_subcategory_id: subcategoryId,
-          severity: normalizeSeverity(item.severity),
+          severity,
           notes: item && item.notes ? sanitizeText(item.notes, 280) : null,
         });
         return acc;
@@ -1261,8 +1263,8 @@
 
   function normalizeIntensity(value) {
     if (!value) return null;
-    const normalized = String(value).toLowerCase();
-    return ['light', 'moderate', 'intense', 'elite'].includes(normalized) ? normalized : null;
+    const normalized = String(value).trim().toLowerCase();
+    return normalized || null;
   }
 
   function normalizeYesNoBoolean(value) {
@@ -1277,12 +1279,14 @@
   }
 
   function normalizePriority(value) {
-    return value === 'must_have' ? 'must_have' : 'nice_to_have';
+    return value === 'must_have' || value === 'important' ? value : 'nice_to_have';
   }
 
   function normalizeSeverity(value) {
+    if (!value) return null;
+    const normalized = String(value).toLowerCase();
     const allowed = new Set(['severe', 'somewhat_bad', 'mostly_healed']);
-    return allowed.has(value) ? value : 'somewhat_bad';
+    return allowed.has(normalized) ? normalized : null;
   }
 
   function sanitizeText(value, maxLength) {

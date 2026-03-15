@@ -279,10 +279,11 @@
       const label = document.createElement('span');
       label.className = 'component-list__label';
       const weightText = formatPercent(component.weight_percent);
+      const contributionText = formatPercent(component.contribution_percent);
       const scoreText = component.score_percent !== undefined && component.score_percent !== null
         ? `${component.score_percent.toFixed(1)}%`
         : '—';
-      label.textContent = `${component.component || component.key || 'Component'} · Weight ${weightText} · Score ${scoreText}`;
+      label.textContent = `${component.component || component.key || 'Component'} · Weight ${weightText} · Contribution ${contributionText} · Score ${scoreText}`;
       const summary = document.createElement('p');
       summary.className = 'component-list__summary';
       summary.textContent = component.summary || '';
@@ -1099,17 +1100,14 @@
     const breakdown = match.score_breakdown || {};
     const traitBody = breakdown.details?.traits?.body || {};
 
-    const formatLabel = (key) =>
-      key
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, (l) => l.toUpperCase());
-
     return Object.entries(traitBody)
       .map(([key, val]) => ({
-        key,
-        label: formatLabel(key),
-        user_value: val.user_value ?? breakdown.details?.traits?.user?.[key],
-        cohort_mean: val.value,
+        key: val.trait_key || key,
+        label: val.trait_label,
+        user_value: val.user_value_label ?? '-',
+        user_value_label: val.user_value_label,
+        cohort_mean: val.ideal_value_label ?? '',
+        cohort_mean_label: val.ideal_value_label,
         importance: val.importance,
         reasoning: val.reasoning,
         match_contribution: val.match_contribution || 0,
@@ -1207,7 +1205,7 @@
       severityLabel.textContent = 'Severity:';
       severityContainer.appendChild(severityLabel);
 
-      severityContainer.appendChild(buildSeverityBadge(entry.severity));
+      severityContainer.appendChild(buildSeverityBadge(entry.severity, entry.severity_label));
       leftCol.appendChild(severityContainer);
     }
 
@@ -1332,7 +1330,7 @@
     return barRow;
   }
 
-  function buildSeverityBadge(severity) {
+  function buildSeverityBadge(severity, severityLabel) {
     const badge = document.createElement('span');
     let badgeClass = 'text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider ';
     const sev = String(severity || '').toLowerCase();
@@ -1340,7 +1338,7 @@
     else if (sev === 'mostly_healed') badgeClass += 'bg-emerald-100 text-emerald-700';
     else badgeClass += 'bg-amber-100 text-amber-700';
     badge.className = badgeClass;
-    badge.textContent = sev.replace(/_/g, ' ');
+    badge.textContent = String(severityLabel || sev.replace(/_/g, ' '));
     return badge;
   }
 
@@ -1442,8 +1440,16 @@
     } else {
       const values = document.createElement('div');
       values.className = 'text-xs text-slate-500 mb-1';
-      const userValue = formatRatioDisplayValue(factor.key, factor.user_value);
-      const cohortMean = formatRatioDisplayValue(factor.key, factor.cohort_mean);
+      const userValueRaw =
+        factor.user_value_label ??
+        factor.user_value ??
+        '—';
+      const cohortMeanRaw =
+        factor.cohort_mean_label ??
+        factor.cohort_mean ??
+        '';
+      const userValue = factor.type === 'trait' ? userValueRaw : formatRatioDisplayValue(factor.key, userValueRaw);
+      const cohortMean = factor.type === 'trait' ? cohortMeanRaw : formatRatioDisplayValue(factor.key, cohortMeanRaw);
       let valueHtml = `${escapeHtml(subjectLabel)}: <span class="font-bold">${escapeHtml(
         userValue
       )}</span>`;
@@ -1489,10 +1495,12 @@
       const badge = document.createElement('span');
       let badgeClass = 'text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider ';
       const pr = String(factor.priority).toLowerCase();
+      const priorityText = String(factor.priority_label || pr.replace(/_/g, ' ')).toUpperCase();
       if (pr === 'must_have') badgeClass += 'bg-indigo-100 text-indigo-700';
+      else if (pr === 'important') badgeClass += 'bg-sky-100 text-sky-700';
       else badgeClass += 'bg-slate-100 text-slate-600';
       badge.className = badgeClass;
-      badge.textContent = pr.replace(/_/g, ' ').toUpperCase();
+      badge.textContent = priorityText;
       priorityContainer.appendChild(badge);
 
       leftCol.appendChild(priorityContainer);
@@ -1507,10 +1515,12 @@
       const badge = document.createElement('span');
       let badgeClass = 'text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider ';
       const pr = String(factor.priority).toLowerCase();
+      const priorityText = String(factor.priority_label || pr.replace(/_/g, ' '));
       if (pr === 'must_have') badgeClass += 'bg-indigo-100 text-indigo-700';
+      else if (pr === 'important') badgeClass += 'bg-sky-100 text-sky-700';
       else badgeClass += 'bg-slate-100 text-slate-600';
       badge.className = badgeClass;
-      badge.textContent = pr.replace(/_/g, ' ');
+      badge.textContent = priorityText;
       priorityContainer.appendChild(badge);
 
       leftCol.appendChild(priorityContainer);
@@ -1524,7 +1534,7 @@
       severityLabel.textContent = 'Severity:';
       severityContainer.appendChild(severityLabel);
 
-      severityContainer.appendChild(buildSeverityBadge(factor.severity));
+      severityContainer.appendChild(buildSeverityBadge(factor.severity, factor.severity_label));
       leftCol.appendChild(severityContainer);
     }
 

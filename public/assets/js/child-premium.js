@@ -227,10 +227,49 @@
 
   async function loadTaxonomy(client) {
     try {
-      const taxonomy = await fetchChildTaxonomy(client);
+      const [taxonomy, intakeCatalog] = await Promise.all([
+        fetchChildTaxonomy(client),
+        fetch('/api/intake-catalog', { headers: { Accept: 'application/json' } }).then(async (response) => {
+          if (!response.ok) {
+            throw new Error(`Failed to load intake catalog (${response.status})`);
+          }
+          return response.json();
+        }),
+      ]);
+      preferenceList.setPriorityOptions(
+        (((intakeCatalog || {}).preferences || {}).priority_options || []).map((option) => ({
+          value: option.id,
+          label: option.label,
+        })),
+        (((intakeCatalog || {}).preferences || {}).default_priority) || 'nice_to_have'
+      );
       preferenceList.setOptions(taxonomy.preferences || []);
+      goalList.setPriorityOptions(
+        (((intakeCatalog || {}).goals || {}).priority_options || []).map((option) => ({
+          value: option.id,
+          label: option.label,
+        })),
+        (((intakeCatalog || {}).goals || {}).default_priority) || 'nice_to_have'
+      );
       goalList.setOptions(taxonomy.goals || []);
-      injuryList.setOptions(taxonomy.injuries || [], taxonomy.injurySubcategories || {});
+      injuryList.setSeverityOptions(
+        ((((intakeCatalog || {}).injuries || {}).severity_options) || []).map((option) => ({
+          value: option.id,
+          label: option.label,
+        })),
+        (((intakeCatalog || {}).injuries || {}).default_severity) || ''
+      );
+      injuryList.setOptions(
+        (((intakeCatalog || {}).injuries || {}).options) || taxonomy.injuries || [],
+        ((((intakeCatalog || {}).injuries || {}).subcategories) || []).reduce((acc, row) => {
+          if (!row || !row.injury_id) return acc;
+          const list = acc[row.injury_id] || [];
+          list.push(row);
+          acc[row.injury_id] = list;
+          return acc;
+        }, taxonomy.injurySubcategories || {})
+      );
+      pastController.setPolicy(((intakeCatalog || {}).past_sports) || {});
     } catch (error) {
       console.error('Failed to load premium taxonomy', error);
       setStatus('Unable to load premium options right now.', 'error');
@@ -260,6 +299,7 @@
     if (!root) {
       return {
         setOptions: () => {},
+        setSeverityOptions: () => {},
         collect: () => ({ data: [], errors: [] }),
         prefill: () => {},
       };
@@ -272,6 +312,8 @@
     const state = {
       options: [],
       entries: [],
+      priorityOptions: [],
+      defaultPriority: 'nice_to_have',
     };
 
     if (addButton) {
@@ -284,6 +326,12 @@
       state.options = Array.isArray(options) ? options.slice() : [];
       state.options.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       state.entries.forEach((entry) => populateOptions(entry));
+    }
+
+    function setPriorityOptions(options, defaultPriority) {
+      state.priorityOptions = Array.isArray(options) ? options.slice() : [];
+      state.defaultPriority = defaultPriority || 'nice_to_have';
+      state.entries.forEach((entry) => populatePriorityOptions(entry));
     }
 
     function populateOptions(entry) {
@@ -306,6 +354,20 @@
       }
     }
 
+    function populatePriorityOptions(entry) {
+      const select = entry.priority;
+      if (!select || !state.priorityOptions.length) return;
+      const currentValue = select.value;
+      select.innerHTML = '';
+      state.priorityOptions.forEach((option) => {
+        const opt = document.createElement('option');
+        opt.value = option.value;
+        opt.textContent = option.label;
+        select.appendChild(opt);
+      });
+      select.value = currentValue || state.defaultPriority || state.priorityOptions[0].value;
+    }
+
     function addEntry(initial) {
       if (!template || !listRoot) return;
       const fragment = template.content.cloneNode(true);
@@ -322,6 +384,7 @@
       }
 
       populateOptions(entry);
+      populatePriorityOptions(entry);
       if (priority && initial && initial.priority) {
         priority.value = initial.priority;
       }
@@ -350,7 +413,7 @@
         }
         data.push({
           [`${config.type}_id`]: id,
-          priority: entry.priority ? entry.priority.value : 'nice_to_have',
+          priority: entry.priority ? entry.priority.value : state.defaultPriority,
           name: getOptionName(id),
         });
       });
@@ -375,6 +438,7 @@
 
     return {
       setOptions,
+      setPriorityOptions,
       collect,
       prefill,
     };
@@ -398,6 +462,8 @@
       injuries: [],
       subcategories: {},
       entries: [],
+      severityOptions: [],
+      defaultSeverity: '',
     };
 
     if (addButton) {
@@ -411,6 +477,25 @@
         populateInjury(entry);
         populateSubcategories(entry);
       });
+    }
+
+    function setSeverityOptions(options, defaultSeverity) {
+      state.severityOptions = Array.isArray(options) ? options.slice() : [];
+      state.defaultSeverity = defaultSeverity || '';
+      state.entries.forEach((entry) => renderSeverityOptions(entry.severitySelect));
+    }
+
+    function renderSeverityOptions(select) {
+      if (!select || !state.severityOptions.length) return;
+      const current = select.value;
+      select.innerHTML = '';
+      state.severityOptions.forEach((option) => {
+        const el = document.createElement('option');
+        el.value = option.value;
+        el.textContent = option.label;
+        select.appendChild(el);
+      });
+      select.value = current || state.defaultSeverity || state.severityOptions[0].value;
     }
 
     function addEntry(initial) {
@@ -436,6 +521,7 @@
 
       populateInjury(entry);
       populateSubcategories(entry, true);
+      renderSeverityOptions(severitySelect);
 
       if (severitySelect && initial && initial.severity) {
         severitySelect.value = initial.severity;
@@ -533,7 +619,7 @@
           injury_name: injury ? injury.name : injuryId,
           injury_subcategory_id: subId || null,
           injury_subcategory_name: sub ? sub.name : null,
-          severity: entry.severitySelect ? entry.severitySelect.value : 'somewhat_bad',
+          severity: entry.severitySelect ? entry.severitySelect.value : state.defaultSeverity,
           notes: entry.notesInput && entry.notesInput.value ? entry.notesInput.value.trim() : null,
         });
       });
@@ -553,6 +639,7 @@
 
     return {
       setOptions,
+      setSeverityOptions,
       collect,
       prefill,
     };
@@ -562,6 +649,7 @@
     if (!root) {
       return {
         setClient: () => {},
+        setPolicy: () => {},
         collect: () => ({ data: [], errors: [] }),
         prefill: () => {},
       };
@@ -573,7 +661,30 @@
     const template = root.querySelector('template[data-child-past-template]');
 
     const MAX_ITEMS = 5;
-    const INTENSITY_VALUES = ['light', 'moderate', 'intense', 'elite'];
+    const state = {
+      intensityOptions: [],
+      defaultIntensity: null,
+      booleanFields: {
+        liked: {
+          label: 'Enjoyed it?',
+          true_label: 'Yes',
+          false_label: 'No',
+          unknown_label: 'Select',
+        },
+        had_flair: {
+          label: 'Felt natural?',
+          true_label: 'Yes',
+          false_label: 'No',
+          unknown_label: 'Select',
+        },
+        achieved_skill: {
+          label: 'Good at it?',
+          true_label: 'Yes',
+          false_label: 'No',
+          unknown_label: 'Select',
+        },
+      },
+    };
 
     let client = null;
     let catalog = null;
@@ -607,6 +718,44 @@
         pendingPrefill = [];
       }
       toggleEmptyState();
+    }
+
+    function setPolicy(policy) {
+      const pastSports = policy && typeof policy === 'object' ? policy : {};
+      const intensityOptions = Array.isArray(pastSports.intensity_options)
+        ? pastSports.intensity_options
+            .filter((option) => option && option.id && option.label)
+            .map((option) => ({
+              id: String(option.id).trim(),
+              label: String(option.label).trim(),
+              is_default: Boolean(option.is_default),
+            }))
+        : [];
+      state.intensityOptions = intensityOptions;
+      state.defaultIntensity =
+        (pastSports.default_intensity && String(pastSports.default_intensity).trim()) || null;
+      const fields = (pastSports.boolean_options && pastSports.boolean_options.fields) || {};
+      state.booleanFields = {
+        liked: fields.liked || {
+          label: 'Enjoyed it?',
+          true_label: 'Yes',
+          false_label: 'No',
+          unknown_label: 'Select',
+        },
+        had_flair: fields.had_flair || {
+          label: 'Felt natural?',
+          true_label: 'Yes',
+          false_label: 'No',
+          unknown_label: 'Select',
+        },
+        achieved_skill: fields.achieved_skill || {
+          label: 'Good at it?',
+          true_label: 'Yes',
+          false_label: 'No',
+          unknown_label: 'Select',
+        },
+      };
+      refreshExistingItems();
     }
 
     function toggleEmptyState() {
@@ -718,6 +867,9 @@
       const likedSelect = item.querySelector('[data-field="liked"]');
       const flairSelect = item.querySelector('[data-field="had_flair"]');
       const skillSelect = item.querySelector('[data-field="achieved_skill"]');
+      const likedLabel = item.querySelector('[data-boolean-label="liked"]');
+      const flairLabel = item.querySelector('[data-boolean-label="had_flair"]');
+      const skillLabel = item.querySelector('[data-boolean-label="achieved_skill"]');
       const removeBtn = item.querySelector('[data-remove]');
 
       if (resultsEl) {
@@ -725,9 +877,24 @@
         resultsEl.setAttribute('tabindex', '-1');
       }
 
+      applySelectOptions(
+        intensitySelect,
+        state.intensityOptions,
+        'Select',
+        (option) => option.id,
+        (option) => option.label
+      );
+      applyBooleanField(likedLabel, likedSelect, state.booleanFields.liked);
+      applyBooleanField(flairLabel, flairSelect, state.booleanFields.had_flair);
+      applyBooleanField(skillLabel, skillSelect, state.booleanFields.achieved_skill);
+
       if (yearsInput && initial && initial.years_played != null) yearsInput.value = Number(initial.years_played);
       if (ageInput && initial && initial.age_started_years != null) ageInput.value = Number(initial.age_started_years);
-      if (intensitySelect && initial && INTENSITY_VALUES.includes(initial.intensity)) intensitySelect.value = initial.intensity;
+      if (intensitySelect && initial && isAllowedIntensity(initial.intensity)) {
+        intensitySelect.value = initial.intensity;
+      } else if (intensitySelect && state.defaultIntensity) {
+        intensitySelect.value = state.defaultIntensity;
+      }
       if (likedSelect && typeof initial?.liked === 'boolean') likedSelect.value = initial.liked ? 'yes' : 'no';
       if (flairSelect && typeof initial?.had_flair === 'boolean') flairSelect.value = initial.had_flair ? 'yes' : 'no';
       if (skillSelect && typeof initial?.achieved_skill === 'boolean') skillSelect.value = initial.achieved_skill ? 'yes' : 'no';
@@ -859,7 +1026,7 @@
 
         if (intensitySelect && intensitySelect.value) {
           const value = intensitySelect.value;
-          if (INTENSITY_VALUES.includes(value)) {
+          if (isAllowedIntensity(value)) {
             entry.intensity = value;
           } else {
             errors.push(`Past sport ${index + 1}: select a valid intensity.`);
@@ -899,8 +1066,72 @@
       return null;
     }
 
+    function refreshExistingItems() {
+      if (!itemsContainer) return;
+      itemsContainer.querySelectorAll('[data-item]').forEach((item) => {
+        const intensitySelect = item.querySelector('[data-field="intensity"]');
+        const likedSelect = item.querySelector('[data-field="liked"]');
+        const flairSelect = item.querySelector('[data-field="had_flair"]');
+        const skillSelect = item.querySelector('[data-field="achieved_skill"]');
+        const likedLabel = item.querySelector('[data-boolean-label="liked"]');
+        const flairLabel = item.querySelector('[data-boolean-label="had_flair"]');
+        const skillLabel = item.querySelector('[data-boolean-label="achieved_skill"]');
+        applySelectOptions(
+          intensitySelect,
+          state.intensityOptions,
+          'Select',
+          (option) => option.id,
+          (option) => option.label
+        );
+        applyBooleanField(likedLabel, likedSelect, state.booleanFields.liked);
+        applyBooleanField(flairLabel, flairSelect, state.booleanFields.had_flair);
+        applyBooleanField(skillLabel, skillSelect, state.booleanFields.achieved_skill);
+      });
+    }
+
+    function isAllowedIntensity(value) {
+      if (!value) return false;
+      return state.intensityOptions.some((option) => option.id === String(value).trim());
+    }
+
+    function applySelectOptions(selectEl, options, placeholderLabel, getValue, getLabel) {
+      if (!selectEl) return;
+      const currentValue = selectEl.value;
+      selectEl.innerHTML = '';
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = placeholderLabel;
+      selectEl.appendChild(placeholder);
+      options.forEach((option) => {
+        const el = document.createElement('option');
+        el.value = getValue(option);
+        el.textContent = getLabel(option);
+        selectEl.appendChild(el);
+      });
+      if (currentValue && Array.from(selectEl.options).some((option) => option.value === currentValue)) {
+        selectEl.value = currentValue;
+      }
+    }
+
+    function applyBooleanField(labelEl, selectEl, config) {
+      if (labelEl && config && config.label) {
+        labelEl.textContent = config.label;
+      }
+      applySelectOptions(
+        selectEl,
+        [
+          { value: 'yes', label: config.true_label },
+          { value: 'no', label: config.false_label },
+        ],
+        config.unknown_label,
+        (option) => option.value,
+        (option) => option.label
+      );
+    }
+
     return {
       setClient,
+      setPolicy,
       collect,
       prefill,
     };

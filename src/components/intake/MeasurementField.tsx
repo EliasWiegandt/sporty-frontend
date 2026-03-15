@@ -1,6 +1,6 @@
 import type { FunctionalComponent } from 'preact';
 import NumberStepper from './NumberStepper';
-import type { MeasurementFieldConfig } from '../../data/measurementFields';
+import type { MeasurementFieldConfig } from '../../lib/intakeCatalog';
 import {
   clampInRange,
   cmToFeetInches,

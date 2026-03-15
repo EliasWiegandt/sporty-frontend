@@ -3,15 +3,33 @@ import type { FunctionalComponent } from "preact";
 import type { PastSportsEntry } from "../IntakeApp";
 import NumberStepper from "../NumberStepper";
 import InlineInfoTip from "../InlineInfoTip";
+import type {
+  PastSportBooleanFieldConfig,
+  PastSportIntensityOption,
+} from "../../../lib/intakeCatalog";
 
 type Props = {
   entries: PastSportsEntry[];
+  intensityOptions: PastSportIntensityOption[];
+  booleanFields: Record<string, PastSportBooleanFieldConfig>;
   onUpdate: (entries: PastSportsEntry[]) => void;
 };
 
 type SportCatalogRow = { id: string; label: string; searchText: string };
 
-const PastSportsStep: FunctionalComponent<Props> = ({ entries, onUpdate }) => {
+const DEFAULT_BOOLEAN_FIELD: PastSportBooleanFieldConfig = {
+  label: "Select",
+  true_label: "Yes",
+  false_label: "No",
+  unknown_label: "Select",
+};
+
+const PastSportsStep: FunctionalComponent<Props> = ({
+  entries,
+  intensityOptions,
+  booleanFields,
+  onUpdate,
+}) => {
   const [catalog, setCatalog] = useState<SportCatalogRow[]>([]);
 
   useEffect(() => {
@@ -87,6 +105,8 @@ const PastSportsStep: FunctionalComponent<Props> = ({ entries, onUpdate }) => {
               key={entry.id}
               entry={entry}
               catalog={catalog}
+              intensityOptions={intensityOptions}
+              booleanFields={booleanFields}
               onChange={(patch) => handleUpdate(entry.id, patch)}
               onRemove={() => handleRemove(entry.id)}
             />
@@ -110,6 +130,8 @@ const PastSportsStep: FunctionalComponent<Props> = ({ entries, onUpdate }) => {
 type ItemProps = {
   entry: PastSportsEntry;
   catalog: SportCatalogRow[];
+  intensityOptions: PastSportIntensityOption[];
+  booleanFields: Record<string, PastSportBooleanFieldConfig>;
   onChange: (patch: Partial<PastSportsEntry>) => void;
   onRemove: () => void;
 };
@@ -117,6 +139,8 @@ type ItemProps = {
 const PastSportItem: FunctionalComponent<ItemProps> = ({
   entry,
   catalog,
+  intensityOptions,
+  booleanFields,
   onChange,
   onRemove,
 }) => {
@@ -148,6 +172,19 @@ const PastSportItem: FunctionalComponent<ItemProps> = ({
     setSearch(item.label);
     onChange({ sport_subcategory_id: item.id, sport_label: item.label });
     setShowResults(false);
+  };
+
+  const likedField = booleanFields.liked || {
+    ...DEFAULT_BOOLEAN_FIELD,
+    label: "Enjoyed it?",
+  };
+  const flairField = booleanFields.had_flair || {
+    ...DEFAULT_BOOLEAN_FIELD,
+    label: "Felt natural?",
+  };
+  const skillField = booleanFields.achieved_skill || {
+    ...DEFAULT_BOOLEAN_FIELD,
+    label: "Good at it?",
   };
 
   return (
@@ -273,10 +310,11 @@ const PastSportItem: FunctionalComponent<ItemProps> = ({
             }
           >
             <option value="">Select intensity</option>
-            <option value="light">Light</option>
-            <option value="moderate">Moderate</option>
-            <option value="intense">Intense</option>
-            <option value="elite">Elite</option>
+            {intensityOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </label>
       </div>
@@ -284,7 +322,7 @@ const PastSportItem: FunctionalComponent<ItemProps> = ({
       <div className="grid gap-4 md:grid-cols-3">
         <label className="space-y-2">
           <span className="type-body font-semibold text-slate-800">
-            Enjoyed it?
+            {likedField.label}
           </span>
           <select
             className="input-field input-select-pill w-full bg-white"
@@ -294,14 +332,14 @@ const PastSportItem: FunctionalComponent<ItemProps> = ({
               onChange({ liked: val === "" ? null : val === "yes" });
             }}
           >
-            <option value="">Select</option>
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
+            <option value="">{likedField.unknown_label}</option>
+            <option value="yes">{likedField.true_label}</option>
+            <option value="no">{likedField.false_label}</option>
           </select>
         </label>
         <label className="space-y-2">
           <span className="type-body font-semibold text-slate-800">
-            Felt natural?
+            {flairField.label}
           </span>
           <select
             className="input-field input-select-pill w-full bg-white"
@@ -313,14 +351,14 @@ const PastSportItem: FunctionalComponent<ItemProps> = ({
               onChange({ had_flair: val === "" ? null : val === "yes" });
             }}
           >
-            <option value="">Select</option>
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
+            <option value="">{flairField.unknown_label}</option>
+            <option value="yes">{flairField.true_label}</option>
+            <option value="no">{flairField.false_label}</option>
           </select>
         </label>
         <label className="space-y-2">
           <span className="type-body font-semibold text-slate-800">
-            Good at it?
+            {skillField.label}
           </span>
           <select
             className="input-field input-select-pill w-full bg-white"
@@ -336,9 +374,9 @@ const PastSportItem: FunctionalComponent<ItemProps> = ({
               onChange({ achieved_skill: val === "" ? null : val === "yes" });
             }}
           >
-            <option value="">Select</option>
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
+            <option value="">{skillField.unknown_label}</option>
+            <option value="yes">{skillField.true_label}</option>
+            <option value="no">{skillField.false_label}</option>
           </select>
         </label>
       </div>

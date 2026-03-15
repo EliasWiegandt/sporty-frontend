@@ -93,8 +93,7 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
                 <label className="space-y-2">
                   <span className="type-body font-semibold text-slate-800">Priority</span>
                   <select className="input-field input-select-pill" data-field="priority">
-                    <option value="must_have">Must have</option>
-                    <option value="nice_to_have">Nice to have</option>
+                    <option value="">Loading priorities…</option>
                   </select>
                 </label>
               </div>
@@ -162,8 +161,7 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
                 <label className="space-y-2">
                   <span className="type-body font-semibold text-slate-800">Priority</span>
                   <select className="input-field input-select-pill" data-field="priority">
-                    <option value="must_have">Must have</option>
-                    <option value="nice_to_have">Nice to have</option>
+                    <option value="">Loading priorities…</option>
                   </select>
                 </label>
               </div>
@@ -231,9 +229,7 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
                 <label className="space-y-2">
                   <span className="type-body font-semibold text-slate-800">Severity</span>
                   <select className="input-field input-select-pill" data-field="severity">
-                    <option value="severe">Severe</option>
-                    <option value="somewhat_bad">Somewhat bad</option>
-                    <option value="mostly_healed">Mostly healed</option>
+                    <option value="">Loading severities…</option>
                   </select>
                 </label>
               </div>
