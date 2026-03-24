@@ -26,6 +26,7 @@ import {
 } from "../../lib/measurementSystem";
 import {
   fetchIntakeCatalog,
+  type ChildForecastRaceOption,
   type MeasurementFieldConfig,
   type PastSportBooleanFieldConfig,
   type PastSportIntensityOption,
@@ -122,7 +123,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
 
   const [birthdate, setBirthdate] = useState<string>("");
   const [sex, setSex] = useState<Sex>("female");
-  const [ethnicity, setEthnicity] = useState<string>("");
+  const [race, setRace] = useState<string>("");
   const [adultAgeGroup, setAdultAgeGroup] = useState<string>(
     adultAgeGroups[2] || adultAgeGroups[0] || "25-35 years",
   );
@@ -149,6 +150,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
   const [pastSportBooleanFields, setPastSportBooleanFields] = useState<
     Record<string, PastSportBooleanFieldConfig>
   >({});
+  const [raceOptions, setRaceOptions] = useState<ChildForecastRaceOption[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(
     null,
@@ -180,6 +182,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
         setTraitQuestions(catalog.traits.intake.questions || []);
         setPastSportIntensityOptions(catalog.past_sports.intensity_options || []);
         setPastSportBooleanFields(catalog.past_sports.boolean_options.fields || {});
+        setRaceOptions(catalog.child_forecast.race_options || []);
       } catch (error) {
         if (cancelled) return;
         console.error("[ChildIntake] Failed to load intake catalog", error);
@@ -198,6 +201,12 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
     setMotherMeasurements((prev) => ({ ...buildEmptyMeasurements(measurementFields), ...prev }));
     setFatherMeasurements((prev) => ({ ...buildEmptyMeasurements(measurementFields), ...prev }));
   }, [measurementFields]);
+
+  useEffect(() => {
+    if (race || !raceOptions.length) return;
+    const defaultRace = raceOptions.find((option) => option.is_overall)?.id || raceOptions[0]?.id || "";
+    if (defaultRace) setRace(defaultRace);
+  }, [race, raceOptions]);
 
   const setStatus = useCallback(
     (html: string, tone: "info" | "error" = "info") => {
@@ -662,7 +671,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
       guardian_user_id: user.id,
       birthdate,
       sex,
-      ethnicity: ethnicity || null,
+      race,
       adult_age_group: adultAgeGroup,
       measurements: { ...childMeasurements },
       traits: { ...traits },
@@ -750,7 +759,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
     measurementFields,
     childId,
     childMeasurements,
-    ethnicity,
+    race,
     fatherMeasurements,
     includeFather,
     includeMother,
@@ -1072,18 +1081,20 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
               </div>
               <label className="space-y-2">
                 <div className="text-sm font-semibold text-slate-800">
-                  Ethnicity (optional)
+                  Race (optional)
                 </div>
                 <select
                   className="input-field input-select-pill"
-                  value={ethnicity}
+                  value={race}
                   onChange={(e) =>
-                    setEthnicity((e.target as HTMLSelectElement).value)
+                    setRace((e.target as HTMLSelectElement).value)
                   }
                 >
-                  <option value="">General population</option>
-                  <option value="caucasian">Caucasian</option>
-                  <option value="asian">Asian</option>
+                  {raceOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </label>
               <label className="space-y-2">

@@ -61,6 +61,13 @@ export type PastSportBooleanFieldConfig = {
   unknown_label: string;
 };
 
+export type ChildForecastRaceOption = {
+  id: string;
+  label: string;
+  description?: string;
+  is_overall: boolean;
+};
+
 export type IntakeCatalog = {
   version: number;
   traits: {
@@ -78,6 +85,10 @@ export type IntakeCatalog = {
       adult_premium: string[];
       child: string[];
     };
+  };
+  child_forecast: {
+    version: number;
+    race_options: ChildForecastRaceOption[];
   };
   preferences: {
     version: number;
@@ -185,6 +196,7 @@ function normalizeCatalog(payload: unknown): IntakeCatalog {
 
   const measurementsBlock = isRecord(payload.measurements) ? payload.measurements : {};
   const requiredBlock = isRecord(measurementsBlock.required) ? measurementsBlock.required : {};
+  const childForecastBlock = isRecord(payload.child_forecast) ? payload.child_forecast : {};
   const preferencesBlock = isRecord(payload.preferences) ? payload.preferences : {};
   const goalsBlock = isRecord(payload.goals) ? payload.goals : {};
   const injuriesBlock = isRecord(payload.injuries) ? payload.injuries : {};
@@ -194,6 +206,18 @@ function normalizeCatalog(payload: unknown): IntakeCatalog {
     adult_premium: Array.isArray(requiredBlock.adult_premium) ? requiredBlock.adult_premium.map((x) => String(x)).filter(Boolean) : [],
     child: Array.isArray(requiredBlock.child) ? requiredBlock.child.map((x) => String(x)).filter(Boolean) : [],
   };
+
+  const childForecastRaceOptions = Array.isArray(childForecastBlock.race_options)
+    ? childForecastBlock.race_options
+        .filter(isRecord)
+        .map((row) => ({
+          id: String(row.id || '').trim(),
+          label: String(row.label || row.name || '').trim(),
+          description: row.description == null ? undefined : String(row.description || '').trim(),
+          is_overall: Boolean(row.is_overall),
+        }))
+        .filter((row) => row.id && row.label)
+    : [];
 
   const normalizeMeasurementList = (raw: unknown, requiredIds: string[]) => {
     const requiredSet = new Set(requiredIds);
@@ -322,6 +346,10 @@ function normalizeCatalog(payload: unknown): IntakeCatalog {
       adult_premium: normalizeMeasurementList(measurementsBlock.adult_premium, required.adult_premium),
       child: normalizeMeasurementList(measurementsBlock.child, required.child),
       required,
+    },
+    child_forecast: {
+      version: Number(childForecastBlock.version || 1),
+      race_options: childForecastRaceOptions,
     },
     preferences: {
       version: Number(preferencesBlock.version || 1),

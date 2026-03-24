@@ -760,19 +760,10 @@
     return null;
   }
 
-  function slugify(value) {
-    return String(value || "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "");
-  }
-
   function buildSportBodyHref(body, subcategory) {
-    if (!body || body.id === undefined || body.id === null) return null;
-    const rawSlug = subcategory?.name || body.category_slug || body.sport_slug || "body";
-    const slug = slugify(rawSlug) || "body";
-    return `/sport-bodies/${slug}-${body.id}`;
+    const targetId = body && body.target_id ? String(body.target_id).trim() : '';
+    if (!targetId) return null;
+    return `/sport-bodies/${encodeURIComponent(targetId)}`;
   }
 
   function escapeHtml(value) {

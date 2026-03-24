@@ -9,10 +9,10 @@ export const GET: APIRoute = async ({ request, locals, params }) => {
   const reqId = request.headers.get('X-Request-Id') ?? crypto.randomUUID();
   const backendUrl = env.RENDER_URL;
   const apiKey = env.RENDER_API_KEY;
-  const bodyId = params.bodyId;
+  const targetId = params.targetId;
 
-  if (!bodyId) {
-    return new Response(JSON.stringify({ detail: 'bodyId is required' }), {
+  if (!targetId) {
+    return new Response(JSON.stringify({ detail: 'targetId is required' }), {
       status: 400,
       headers: { ...JSON_HEADERS, 'X-Request-Id': reqId },
     });
@@ -30,7 +30,7 @@ export const GET: APIRoute = async ({ request, locals, params }) => {
     });
   }
 
-  const upstreamUrl = new URL(`/v1/sport-bodies/${encodeURIComponent(bodyId)}`, backendUrl);
+  const upstreamUrl = new URL(`/v1/sport-bodies/${encodeURIComponent(targetId)}`, backendUrl);
   try {
     const upstreamResp = await fetch(upstreamUrl.toString(), {
       method: 'GET',

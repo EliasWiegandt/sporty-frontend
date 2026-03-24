@@ -57,6 +57,11 @@
             <div class="sport-body-directory-card__meta">
               <span class="source-chip source-chip-ok">${escapeHtml(item.sport_slug || 'sport')}</span>
               <span class="source-chip source-chip-ok">${escapeHtml(item.category_slug || 'category')}</span>
+              ${Array.isArray(item.cohort_items)
+                ? item.cohort_items
+                    .map((entry) => `<span class="source-chip source-chip-ok">${escapeHtml(`${entry.label}: ${entry.value}`)}</span>`)
+                    .join('')
+                : ''}
             </div>
             <div>
               <a class="btn-pill btn-pill-secondary btn-pill-sm" href="${escapeHtml(item.canonical_path || '#')}">Read about this sport body</a>
@@ -83,7 +88,10 @@
       return;
     }
     const filtered = items.filter((item) => {
-      const haystack = [item.title, item.slug, item.sport_slug, item.category_slug].join(' ').toLowerCase();
+      const cohortText = Array.isArray(item.cohort_items)
+        ? item.cohort_items.map((entry) => `${entry.key} ${entry.label} ${entry.value}`).join(' ')
+        : '';
+      const haystack = [item.title, item.slug, item.sport_slug, item.category_slug, cohortText].join(' ').toLowerCase();
       return haystack.includes(q);
     });
     render(filtered);

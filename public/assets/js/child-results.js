@@ -49,6 +49,7 @@
 
   renderSummary(result, requestPayload);
   renderMeasurements(result);
+  hydrateRaceLabel();
 
   function showEmpty() {
     if (emptyStateEl) emptyStateEl.hidden = false;
@@ -91,8 +92,8 @@
         value: scenario,
       },
       {
-        label: "Ethnicity",
-        value: payload?.ethnicity || "General population",
+        label: "Race",
+        value: payload?.race_label || payload?.race || "Overall population",
       },
     ];
 
@@ -104,6 +105,27 @@
       summaryMetaEl.appendChild(dt);
       summaryMetaEl.appendChild(dd);
     });
+  }
+
+  async function hydrateRaceLabel() {
+    if (!requestPayload || !requestPayload.race) return;
+    try {
+      const response = await fetch("/api/intake-catalog", {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) return;
+      const payload = await response.json();
+      const options = Array.isArray(payload?.child_forecast?.race_options)
+        ? payload.child_forecast.race_options
+        : [];
+      const match = options.find((option) => option && option.id === requestPayload.race);
+      if (!match || !match.label) return;
+      requestPayload.race_label = String(match.label);
+      renderSummary(result, requestPayload);
+    } catch (error) {
+      console.warn("Failed to hydrate race labels", error);
+    }
   }
 
   function renderMeasurements(res) {

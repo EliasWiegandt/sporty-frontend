@@ -78,7 +78,7 @@ export const offerings = [
     ],
     cta: {
       href: "/intake",
-      label: "Try quick analysis",
+      label: "Try Quick Analysis",
       theme: "primary",
     },
   },

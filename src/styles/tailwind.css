@@ -1001,10 +1001,12 @@
 
   .match-card__accordion-content.is-open {
     opacity: 1;
+    overflow: visible;
   }
 
   .match-card__accordion-content.is-closed {
     opacity: 0;
+    overflow: hidden;
   }
 
   @media (prefers-reduced-motion: reduce) {

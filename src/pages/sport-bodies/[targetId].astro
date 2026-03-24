@@ -1,15 +1,11 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
-const slugAndId = String(Astro.params.slugAndId || '');
-const match = slugAndId.match(/^(.*)-(\d+)$/);
-if (!match) {
+const targetId = String(Astro.params.targetId || '').trim();
+if (!targetId) {
   return Astro.redirect('/sport-bodies', 302);
 }
-
-const incomingSlug = match[1];
-const bodyId = match[2];
-const detailUrl = new URL(`/api/sport-bodies/${encodeURIComponent(bodyId)}`, Astro.url);
+const detailUrl = new URL(`/api/sport-bodies/${encodeURIComponent(targetId)}`, Astro.url);
 const detailResp = await fetch(detailUrl);
 
 if (detailResp.status === 404) {
@@ -23,8 +19,8 @@ const payload = await detailResp.json();
 const body = payload.body || {};
 const canonicalPath = payload.canonical_path || body.canonical_path || '/sport-bodies';
 const canonicalUrl = new URL(canonicalPath, Astro.url).toString();
-const canonicalSlug = canonicalPath.split('/').pop()?.replace(/-\d+$/, '') || '';
-if (incomingSlug !== canonicalSlug) {
+const canonicalTargetId = canonicalPath.split('/').pop() || '';
+if (targetId !== canonicalTargetId) {
   return Astro.redirect(canonicalPath, 301);
 }
 
@@ -156,6 +152,7 @@ for (const section of sourceSections) {
 const mediaCard = body?.media?.card || null;
 const resolvedMediaSrc = resolveMediaUrl(mediaCard?.path);
 const mediaAlt = mediaCard?.alt || body?.title || 'Sport body image';
+const cohortItems = asList(body.cohort_items);
 
 const title = body.title || 'Sport body';
 const bodyNarrative = body?.rationale || body?.overall_description || '';
@@ -229,6 +226,20 @@ const ldBreadcrumb = {
             <div class="match-card__desc-block">
               <h4>Athletes' bodies</h4>
               <p>{bodyNarrative}</p>
+            </div>
+          )}
+
+          {cohortItems.length > 0 && (
+            <div class="match-card__desc-block">
+              <h4>Cohort</h4>
+              <div class="space-y-1 text-sm">
+                {cohortItems.map((item: any) => (
+                  <div class="match-card__detail-row flex items-center">
+                    <span class="font-medium text-slate-700 w-24 shrink-0">{item?.label || item?.key}:</span>
+                    <span class="text-slate-900">{item?.value || '-'}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -590,13 +601,13 @@ const ldBreadcrumb = {
         const root = document.querySelector('.sport-body-redesign');
         if (!root) return;
 
-        const config = (window && window.SPORTY_CONFIG) || null;
+        const config = ((window as any) && (window as any).SPORTY_CONFIG) || null;
         const storageBase =
           config && typeof config.SUPABASE_STORAGE_URL === 'string'
             ? config.SUPABASE_STORAGE_URL.replace(/\/$/, '')
             : '';
 
-        const media = root.querySelector('.sport-body-hero__media img[data-media-src]');
+        const media = root.querySelector('.sport-body-hero__media img[data-media-src]') as HTMLImageElement | null;
         const mediaFallback = root.querySelector('.sport-body-image-fallback');
         if (media) {
           const raw = String(media.getAttribute('data-media-src') || '').trim();
@@ -614,7 +625,7 @@ const ldBreadcrumb = {
           if (!hash) return;
           const target = document.getElementById(hash.slice(1));
           if (!target) return;
-          const sourcesDetails = target.closest('details#sources');
+          const sourcesDetails = target.closest('details#sources') as HTMLDetailsElement | null;
           if (!sourcesDetails) return;
           sourcesDetails.open = true;
           requestAnimationFrame(() => {
