@@ -19,10 +19,19 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     <script is:inline src="/assets/js/app.js?v=4" defer></script>
     <script is:inline defer>
       (function () {
+        const params = new URLSearchParams(window.location.search || '');
+        const id = params.get('id');
         try {
           sessionStorage.setItem('sporty:childResultsTab', 'matches');
         } catch (_) {}
-        window.location.replace('/child-results?tab=matches');
+        const nextUrl = id
+          ? `/child-results?id=${encodeURIComponent(id)}&tab=matches`
+          : '/child-results?tab=matches';
+        const link = document.querySelector('a.btn-primary');
+        if (link) {
+          link.setAttribute('href', nextUrl);
+        }
+        window.location.replace(nextUrl);
       })();
     </script>
   </Fragment>

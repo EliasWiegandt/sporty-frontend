@@ -33,7 +33,7 @@ Strictly necessary service operations are not consent-only: contract/legal-oblig
 Day-1 posture includes guardian-mediated minor (<18) flow; direct child self-service onboarding is out of scope.
 Child analysis monetization policy: no sale/share/license/monetization of child-derived data (including aggregates).
 Child anonymized event collection is disabled; child identifiable analysis data is retained for 7 days then deleted.
-Child results persistence strategy: no retention-extension option at launch; guardians should export the top-3 results PDF from `/child-results` if they need records beyond 7 days.
+Child results persistence strategy: no retention-extension option at launch; guardians should export the top-10 results PDF from `/child-results` if they need records beyond 7 days.
 
 Users can manage or revoke consent anytime in **Account → Data & Privacy**.
 Revocation deletion contract:
@@ -133,7 +133,8 @@ Get a deeper, personalized analysis including goals, preferences, injuries, and 
 
 2. **Submit ➝ Results (Premium Analysis)**
 
-   - Results page includes charts, breakdowns, and insights (body, goals, preferences, injuries).
+   - Results page includes a browsable ranked rail. First view shows the top 3 matches, then users can move one card at a time, filter by sport, toggle unique-sport view, and jump to the worst end of the ranking.
+   - Each card still includes the detailed body / goal / preference / injury breakdowns.
    - User can compare with previous runs via History.
 
 3. **Optional Next Steps**
@@ -181,7 +182,7 @@ Purchase a paid child credit to forecast a child’s body trajectory and unlock 
 
 3. **Follow-Up**
    - Dashboard updated with the next recommended re-measure date and recent child analyses (within the 7-day retention window).
-   - Guardians can export a PDF summary (top 3 child matches) from `/child-results` before auto-deletion.
+   - Guardians can export a PDF summary (top 10 child matches) from `/child-results` before auto-deletion.
    - Notification prompt for future forecast windows.
 
 ### Key Pages Involved

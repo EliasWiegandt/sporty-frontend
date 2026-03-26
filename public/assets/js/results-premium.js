@@ -52,18 +52,35 @@
     'shoulder_hip_ratio',
     'leg_torso_ratio',
   ]);
+  const PAGE_FETCH_LIMIT = 6;
+  const VISIBLE_CARD_COUNT = 3;
+  const state = {
+    runId: null,
+    runKind: isChildResults ? 'child' : 'adult',
+    uniqueSports: true,
+    direction: 'top',
+    includedSports: new Set(),
+    focusSport: '',
+    availableSports: [],
+    loadedMatches: [],
+    totalRankedCount: 0,
+    totalFilteredCount: 0,
+    currentStart: 0,
+    loading: false,
+  };
+  let browserUi = null;
 
   init().catch((error) => {
     console.error('[Sporty] Failed to init premium results page', error);
     showEmptyState('Unable to load this premium run right now.');
   });
 
-  function showEmptyState(message) {
+  function showEmptyState(message, title = 'Premium analysis unavailable') {
     if (container) {
       container.hidden = true;
     }
     if (emptyTitle) {
-      emptyTitle.textContent = 'Premium analysis unavailable';
+      emptyTitle.textContent = title;
     }
     if (emptyMessage && message) {
       emptyMessage.textContent = message;
@@ -71,12 +88,6 @@
     if (emptyState) {
       emptyState.hidden = false;
     }
-  }
-
-  function isRenderablePremiumPayload(payload) {
-    if (!payload || typeof payload !== 'object') return false;
-    if (!Array.isArray(payload.matches) || payload.matches.length === 0) return false;
-    return payload.matches.some((match) => match && typeof match === 'object' && match.optimal_body);
   }
 
   async function waitForAuthReady() {
@@ -125,108 +136,286 @@
   }
 
   async function init() {
-    let parsed = null;
-    let payloadSource = 'session';
-    let invalidReason = null;
     const params = new URLSearchParams(window.location.search || '');
-    const resultId = params.get('id');
-    const stored = sessionStorage.getItem('sporty:lastPremiumResult');
-    if (stored) {
-      try {
-        const candidate = JSON.parse(stored);
-        if (isRenderablePremiumPayload(candidate)) {
-          parsed = candidate;
-        } else {
-          invalidReason = 'Cached premium payload is invalid or incomplete.';
-        }
-      } catch (error) {
-        console.error('[Sporty] Failed to parse premium analysis payload', error);
-      }
-    }
-
-    if (!parsed) {
-      payloadSource = 'database';
-      if (resultId) {
-        const fetched = await fetchPremiumResultById(resultId);
-        if (isRenderablePremiumPayload(fetched)) {
-          parsed = fetched;
-        } else if (fetched) {
-          invalidReason = 'Stored premium payload is invalid or incomplete.';
-        }
-      }
-    }
-
-    if (!parsed || typeof parsed !== 'object' || !isRenderablePremiumPayload(parsed)) {
-      const idHint = resultId ? ` (run ${resultId})` : '';
-      showEmptyState(
-        invalidReason
-          ? `This premium run cannot be rendered${idHint}. ${invalidReason} Run a new premium analysis.`
-          : `No premium analysis payload found${idHint}. Run a premium analysis first.`
-      );
+    state.runId = params.get('id');
+    if (!state.runId) {
+      showEmptyState('Open a saved premium run from history, or run a new premium analysis.');
       return;
     }
-
-    try {
-      sessionStorage.removeItem('sporty:lastPremiumResult');
-    } catch (error) {
-      console.warn('[Sporty] Unable to clear premium result cache', error);
-    }
-
+    browserUi = buildBrowserUi();
     if (emptyState) emptyState.hidden = true;
-
-    if (reasonEl) {
-      reasonEl.textContent = parsed.reason || 'Based on your measurements and premium inputs.';
-    }
-
-    const matches = parsed.matches || [];
-    renderMatches(matches, { source: payloadSource, resultId });
-    setupChildPdfExport(matches);
+    await reloadBrowser({ direction: params.get('direction') === 'bottom' ? 'bottom' : 'top' });
+    setupChildPdfExport();
   }
 
-  async function fetchPremiumResultById(id) {
-    try {
-      const sportyApp = window.SportyApp || window.sportyApp;
-      const auth = await waitForAuthReady();
-      const hasSession = Boolean(sportyApp && sportyApp.getSession && sportyApp.getSession() && sportyApp.getSession().user);
-      if (!hasSession) {
-        console.error('[Sporty] Premium fetch skipped: auth session unavailable', {
-          runId: id,
-          hasSession,
-          phase: auth.phase,
-        });
-        return null;
-      }
-      const client = sportyApp && sportyApp.getClient ? sportyApp.getClient() : null;
-      if (!client) return null;
+  function buildBrowserUi() {
+    if (!container || !container.parentNode) return null;
+    const shell = document.createElement('section');
+    shell.className = 'premium-browser';
+    shell.innerHTML = `
+      <div class="premium-browser__toolbar">
+        <div class="premium-browser__headline">
+          <p class="premium-browser__summary" data-premium-summary>Loading premium ranking…</p>
+          <label class="premium-browser__toggle">
+            <input type="checkbox" data-unique-toggle checked />
+            <span>One best subcategory per sport</span>
+          </label>
+        </div>
+        <div class="premium-browser__actions">
+          <label class="premium-browser__focus">
+            <span>Focus sport</span>
+            <select class="input-field input-select-pill" data-focus-select>
+              <option value="">All sports</option>
+            </select>
+          </label>
+          <button type="button" class="btn-pill btn-pill-secondary btn-pill-sm" data-jump-top>Top matches</button>
+          <button type="button" class="btn-pill btn-pill-secondary btn-pill-sm" data-jump-bottom>Worst matches</button>
+        </div>
+      </div>
+      <div class="premium-browser__filters" data-sport-filters></div>
+      <div class="premium-browser__nav">
+        <button type="button" class="btn-pill btn-pill-secondary btn-pill-sm" data-nav-prev>Previous</button>
+        <div class="premium-browser__position" data-position-label></div>
+        <button type="button" class="btn-pill btn-pill-secondary btn-pill-sm" data-nav-next>Next</button>
+      </div>
+    `;
+    container.parentNode.insertBefore(shell, container);
+    container.classList.add('premium-browser__cards');
 
-      const { data, error } = await client
-        .from('recommendations')
-        .select('result_payload, summary')
-        .eq('id', id)
-        .single();
+    const ui = {
+      shell,
+      summary: shell.querySelector('[data-premium-summary]'),
+      uniqueToggle: shell.querySelector('[data-unique-toggle]'),
+      focusSelect: shell.querySelector('[data-focus-select]'),
+      sportFilters: shell.querySelector('[data-sport-filters]'),
+      prevBtn: shell.querySelector('[data-nav-prev]'),
+      nextBtn: shell.querySelector('[data-nav-next]'),
+      jumpTopBtn: shell.querySelector('[data-jump-top]'),
+      jumpBottomBtn: shell.querySelector('[data-jump-bottom]'),
+      positionLabel: shell.querySelector('[data-position-label]'),
+    };
 
-      if (error) throw error;
+    ui.uniqueToggle.addEventListener('change', async () => {
+      try {
+        state.uniqueSports = Boolean(ui.uniqueToggle.checked);
+        await reloadBrowser({ direction: state.direction });
+      } catch (error) {
+        console.error('[Sporty] Failed to reload premium browser after unique toggle', error);
+      }
+    });
+    ui.focusSelect.addEventListener('change', async () => {
+      try {
+        state.focusSport = String(ui.focusSelect.value || '');
+        await reloadBrowser({ direction: state.direction });
+      } catch (error) {
+        console.error('[Sporty] Failed to reload premium browser after focus change', error);
+      }
+    });
+    ui.prevBtn.addEventListener('click', async () => {
+      if (state.currentStart <= 0) return;
+      state.currentStart -= 1;
+      renderVisibleMatches();
+    });
+    ui.nextBtn.addEventListener('click', async () => {
+      if (state.currentStart + VISIBLE_CARD_COUNT >= state.totalFilteredCount) return;
+      try {
+        await ensureLoadedThrough(state.currentStart + VISIBLE_CARD_COUNT + 1);
+        state.currentStart += 1;
+        renderVisibleMatches();
+      } catch (error) {
+        console.error('[Sporty] Failed to advance premium browser', error);
+      }
+    });
+    ui.jumpTopBtn.addEventListener('click', async () => {
+      try {
+        await reloadBrowser({ direction: 'top' });
+      } catch (error) {
+        console.error('[Sporty] Failed to load top premium view', error);
+      }
+    });
+    ui.jumpBottomBtn.addEventListener('click', async () => {
+      try {
+        await reloadBrowser({ direction: 'bottom' });
+      } catch (error) {
+        console.error('[Sporty] Failed to load worst premium view', error);
+      }
+    });
+    return ui;
+  }
 
-      if (data && data.result_payload) {
-        return data.result_payload;
-      }
-      if (data && data.summary) {
-        try {
-          return JSON.parse(data.summary);
-        } catch (_) {
-          return null;
-        }
-      }
-      return null;
-    } catch (error) {
-      console.error('[Sporty] Failed to fetch premium analysis by id', {
-        runId: id,
-        phase: 'db-fetch',
-        errorCode: error && error.code ? error.code : null,
-        errorMessage: error && error.message ? error.message : String(error),
-      });
-      return null;
+  async function authFetchJson(path) {
+    const sportyApp = window.SportyApp || window.sportyApp;
+    const auth = await waitForAuthReady();
+    const session = sportyApp && sportyApp.getSession ? sportyApp.getSession() : null;
+    const token = session && session.access_token ? session.access_token : null;
+    if (!token) {
+      throw new Error(`Missing auth token (${auth.phase})`);
     }
+    const response = await fetch(path, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const text = await response.text();
+    let parsed = null;
+    try {
+      parsed = text ? JSON.parse(text) : null;
+    } catch (_) {
+      parsed = null;
+    }
+    if (!response.ok) {
+      const detail = parsed && parsed.detail ? parsed.detail.message || parsed.detail : null;
+      throw new Error(detail || `Premium results request failed (${response.status})`);
+    }
+    return parsed;
+  }
+
+  function activeSportFilters() {
+    if (state.focusSport) return [state.focusSport];
+    const allSlugs = state.availableSports.map((option) => option.sport_slug);
+    const included = allSlugs.filter((slug) => state.includedSports.has(slug));
+    if (!included.length || included.length === allSlugs.length) return [];
+    return included;
+  }
+
+  async function fetchPremiumSlice({ offset, limit, direction, sportSlugs = null, uniqueSports = null }) {
+    const params = new URLSearchParams();
+    params.set('run_kind', state.runKind);
+    params.set('run_id', String(state.runId));
+    params.set('offset', String(offset));
+    params.set('limit', String(limit));
+    params.set('unique_sports', (uniqueSports === null ? state.uniqueSports : uniqueSports) ? 'true' : 'false');
+    params.set('direction', direction);
+    const filterValues = Array.isArray(sportSlugs) ? sportSlugs : activeSportFilters();
+    filterValues.forEach((slug) => params.append('sport_slug', slug));
+    return authFetchJson(`/api/premium-results?${params.toString()}`);
+  }
+
+  async function reloadBrowser({ direction }) {
+    state.direction = direction;
+    state.currentStart = 0;
+    state.loadedMatches = [];
+    const payload = await fetchPremiumSlice({ offset: 0, limit: PAGE_FETCH_LIMIT, direction });
+    applyPayload(payload, { reset: true });
+    renderBrowserControls();
+    renderVisibleMatches();
+  }
+
+  function applyPayload(payload, { reset }) {
+    const incomingMatches = Array.isArray(payload?.matches) ? payload.matches : [];
+    if (reset) {
+      state.loadedMatches = incomingMatches;
+    } else {
+      state.loadedMatches = state.loadedMatches.concat(incomingMatches);
+    }
+    state.totalRankedCount = Number(payload?.total_ranked_count || 0);
+    state.totalFilteredCount = Number(payload?.total_filtered_count || 0);
+    state.availableSports = Array.isArray(payload?.available_sports) ? payload.available_sports : [];
+    if (!state.includedSports.size) {
+      state.availableSports.forEach((option) => {
+        if (option && option.sport_slug) state.includedSports.add(option.sport_slug);
+      });
+    }
+    if (reasonEl) {
+      reasonEl.textContent =
+        payload?.run?.reason ||
+        (isChildResults
+          ? 'Based on the child’s forecasted adult build and premium inputs.'
+          : 'Based on your measurements and premium inputs.');
+    }
+  }
+
+  async function ensureLoadedThrough(indexExclusive) {
+    if (state.loading) return;
+    if (state.loadedMatches.length >= indexExclusive) return;
+    if (state.loadedMatches.length >= state.totalFilteredCount) return;
+    state.loading = true;
+    try {
+      const payload = await fetchPremiumSlice({
+        offset: state.loadedMatches.length,
+        limit: PAGE_FETCH_LIMIT,
+        direction: state.direction,
+      });
+      applyPayload(payload, { reset: false });
+      renderBrowserControls();
+    } finally {
+      state.loading = false;
+    }
+  }
+
+  function renderBrowserControls() {
+    if (!browserUi) return;
+    if (browserUi.summary) {
+      const viewLabel = state.direction === 'bottom' ? 'worst' : 'top';
+      browserUi.summary.textContent = `Showing ${viewLabel} premium ranking. ${state.totalFilteredCount} matches in this view, ${state.totalRankedCount} total in the run.`;
+    }
+    if (browserUi.focusSelect) {
+      const current = state.focusSport;
+      browserUi.focusSelect.innerHTML = '<option value="">All sports</option>';
+      state.availableSports.forEach((option) => {
+        const opt = document.createElement('option');
+        opt.value = option.sport_slug;
+        opt.textContent = option.label || option.sport_slug;
+        if (option.sport_slug === current) opt.selected = true;
+        browserUi.focusSelect.appendChild(opt);
+      });
+    }
+    if (browserUi.sportFilters) {
+      browserUi.sportFilters.innerHTML = '';
+      state.availableSports.forEach((option) => {
+        const slug = String(option.sport_slug || '');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const included = state.focusSport ? state.focusSport === slug : state.includedSports.has(slug);
+        btn.className = `btn-pill btn-pill-sm ${included ? 'btn-pill-primary' : 'btn-pill-secondary'}`;
+        btn.textContent = option.label || slug;
+        btn.addEventListener('click', async () => {
+          try {
+            if (state.focusSport) {
+              state.focusSport = slug;
+            } else if (state.includedSports.has(slug)) {
+              if (state.includedSports.size === 1) return;
+              state.includedSports.delete(slug);
+            } else {
+              state.includedSports.add(slug);
+            }
+            await reloadBrowser({ direction: state.direction });
+          } catch (error) {
+            console.error('[Sporty] Failed to reload premium browser after sport filter change', error);
+          }
+        });
+        browserUi.sportFilters.appendChild(btn);
+      });
+    }
+    if (browserUi.prevBtn) {
+      browserUi.prevBtn.disabled = state.currentStart <= 0;
+    }
+    if (browserUi.nextBtn) {
+      browserUi.nextBtn.disabled = state.currentStart + VISIBLE_CARD_COUNT >= state.totalFilteredCount;
+    }
+    if (browserUi.positionLabel) {
+      if (!state.totalFilteredCount) {
+        browserUi.positionLabel.textContent = 'No matches in this view';
+      } else {
+        const start = state.currentStart + 1;
+        const end = Math.min(state.currentStart + VISIBLE_CARD_COUNT, state.totalFilteredCount);
+        browserUi.positionLabel.textContent = `${start}–${end} of ${state.totalFilteredCount}`;
+      }
+    }
+  }
+
+  function renderVisibleMatches() {
+    const visibleMatches = state.loadedMatches.slice(
+      state.currentStart,
+      state.currentStart + VISIBLE_CARD_COUNT
+    );
+    renderMatches(visibleMatches, {
+      resultId: state.runId,
+      startIndex: state.currentStart,
+    });
+    renderBrowserControls();
   }
 
   function extractFactors(match) {
@@ -489,19 +678,19 @@
     if (!container) return;
     container.innerHTML = '';
     if (!matches.length) {
-      showEmptyState('No premium matches were returned for this run.');
-      setChildExportState([]);
+      showEmptyState('No premium matches were returned for this filtered view.', 'No matches in this view');
+      setChildExportState(0);
       return;
     }
     container.hidden = false;
+    if (emptyState) emptyState.hidden = true;
     let renderedCount = 0;
     try {
       matches
-        .slice()
-        .sort((a, b) => (b.score ?? b.fit_score ?? 0) - (a.score ?? a.fit_score ?? 0))
         .forEach((match, index) => {
           try {
-            const card = buildMatchCard(match, index + 1);
+            const rank = Number(match?.canonical_rank || 0) || (Number(context.startIndex || 0) + index + 1);
+            const card = buildMatchCard(match, rank);
             container.appendChild(card);
             renderedCount += 1;
           } catch (error) {
@@ -520,27 +709,38 @@
         resultId: context.resultId || null,
       });
       showEmptyState('Premium run payload exists but no match cards could be rendered.');
-      setChildExportState([]);
+      setChildExportState(0);
       return;
     }
     initCardAlignment();
-    setChildExportState(matches);
+    setChildExportState(state.totalFilteredCount);
   }
 
-  function setupChildPdfExport(matches) {
+  function setupChildPdfExport() {
     if (!isChildResults || !exportPdfButton) return;
-    exportPdfButton.addEventListener('click', () => {
+    exportPdfButton.addEventListener('click', async () => {
       if (exportPdfButton.disabled) return;
-      renderChildPrintReport(matches);
-      window.print();
+      try {
+        const payload = await fetchPremiumSlice({
+          offset: 0,
+          limit: 10,
+          direction: 'top',
+          sportSlugs: [],
+          uniqueSports: true,
+        });
+        renderChildPrintReport(Array.isArray(payload?.matches) ? payload.matches : []);
+        window.print();
+      } catch (error) {
+        console.error('[Sporty] Failed to build child premium PDF', error);
+      }
     });
   }
 
-  function setChildExportState(matches) {
+  function setChildExportState(totalCount) {
     if (!isChildResults || !exportPdfButton) return;
-    const topMatches = getTopMatches(matches);
-    exportPdfButton.disabled = topMatches.length < 1;
-    if (!topMatches.length) {
+    const available = Number(totalCount || 0);
+    exportPdfButton.disabled = available < 1;
+    if (available < 1) {
       exportPdfButton.setAttribute('aria-disabled', 'true');
       exportPdfButton.title = 'Run a child analysis first to export PDF results.';
       clearPrintReport();
@@ -556,17 +756,14 @@
     printReportRoot.innerHTML = '';
   }
 
-  function getTopMatches(matches) {
+  function getTopMatches(matches, limit = 10) {
     if (!Array.isArray(matches)) return [];
-    return matches
-      .slice()
-      .sort((a, b) => (b.score ?? b.fit_score ?? 0) - (a.score ?? a.fit_score ?? 0))
-      .slice(0, 3);
+    return matches.slice(0, limit);
   }
 
   function renderChildPrintReport(matches) {
     if (!printReportRoot) return;
-    const topMatches = getTopMatches(matches);
+    const topMatches = getTopMatches(matches, 10);
     if (!topMatches.length) {
       clearPrintReport();
       return;
@@ -596,7 +793,7 @@
 
     printReportRoot.innerHTML = `
       <header class="child-results-print-header">
-        <h1>Sporty Child Match Summary (Top 3)</h1>
+        <h1>Sporty Child Match Summary (Top 10)</h1>
         <p>Generated: ${escapeHtml(generatedAt)}</p>
         <p>Operational copy. Child results are deleted after 7 days.</p>
       </header>

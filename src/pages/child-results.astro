@@ -46,7 +46,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     >
       <div class="results-shell" data-premium-root data-subject-label="Child">
         <header class="result-header anchored" data-premium-hero>
-          <h1 class="section-title">Child’s Premium Matches</h1>
+          <h1 class="section-title">Child’s Premium Ranking</h1>
           <p class="cta-inline" data-reason>Based on the child’s forecasted adult build and premium inputs.</p>
           <div
             class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-slate-700"
@@ -61,7 +61,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
               data-child-export-pdf
               disabled
             >
-              Download PDF (Top 3 matches)
+              Download PDF (Top 10 matches)
             </button>
           </div>
         </header>
@@ -104,7 +104,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           data-empty-state
         >
           <h2>No forecast loaded</h2>
-          <p>Submit the child forecast form first. We keep the latest run locally so you can review it here.</p>
+          <p>Open a saved child forecast from dashboard history, or run a new child analysis.</p>
           <div class="btn-row justify-center">
             <a class="btn-primary" href="/child-intake">Back to intake</a>
           </div>
@@ -118,8 +118,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <script is:inline src="/config.js" defer></script>
     <script is:inline src="/assets/js/app.js?v=4" defer></script>
     <script is:inline src="/assets/js/results-card-alignment.js" defer></script>
+    <script is:inline src="/assets/js/child-results-data.js" defer></script>
     <script is:inline src="/assets/js/child-results-tabs.js" defer></script>
-    <script is:inline src="/assets/js/child-results-premium-adapter.js" defer></script>
     <script is:inline src="/assets/js/child-results.js" defer></script>
     <script is:inline src="/assets/js/results-premium.js" defer></script>
   </Fragment>

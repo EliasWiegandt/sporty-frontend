@@ -1563,8 +1563,7 @@
 
   function isRenderablePremiumPayload(payload) {
     if (!payload || typeof payload !== 'object') return false;
-    if (!Array.isArray(payload.matches) || payload.matches.length === 0) return false;
-    return payload.matches.some((match) => match && typeof match === 'object' && match.optimal_body);
+    return String(payload.analysis_type || '').trim().toLowerCase() === 'premium';
   }
 
   async function loadHistory(userId) {
@@ -1577,7 +1576,7 @@
     if (!client) return;
 
     try {
-      // Read from recommendations so premium card links only point to renderable premium payloads.
+      // Premium history is now run-id driven. Do not require a top-3 payload blob here.
       const { data: adultData, error: adultError } = await client
         .from('recommendations')
         .select('id,created_at,summary,result_payload')
@@ -1613,27 +1612,40 @@
 
       let childItems = [];
       try {
-        const { data: childData, error: childError } = await client
-          .from('child_forecast_runs')
-          .select('id,forecasted_at,metadata')
+        const { data: guardianLinks, error: guardianError } = await client
+          .from('guardianships')
+          .select('child_id')
           .eq('guardian_user_id', userId)
-          .order('forecasted_at', { ascending: false });
-        if (childError) throw childError;
+          .eq('status', 'active');
+        if (guardianError) throw guardianError;
 
-        childItems = (childData || []).map((item) => {
-          const metadata = item.metadata || {};
-          const premium = metadata.child_premium_analysis || {};
-          const suggested = premium.suggested_sport || 'Child forecast run';
-          return {
-            id: item.id,
-            itemType: 'child_run',
-            title: 'Child Forecast Analysis',
-            date: item.forecasted_at || item.created_at,
-            summary: `Top match: ${suggested}`,
-            isPremium: true,
-            link: '/child-results',
-          };
-        });
+        const childIds = Array.from(
+          new Set((guardianLinks || []).map((row) => row?.child_id).filter(Boolean))
+        );
+
+        if (childIds.length > 0) {
+          const { data: childData, error: childError } = await client
+            .from('child_forecast_runs')
+            .select('id,child_id,forecasted_at,metadata')
+            .in('child_id', childIds)
+            .order('forecasted_at', { ascending: false });
+          if (childError) throw childError;
+
+          childItems = (childData || []).map((item) => {
+            const metadata = item.metadata || {};
+            const premium = metadata.child_premium_analysis || {};
+            const suggested = premium.suggested_sport || 'Child forecast run';
+            return {
+              id: item.id,
+              itemType: 'child_run',
+              title: 'Child Forecast Analysis',
+              date: item.forecasted_at || item.created_at,
+              summary: `Top match: ${suggested}`,
+              isPremium: true,
+              link: `/child-results?id=${item.id}&tab=matches`,
+            };
+          });
+        }
       } catch (error) {
         console.warn('[Dashboard] Child run history unavailable; continuing with adult history', error);
       }

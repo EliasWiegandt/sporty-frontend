@@ -24,14 +24,15 @@ Signup legal gate posture: sign-up now requires Terms acceptance, Privacy acknow
 - Proxy `/api/legal/status` and enforce a hard checkout legal gate: purchases require current terms/privacy acceptance versions before Stripe redirect.
 - Proxy `/api/intake/prefill` to the backend canonical saved-analysis prefill endpoint (`/v1/intake-prefill`) so adult intake uses one prefill source.
 - Free adult match now requires the full measurement set (birthday, sex, height, weight, arm span, leg inseam, shoulder width, pelvic bone width, torso length, hand length, foot length, ankle circumference, wrist circumference) and renders numeric inputs with +/- controls, contextual tooltips, and autosave across steps. Premium-only inputs (preferences, goals, injuries) remain locked behind credits until a paid analysis is available.
-- When an authenticated user has credits, the intake toggles “Apply credit” to run `/api/recommend-adult-premium`; the premium journey redirects to `/results/premium` with component breakdowns pulled from the backend.
+- When an authenticated user has credits, the intake toggles “Apply credit” to run `/api/recommend-adult-premium`; the premium journey redirects to `/results/premium?id=<recommendation_id>` and the page loads the stored premium ranking through `/api/premium-results`.
 - Adult intake now exposes two routes (`/intake` and `/intake-premium`) that both hydrate the Preact island at `src/components/intake/IntakeApp.tsx`; the free page keeps traits locked behind the premium controller, while the premium page flips the `mode` prop so the traits/goals/injuries steps appear and the credit-backed submission posts to `/api/recommend-adult-premium`.
 - The payload sent to `/api/recommend-adult-premium` now includes the trait answers collected in the Traits step (`muscle_fiber`, `metabolic_tendency`, `joint_laxity`, `foot_arch`, `temperature_tolerance`, `handedness`, `footedness`) so the matching service can incorporate those signals into premium scoring.
 - Trait/measurement language is now backend-canonical: intake traits + measurement config load from `/api/intake-catalog`, and result/drill-down trait displays consume backend `trait_label` + `*_value_label` fields (no frontend underscore-humanize fallback for trait ids/values). Trait-step heading/subheading copy is frontend-owned, not catalog-driven.
 - Injury severity language is now backend-canonical too: premium adult + child injury severity options/defaults come from `/api/intake-catalog`, and premium result surfaces should prefer backend `severity_label` + `guidance` fields over raw severity ids.
 - Child race language is backend-canonical too: `/api/intake-catalog` now supplies `child_forecast.race_options`, child intake submits canonical `race` ids, and result pages should render the catalog label rather than a hard-coded ethnicity string.
-- Child analysis now requires a child credit up front; guardians collect measurements, apply the credit, and receive both the forecast and premium sport matches in the same flow (`/child-intake` → `/child-results?tab=matches`, with a Forecast tab alongside it).
-- `/child-results` now includes a guardian “Download PDF (Top 3 matches)” export path designed for post-7-day record keeping.
+- Child analysis now requires a child credit up front; guardians collect measurements, apply the credit, and receive both the forecast and premium sport matches in the same flow (`/child-intake` → `/child-results?id=<run_id>&tab=matches`, with a Forecast tab alongside it).
+- `/child-results` now includes a guardian “Download PDF (Top 10 matches)” export path designed for post-7-day record keeping.
+- Premium results are now browsable ranked datasets, not fixed top-3 blobs. Adult premium and child premium share the same endpoint-driven browser: first view shows top 3, users can move one card at a time, toggle unique-sport projection, jump to worst matches, and filter by sport. `unique_sports` is a view toggle only, not a scoring rule.
 - The free results page now mirrors the journey vision with a component impact bar, five match cards, measurement comparison tables (with fit bars), and highlight reasoning drawn from each measurement so the narrative stays grounded in the research. Interactive adjustment controls remain deferred until preview endpoints exist.
 - Premium/child premium component-impact lists now read raw backend scoring semantics: `raw_weight`, `raw_contribution`, and `score` are authored by the backend scoring policy, while the UI displays those as weight/contribution/score percentages without assuming component weights sum to 1.
 - Free, premium, and child-premium result cards render sport detail rows from `optimal_body.subcategory.hierarchy` (ordered array from backend taxonomy seed), not from object-key order. This guarantees YAML-defined order such as `sport -> role -> subrole` and `sport -> stroke -> distance`.
@@ -44,12 +45,13 @@ Signup legal gate posture: sign-up now requires Terms acceptance, Privacy acknow
 - Drill-down source numbering is global across sections (Measurements -> Traits -> Goals -> Preferences -> Injuries -> Past-sport transfer) so refs never reset per subsection.
 - Drill-down `Sources` table now renders canonical citation columns (`Title`, `Authors`, `Year`, `Publisher`, `Use`, `URL`); `short_name` is intentionally not rendered.
 - Drill-down disclaimer policy: strong safety/liability notice at top and repeated in footer; pages are indexable and intended for public transparency.
-- Child intake primes the deterministic test family (prefilled on preview branches) and collects child + parent measurements plus premium inputs; once a child credit is applied we post to `/api/forecast-child`, capture the forecast, and render both premium matches and forecast details in `/child-results` (tabs).
+- Child intake primes the deterministic test family (prefilled on preview branches) and collects child + parent measurements plus premium inputs; once a child credit is applied we post to `/api/forecast-child`, read back `run_id`, and render both premium matches and forecast details from the persisted `child_forecast_runs` row in `/child-results` (tabs).
 - Logged-in intakes also capture past sports (searchable `sports_subcategories`, using the long-form subcategory `name` such as "Soccer - Forward - Winger", plus intensity and enjoyment/flair/skill flags) and sync them to Supabase before saving recommendations.
 - Logged-in free users can run and store analyses once `basic_processing` consent is granted; anonymous free runs are preview-only and not persisted as identifiable history.
 - The dashboard views stored recommendations (free + premium) alongside updated credit balances so users and guardians can revisit previous analyses.
 - The dashboard exposes consent-category controls (`basic_processing`, `sensitive_health_processing`, `child_data_processing`) plus account deletion (permanent account closure with immediate sign-out).
 - Dashboard consent revoke behavior now waits for backend purge completion and then refreshes history so visible cards match the final deletion outcome.
+- Child forecast history on `/dashboard` is child-linked, not creator-owned: any active guardian linked to the same child sees the same shared child run card.
 - Consent revoke deletion mapping (UI contract):
   - `basic_processing`: removes saved adult measurements plus quick/premium adult history.
   - `sensitive_health_processing`: removes saved adult premium analyses and premium input memory.
@@ -222,11 +224,11 @@ Both `/intake` and `/intake-premium` hydrate the same Preact island (`src/compon
 
 ---
 
-## Results Storage Note (Session Storage)
+## Results Storage Note
 
 - `/results` reads the most recent free analysis from `sessionStorage["sporty:lastResult"]`.
-- `/results/premium` reads the most recent premium analysis from `sessionStorage["sporty:lastPremiumResult"]`.
-- `sessionStorage` is scoped to the page origin (scheme + host + port). If you submit intake on one origin (e.g. `http://localhost:4321`) but view results on another (e.g. `http://127.0.0.1:8787`), the results pages will appear empty because the stored payload is not shared across origins.
+- `/results/premium?id=<recommendation_id>` is run-id driven and fetches the stored premium ranking from `/api/premium-results`; do not reintroduce sessionStorage as the canonical premium-results source.
+- `sessionStorage` is still origin-scoped, so free-result previews can appear empty if submit and results load on different origins (e.g. `http://localhost:4321` vs `http://127.0.0.1:8787`).
 
 ---
 
@@ -246,7 +248,7 @@ Both `/intake` and `/intake-premium` hydrate the same Preact island (`src/compon
 2. Split Supabase auth/UI helpers into ES modules for easier test coverage.
 3. Introduce content collections for FAQs and policy pages so marketing edits require less HTML wrangling.
 4. Evaluate adding `astro:transitions` or partial hydration for future interactive dashboards once paid flows ship.
-5. Integrate authenticated storage of child forecasts once backend exposes guardian-scoped history APIs (replace sessionStorage stopgap).
+5. Keep child-results rendering DB-backed by `child_forecast_runs` run id; do not reintroduce browser-session-only child history.
 6. Coordinate with backend when Stripe + credits launch to surface purchase states in the UI.
 
 

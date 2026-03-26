@@ -22,34 +22,28 @@
     "weight_kg",
   ];
 
-  const rawResult = sessionStorage.getItem("sporty:lastChildForecast");
-  if (!rawResult) {
+  const loader = window.SportyChildResultsData;
+  if (!loader || typeof loader.loadNormalizedResult !== "function") {
     showEmpty();
     return;
   }
 
-  let result;
-  try {
-    result = JSON.parse(rawResult);
-  } catch (error) {
-    console.error("Failed to parse stored child forecast", error);
-    showEmpty();
-    return;
-  }
-
-  const rawRequest = sessionStorage.getItem("sporty:lastChildForecastRequest");
-  let requestPayload = null;
-  if (rawRequest) {
-    try {
-      requestPayload = JSON.parse(rawRequest);
-    } catch (error) {
-      console.warn("Failed to parse stored child forecast request", error);
-    }
-  }
-
-  renderSummary(result, requestPayload);
-  renderMeasurements(result);
-  hydrateRaceLabel();
+  loader
+    .loadNormalizedResult()
+    .then((result) => {
+      if (!result) {
+        showEmpty();
+        return;
+      }
+      const requestPayload = result.request_payload || null;
+      renderSummary(result, requestPayload);
+      renderMeasurements(result);
+      hydrateRaceLabel(result, requestPayload);
+    })
+    .catch((error) => {
+      console.error("Failed to load child forecast run", error);
+      showEmpty();
+    });
 
   function showEmpty() {
     if (emptyStateEl) emptyStateEl.hidden = false;
@@ -107,7 +101,7 @@
     });
   }
 
-  async function hydrateRaceLabel() {
+  async function hydrateRaceLabel(result, requestPayload) {
     if (!requestPayload || !requestPayload.race) return;
     try {
       const response = await fetch("/api/intake-catalog", {

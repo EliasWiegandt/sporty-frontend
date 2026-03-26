@@ -25,13 +25,6 @@
 
     const stored = normalizeTab(sessionStorage.getItem('sporty:childResultsTab'));
     if (stored) return stored;
-
-    const rawForecast = sessionStorage.getItem('sporty:lastChildForecast');
-    if (!rawForecast) return 'forecast';
-    try {
-      const parsed = JSON.parse(rawForecast);
-      if (parsed && parsed.premium_analysis) return 'matches';
-    } catch (_) {}
     return 'forecast';
   };
 

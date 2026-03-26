@@ -826,10 +826,6 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
           }
         })();
 
-        const storageKey = wantsPremium
-          ? "sporty:lastPremiumResult"
-          : "sporty:lastResult";
-        sessionStorage.setItem(storageKey, bodyText);
         if (!wantsPremium) {
           sessionStorage.setItem("sporty:lastResult", bodyText);
         } else if (
@@ -874,7 +870,14 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
           }
         }
 
-        window.location.assign(wantsPremium ? "/results/premium" : "/results");
+        const premiumRunId =
+          resultJson?.run_id ||
+          resultJson?.storage?.recommendation_id ||
+          null;
+        const premiumTarget = premiumRunId
+          ? `/results/premium?id=${encodeURIComponent(String(premiumRunId))}`
+          : "/results/premium";
+        window.location.assign(wantsPremium ? premiumTarget : "/results");
       } catch (error) {
         setStatus(
           (error as Error).message || "Unexpected error, please try again.",

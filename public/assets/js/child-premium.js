@@ -146,9 +146,6 @@
         throw new Error(detail);
       }
 
-      const serialized = resultJson ? JSON.stringify(resultJson) : bodyText;
-      sessionStorage.setItem('sporty:lastChildForecast', serialized);
-      sessionStorage.setItem('sporty:lastChildForecastRequest', JSON.stringify(payload));
       if (resultJson && resultJson.premium_analysis && resultJson.premium_analysis.credit) {
         try {
           sessionStorage.setItem(
@@ -161,9 +158,15 @@
       }
 
       try {
+        const runId = resultJson && resultJson.run_id ? String(resultJson.run_id) : '';
+        if (!runId) {
+          throw new Error('Missing child run id in premium response.');
+        }
         sessionStorage.setItem('sporty:childResultsTab', 'matches');
+        window.location.assign(`/child-results?id=${encodeURIComponent(runId)}&tab=matches`);
+        return;
       } catch (_) {}
-      window.location.assign('/child-results?tab=matches');
+      throw new Error('Child analysis completed, but no run id was returned.');
     } catch (error) {
       console.error('Child premium analysis failed', error);
       setStatus(error.message || 'Unexpected error, please try again.', 'error');

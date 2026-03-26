@@ -730,23 +730,24 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
         throw new Error(detail);
       }
 
-      sessionStorage.setItem("sporty:lastChildForecast", text);
-      sessionStorage.setItem(
-        "sporty:lastChildForecastRequest",
-        JSON.stringify(payload),
-      );
       try {
         const parsed = JSON.parse(text);
         const credit = parsed?.premium_analysis?.credit?.totals;
+        const runId = parsed?.run_id;
         if (credit) {
           sessionStorage.setItem(
             "sporty:lastCreditSnapshot",
             JSON.stringify(credit),
           );
         }
+        if (!runId) {
+          throw new Error("Missing child run id in forecast response.");
+        }
+        sessionStorage.setItem("sporty:childResultsTab", "matches");
+        window.location.assign(`/child-results?id=${encodeURIComponent(String(runId))}&tab=matches`);
+        return;
       } catch (_) {}
-      sessionStorage.setItem("sporty:childResultsTab", "matches");
-      window.location.assign("/child-results?tab=matches");
+      throw new Error("Child forecast completed, but no run id was returned.");
     } catch (err: any) {
       console.error("[ChildIntake] Forecast failed", err);
       setStatus(err?.message || "Unexpected error, please try again.", "error");
