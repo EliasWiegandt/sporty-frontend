@@ -8,13 +8,6 @@ interface NavLink {
   external?: boolean;
 }
 
-interface NavAction {
-  href: string;
-  label: string;
-  variant?: 'solid' | 'ghost';
-  size?: 'md' | 'sm';
-}
-
 interface Props {
   title?: string;
   description?: string;
@@ -22,8 +15,6 @@ interface Props {
   bodyClass?: string;
   navLabel?: string;
   navLinks?: NavLink[];
-  primaryAction?: NavAction | null;
-  secondaryAction?: NavAction | null;
   showAuth?: boolean;
   showHeader?: boolean;
 }
@@ -36,8 +27,6 @@ const defaultNavLinks: NavLink[] = [
   { href: '/dashboard', label: 'Dashboard' },
 ];
 
-const defaultPrimaryAction: NavAction = { href: '/intake', label: 'Try Quick Analysis' };
-
 const {
   title = 'Sporty',
   description = 'Discover sports that fit your body with Sporty.',
@@ -45,21 +34,14 @@ const {
   bodyClass = '',
   navLabel = 'Primary',
   navLinks: navLinksProp,
-  primaryAction: primaryActionProp,
-  secondaryAction = null,
   showAuth = true,
   showHeader = true,
 } = Astro.props as Props;
 
 const navLinks = navLinksProp ?? defaultNavLinks;
-const primaryAction = primaryActionProp ?? defaultPrimaryAction;
-
-const actions = [primaryAction, secondaryAction].filter(
-  (action): action is NavAction => Boolean(action)
-);
 
 const hasNavContent = navLinks.length > 0;
-const hasActionContent = actions.length > 0 || showAuth;
+const mobileMenuId = 'primary-nav-mobile';
 
 ---
 <!doctype html>
@@ -87,7 +69,7 @@ const hasActionContent = actions.length > 0 || showAuth;
     {showHeader && (
       <header class="sticky top-0 z-50 border-b border-slate-200/60 bg-slate-50/90 backdrop-blur-md">
         <nav
-          class="mx-auto flex w-full max-w-[min(96rem,92vw)] items-center justify-between gap-3 px-4 py-4 sm:gap-4 md:px-6"
+          class="mx-auto flex w-full max-w-[min(96rem,92vw)] flex-wrap items-center justify-between gap-3 px-4 py-4 sm:gap-4 md:px-6"
           aria-label={navLabel}
         >
           <a
@@ -103,12 +85,88 @@ const hasActionContent = actions.length > 0 || showAuth;
             <span class="leading-tight no-underline">sporty</span>
           </a>
 
-          {hasNavContent && (
-            <div class="flex items-center gap-5">
-              {navLinks.map((link) => (
+          <div class="ml-auto flex items-center gap-2 md:hidden">
+            {showAuth && (
+              <div class="inline-flex items-center gap-2" data-auth-controls>
+                <button
+                  class="btn-pill btn-pill-secondary btn-pill-sm"
+                  type="button"
+                  data-auth-open
+                  data-auth-mode="signin"
+                >
+                  Sign up / Log in
+                </button>
+                <button
+                  class="btn-pill btn-pill-secondary btn-pill-sm"
+                  type="button"
+                  data-auth-signout
+                  hidden
+                >
+                  Log out
+                </button>
+              </div>
+            )}
+            <button
+              type="button"
+              class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-slate-200 bg-white px-3 text-slate-800 shadow-sm transition hover:border-teal-300 hover:text-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2"
+              data-mobile-nav-toggle
+              aria-expanded="false"
+              aria-controls={mobileMenuId}
+              aria-label="Open navigation menu"
+            >
+              <span class="sr-only">Menu</span>
+              <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5">
+                <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.75"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="hidden items-center gap-5 md:flex">
+            {hasNavContent && navLinks.map((link) => (
+              <a
+                href={link.href}
+                class="type-body font-medium text-slate-600 transition-colors hover:text-teal-700"
+                rel={link.external ? 'noreferrer noopener' : undefined}
+                target={link.external ? '_blank' : undefined}
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+
+          <div class="hidden items-center gap-3 md:flex md:gap-4">
+            {showAuth && (
+              <div class="inline-flex items-center gap-2" data-auth-controls>
+                <button
+                  class="btn-pill btn-pill-secondary btn-pill-sm"
+                  type="button"
+                  data-auth-open
+                  data-auth-mode="signin"
+                >
+                  Sign up / Log in
+                </button>
+                <button
+                  class="btn-pill btn-pill-secondary btn-pill-sm"
+                  type="button"
+                  data-auth-signout
+                  hidden
+                >
+                  Log out
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div
+            id={mobileMenuId}
+            class="hidden w-full rounded-[1.75rem] border border-slate-200/80 bg-white/95 p-4 shadow-lg md:hidden"
+            data-mobile-nav-panel
+          >
+            <div class="flex flex-col gap-3">
+              {hasNavContent && navLinks.map((link) => (
                 <a
                   href={link.href}
-                  class="type-body font-medium text-slate-600 transition-colors hover:text-teal-700"
+                  class="rounded-2xl px-3 py-3 type-body font-medium text-slate-700 transition-colors hover:bg-teal-50 hover:text-teal-700"
                   rel={link.external ? 'noreferrer noopener' : undefined}
                   target={link.external ? '_blank' : undefined}
                 >
@@ -116,50 +174,54 @@ const hasActionContent = actions.length > 0 || showAuth;
                 </a>
               ))}
             </div>
-          )}
-
-          {hasActionContent && (
-            <div class="flex items-center gap-3 md:gap-4">
-              {actions.map((action) => {
-                const isGhost = action.variant === 'ghost';
-                const classes = ['btn-pill'];
-                classes.push(isGhost ? 'btn-pill-secondary' : 'btn-pill-primary');
-                if (action.size === 'sm') {
-                  classes.push('btn-sm');
-                }
-                return (
-                  <a href={action.href} class={classes.filter(Boolean).join(' ')}>
-                    {action.label}
-                  </a>
-                );
-              })}
-              {showAuth && (
-                <div class="inline-flex items-center gap-2" data-auth-controls>
-                  <button
-                    class="btn-pill btn-pill-secondary btn-sm"
-                    type="button"
-                    data-auth-open
-                    data-auth-mode="signin"
-                  >
-                    Sign up / Log in
-                  </button>
-                  <button
-                    class="btn-pill btn-pill-secondary btn-sm"
-                    type="button"
-                    data-auth-signout
-                    hidden
-                  >
-                    Log out
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+          </div>
         </nav>
       </header>
     )}
     <slot />
     <AuthModal />
+    {showHeader && (
+      <script is:inline>
+        (() => {
+          const toggle = document.querySelector('[data-mobile-nav-toggle]');
+          const panel = document.querySelector('[data-mobile-nav-panel]');
+          if (!(toggle instanceof HTMLButtonElement) || !(panel instanceof HTMLElement)) {
+            return;
+          }
+
+          const closeMenu = () => {
+            toggle.setAttribute('aria-expanded', 'false');
+            toggle.setAttribute('aria-label', 'Open navigation menu');
+            panel.classList.add('hidden');
+          };
+
+          const openMenu = () => {
+            toggle.setAttribute('aria-expanded', 'true');
+            toggle.setAttribute('aria-label', 'Close navigation menu');
+            panel.classList.remove('hidden');
+          };
+
+          toggle.addEventListener('click', () => {
+            const expanded = toggle.getAttribute('aria-expanded') === 'true';
+            if (expanded) {
+              closeMenu();
+            } else {
+              openMenu();
+            }
+          });
+
+          panel.querySelectorAll('a').forEach((link) => {
+            link.addEventListener('click', closeMenu);
+          });
+
+          window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768) {
+              closeMenu();
+            }
+          });
+        })();
+      </script>
+    )}
     <slot name="scripts" />
   </body>
 </html>

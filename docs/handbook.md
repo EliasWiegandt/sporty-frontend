@@ -73,7 +73,7 @@ Signup legal gate posture: sign-up now requires Terms acceptance, Privacy acknow
 - Family dashboard grouping contract: each child now renders as a distinct `family-child-card` (medium-contrast border, subtle tint, and compact child-name header row) with light per-section separators so multi-child lists have clear start/end boundaries.
 - Surface Supabase-powered auth/consent flows without persisting any sensitive keys client-side.
 - Honour explicit consent before storing measurements, preferences/goals, injuries, or child data; provide preview mode if consent is declined.
-- _Current UX scope: design the MVP as a desktop web-first experience; responsive/mobile treatments will follow in subsequent iterations._
+- _Current UX scope: full frontend mobile-friendliness is now in scope. Treat desktop and mobile as first-class surfaces, with modern phone widths as the primary responsive anchor for current work._
 
 ---
 
@@ -200,12 +200,13 @@ Both `/intake` and `/intake-premium` hydrate the same Preact island (`src/compon
 2. `npm run dev` to work in Astro’s dev server (`http://localhost:4321`). Fastest loop for layout/content.
 3. To test end-to-end with the generated Worker proxy:
   ```bash
-  npm run build           # emit dist/_worker.js and assets (or run `make run-frontend`)
-  wrangler dev            # `make run-frontend` first wipes dist/, rebuilds, then runs wrangler dev
+  make run-frontend       # builds the Worker bundle and runs local Wrangler at http://127.0.0.1:8787
   ```
    Provide the same env vars as production (API key, Supabase URLs, Stripe publishable key) via `.dev.vars` or Wrangler CLI flags.
-4. QA the child flow by visiting `/child-intake` after seeding the test family (`make seed-test-family` in the backend repo). Preview/test branches auto-prefill the form for faster checks.
-5. Screenshot helper: `make snap` still hits `http://127.0.0.1:8787` expecting `wrangler dev` to be running.
+4. Run the backend locally with `make run-backend` in `../sporty-backend` so Worker proxy routes resolve against the FastAPI service.
+5. Canonical UI verification path: use Playwright-driven browser checks against `http://127.0.0.1:8787`, including mobile-style verification with phone-width viewports and touch-style interaction.
+6. QA the child flow by visiting `/child-intake` after seeding the test family (`make seed-test-family` in the backend repo). Preview/test branches auto-prefill the form for faster checks.
+7. Legacy `make snap` / Puppeteer scripts are no longer the canonical verification loop; keep docs and future workflow updates Playwright-first.
 
 ---
 

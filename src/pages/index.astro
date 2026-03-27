@@ -28,9 +28,11 @@ import {
       </div>
       <figure class="hero-visual" aria-label="Watercolor illustration highlighting a multi-sport training scene.">
         <img
+          class="h-full w-full object-cover"
           data-image-key="landing.hero.banner"
           alt="Watercolor illustration of a person being measured and other people in a park captured in training moments, all in a single panoramic scene."
-          loading="lazy"
+          loading="eager"
+          fetchpriority="high"
         />
       </figure>
     </section>
@@ -218,7 +220,7 @@ import {
     <div class="footer-inner">
       <div>
         <strong>Sporty</strong>
-        <p class="lead-copy">Helping every body find their sport. Unlimited free adult matches, $5 premium credits, and guardian-backed child insights.</p>
+        <p class="lead-copy">Helping every body find their sport.</p>
       </div>
       <nav class="footer-nav" aria-label="Footer">
         <a href="/intake">Start free</a>

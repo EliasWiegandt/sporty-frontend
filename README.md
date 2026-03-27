@@ -10,9 +10,19 @@ npm run dev
 
 Worker/proxy mode:
 ```bash
-npm run build
-wrangler dev
+make run-frontend
 ```
+
+Backend companion:
+```bash
+cd ../sporty-backend
+make run-backend
+```
+
+## Verification
+- Canonical browser QA path: Playwright-driven checks against the local Worker app at `http://127.0.0.1:8787`.
+- For end-to-end verification, keep the backend running locally and drive the frontend through the Worker proxy.
+- Legacy `make snap` / Puppeteer snapshot scripts are not the canonical verification loop anymore.
 
 ## Deploy
 - Workflow: `.github/workflows/deploy.yml`
@@ -35,4 +45,5 @@ wrangler dev
 ## Canonical Docs
 - Engineering reference: [docs/handbook.md#2-architecture-overview](docs/handbook.md#2-architecture-overview)
 - Product journeys + consent UX: `docs/journeys.md`
+- Mobile work plan + execution loop: `docs/mobile-friendlyness-plan.md`
 - Backend contracts/ops: [../sporty-backend/docs/handbook.md#8-operational-playbooks](../sporty-backend/docs/handbook.md#8-operational-playbooks)

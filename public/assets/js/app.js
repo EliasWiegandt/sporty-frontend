@@ -36,6 +36,7 @@
     authOverlay: null,
     authMode: 'signin',
     authStatusEl: null,
+    postAuthRedirectPath: null,
     readyResolve: null,
   };
 
@@ -252,10 +253,19 @@
   }
 
   function updateSession(session) {
+    const hadUser = Boolean(state.user);
     state.session = session;
     state.user = session && session.user ? session.user : null;
 
     updateAuthControls();
+
+    if (!hadUser && state.user && state.postAuthRedirectPath) {
+      const nextPath = state.postAuthRedirectPath;
+      state.postAuthRedirectPath = null;
+      closeAuthOverlay();
+      window.location.assign(nextPath);
+      return;
+    }
 
     if (state.user) {
       loadConsent();
@@ -512,6 +522,7 @@
     }
 
     updateAuthStatus('Working…');
+    state.postAuthRedirectPath = '/dashboard';
 
     try {
       if (state.authMode === 'signin') {
@@ -521,7 +532,6 @@
         });
         if (error) throw error;
         updateAuthStatus('Success! Redirecting…', 'info');
-        setTimeout(() => closeAuthOverlay(), 400);
       } else {
         const { data, error } = await state.client.auth.signUp({
           email,
@@ -538,14 +548,14 @@
                 guardian_attestation: false,
                 country_of_residence: country,
               });
-              updateAuthStatus('Welcome back! Legal acceptance recorded.', 'info');
-              setTimeout(() => closeAuthOverlay(), 400);
+              updateAuthStatus('Welcome back! Redirecting to dashboard…', 'info');
               return;
             }
             updateAuthStatus(
               'This email is already registered. The password did not match. Use “Reset password” below.',
               'error'
             );
+            state.postAuthRedirectPath = null;
             showResetPasswordAction(email);
             return;
           }
@@ -559,13 +569,20 @@
             guardian_attestation: false,
             country_of_residence: country,
           });
-          updateAuthStatus('Account created and legal acceptance recorded. You can now log in.', 'info');
-          setTimeout(() => closeAuthOverlay(), 400);
+          if (data.session || state.session) {
+            updateAuthStatus('Account created. Redirecting to dashboard…', 'info');
+          } else {
+            state.postAuthRedirectPath = null;
+            updateAuthStatus('Account created. Please log in to continue.', 'info');
+            setTimeout(() => closeAuthOverlay(), 400);
+          }
         } else {
+          state.postAuthRedirectPath = null;
           updateAuthStatus('Unable to finalize signup right now. Please try again.', 'error');
         }
       }
     } catch (error) {
+      state.postAuthRedirectPath = null;
       updateAuthStatus(error.message || 'Authentication failed.', 'error');
     }
   }
