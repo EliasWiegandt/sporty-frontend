@@ -57,10 +57,6 @@
     summaryEl.hidden = false;
     if (emptyStateEl) emptyStateEl.hidden = true;
 
-    const childAge = res.child_age_years
-      ? `${Number(res.child_age_years).toFixed(2)} years`
-      : "Unknown age";
-
     const scenario = res.weight_scenario
       ? res.weight_scenario.replace(/_/g, " ")
       : "child only";
@@ -70,16 +66,8 @@
     summaryMetaEl.innerHTML = "";
     const entries = [
       {
-        label: "Child age",
-        value: childAge,
-      },
-      {
         label: "Child cohort",
         value: res.child_age_group?.label || "—",
-      },
-      {
-        label: "Adult cohort",
-        value: res.adult_age_group?.label || "25-35 years",
       },
       {
         label: "Weighting scenario",

@@ -73,11 +73,11 @@ Definition of "looks ok" for a completed item:
 | ID | Area | Problem | Definition of done | Playwright check | Dependencies | Status |
 | --- | --- | --- | --- | --- | --- | --- |
 | M001 | Global shell | Header/nav does not have a real mobile navigation pattern. | Header has a usable phone nav pattern with no overlap. | Open `/` at `390x844`; open/close nav; confirm links + CTA reachable. | none | done |
-| M002 | Global shell | Header auth controls crowd the top bar on phone widths. | Auth actions fit cleanly in the mobile header/nav state. | Open `/` at `390x844`; inspect signed-out header state. | M001 preferred | todo |
-| M003 | Global shell | Header primary CTA may crowd branding/nav on narrow phones. | Brand, nav trigger, and primary CTA coexist without collision. | Open `/` at `320x712`; inspect top bar before scroll. | M001 preferred | todo |
-| M004 | Global shell | Footer link groups may not stack cleanly on phones. | Footer remains readable and balanced on phone widths. | Open `/` and `/results` at `390x844`; scroll to footer. | M001 preferred | todo |
-| M005 | Global spacing | Global page padding is too desktop-biased. | Shared page padding feels balanced on phone across major pages. | Open `/`, `/intake`, `/dashboard` at `390x844`; inspect page edges. | none | todo |
-| M006 | Global spacing | Shared card spacing is too roomy or cramped on phones. | Card primitives feel proportionate on phone widths without page-local hacks. | Open `/intake`, `/results`, `/dashboard` at `390x844`; inspect card density. | M005 preferred | todo |
+| M002 | Global shell | Header auth controls crowd the top bar on phone widths. | Auth actions fit cleanly in the mobile header/nav state. | Open `/` at `390x844`; inspect signed-out header state. | M001 preferred | done |
+| M003 | Global shell | Header primary CTA may crowd branding/nav on narrow phones. | Brand, nav trigger, and primary CTA coexist without collision. | Open `/` at `320x712`; inspect top bar before scroll. | M001 preferred | done |
+| M004 | Global shell | Footer link groups may not stack cleanly on phones. | Footer remains readable and balanced on phone widths. | Open `/` and `/results` at `390x844`; scroll to footer. | M001 preferred | done |
+| M005 | Global spacing | Global page padding is too desktop-biased. | Shared page padding feels balanced on phone across major pages. | Open `/`, `/intake`, `/dashboard` at `390x844`; inspect page edges. | none | done |
+| M006 | Global spacing | Shared card spacing is too roomy or cramped on phones. | Card primitives feel proportionate on phone widths without page-local hacks. | Open `/intake`, `/results`, `/dashboard` at `390x844`; inspect card density. | M005 preferred | done |
 | M007 | Global controls | Buttons/pills may miss touch-friendly size targets. | Shared buttons/pills are comfortably tappable on phones. | Open `/`, `/intake`, `/dashboard` at `390x844`; inspect major actions. | none | todo |
 | M008 | Global overflow | App shell may allow unintended horizontal overflow. | No root-level side-scroll on core pages at phone widths. | Open `/`, `/intake`, `/results`, `/dashboard` at `320x712`; verify no horizontal scroll. | M001-M007 partial reuse | todo |
 | M009 | Home | Hero content stack is too desktop-shaped. | Hero copy, CTA group, and media stack cleanly on phones. | Open `/` at `390x844`; inspect hero before scroll. | M001, M005 | todo |
@@ -164,6 +164,41 @@ Template:
 - Pages checked: `/`
 - QA notes: Replaced always-inline desktop nav with a phone menu trigger + collapsible mobile panel. Verified in Playwright at `390x844`: menu button visible, panel opens, nav links and sign-in action are reachable, panel closes cleanly.
 - Follow-ups: `M002`, `M003`
+
+### 2026-03-27 — M002
+- Outcome: pass
+- Areas touched: `src/layouts/BaseLayout.astro`
+- Pages checked: `/`
+- QA notes: Removed the header primary CTA, kept the auth CTA in the mobile header row, and removed duplicated auth controls from the burger panel. Verified in Playwright on signed-out landing at `390x844`, plus narrow-phone check: no overlap between brand, auth CTA, and menu trigger; header width stayed within the viewport.
+- Follow-ups: `M003`, `M004`
+
+### 2026-03-27 — M003
+- Outcome: pass
+- Areas touched: `src/layouts/BaseLayout.astro`
+- Pages checked: `/`
+- QA notes: Item became obsolete after removing the header primary CTA from both desktop and mobile header states. Narrow-phone Playwright check showed brand, auth CTA, and menu trigger fit without overlap.
+- Follow-ups: `M004`, `M005`
+
+### 2026-03-27 — M004
+- Outcome: pass
+- Areas touched: `src/styles/tailwind.css`
+- Pages checked: `/`, `/results`
+- QA notes: Re-verified live in Playwright at `390x844`. Both footer variants render as centered vertical stacks with readable spacing and no awkward wrap rows.
+- Follow-ups: `M006`, `M007`
+
+### 2026-03-27 — M005
+- Outcome: pass
+- Areas touched: `src/styles/tailwind.css`
+- Pages checked: `/`, `/intake`, `/dashboard`
+- QA notes: Shared mobile gutters were stacking up through `main` plus shell wrappers. Tightened phone-width `main` padding, reduced mobile `section-shell` inset/padding, and let `dashboard-shell` use full available width on phones so the core pages sit closer to the viewport edge without feeling cramped.
+- Follow-ups: `M006`, `M007`
+
+### 2026-03-27 — M006
+- Outcome: pass
+- Areas touched: `src/styles/tailwind.css`
+- Pages checked: `/intake`, `/results`, `/dashboard`
+- QA notes: Tightened the shared mobile card primitives instead of patching page-by-page: `card-shell`, `sample-card`, `dashboard-card`, `history-card`, and `stat-card` now use smaller phone padding/radii, with denser grid gaps. Playwright verification at `390x844` showed cleaner card density on intake and dashboard without cramped text or broken structure.
+- Follow-ups: `M007`, `M008`
 
 ## 6. Notes
 

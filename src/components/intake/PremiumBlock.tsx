@@ -218,11 +218,14 @@ const PremiumBlock: FunctionalComponent<PremiumBlockProps> = ({ activeSection, v
                       className="input-field w-full"
                       placeholder="Search injury areas…"
                       data-search-input
+                      data-search-input-subcat
                     />
+                    <input type="hidden" data-field="injury_id" />
                     <input type="hidden" data-field="injury_subcategory_id" />
                     <div
                       className="absolute inset-x-0 top-full z-20 mt-2 max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-lg hidden"
                       data-search-results
+                      data-search-results-subcat
                     />
                   </div>
                 </label>

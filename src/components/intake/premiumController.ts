@@ -44,6 +44,11 @@ type InjuryEntry = {
   severitySelect: HTMLSelectElement | null;
 };
 
+type PriorityPrefillSelection = {
+  id?: string | null;
+  priority?: string | null;
+};
+
 function createPriorityList(
   root: HTMLElement | null,
   config: {
@@ -181,7 +186,7 @@ function createPriorityList(
     });
   };
 
-  const addEntry = (defaultId?: string) => {
+  const addEntry = (defaultSelection?: string | PriorityPrefillSelection) => {
     if (!hasCapacity()) return;
     const clone = template.content.cloneNode(true) as DocumentFragment;
     const node = clone.querySelector<HTMLElement>('[data-item]');
@@ -202,9 +207,20 @@ function createPriorityList(
     const entry = { node, searchInput, hiddenId, results, priority, labelEl: null };
     state.entries.push(entry);
     itemsContainer.appendChild(node);
+    const defaultId =
+      typeof defaultSelection === 'string'
+        ? defaultSelection
+        : defaultSelection?.id
+          ? String(defaultSelection.id)
+          : '';
     wireSearch(entry, defaultId);
     renderPriorityOptions(priority);
-    if (priority && !priority.value) priority.value = config.defaultPriority || 'must_have';
+    if (priority) {
+      if (typeof defaultSelection !== 'string' && defaultSelection?.priority) {
+        priority.value = String(defaultSelection.priority);
+      }
+      if (!priority.value) priority.value = config.defaultPriority || 'must_have';
+    }
     updateUI();
   };
 
@@ -565,15 +581,7 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
     keyField: 'goal_id',
     max: 20,
   });
-  const injuryList = createPriorityList(injuryRoot, {
-    label: 'Injury area',
-    keyField: 'injury_subcategory_id',
-    max: 20,
-    priorityField: 'severity',
-    defaultPriority: '',
-    priorityOptions: [],
-    parentField: 'injury_id',
-  });
+  const injuryList = createInjuryList(injuryRoot, { max: 20 });
 
   let active = false;
   let applyCredit = false;
@@ -646,12 +654,18 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
 
       (pendingPrefillData.preferences || []).forEach((item) => {
         if (item?.preference_id) {
-          (preferenceList as any).addEntry?.(String(item.preference_id));
+          (preferenceList as any).addEntry?.({
+            id: String(item.preference_id),
+            priority: item.priority || null,
+          });
         }
       });
       (pendingPrefillData.goals || []).forEach((item) => {
         if (item?.goal_id) {
-          (goalList as any).addEntry?.(String(item.goal_id));
+          (goalList as any).addEntry?.({
+            id: String(item.goal_id),
+            priority: item.priority || null,
+          });
         }
       });
       (pendingPrefillData.injuries || []).forEach((item) => {
@@ -751,15 +765,7 @@ export function createPremiumController(config: PremiumControllerConfig): Premiu
         })),
         intakeCatalog.injuries.default_severity,
       );
-      const flatSubcats = Object.entries(taxonomy.injurySubcategories || {}).flatMap(([injuryId, subs]) =>
-        (subs || []).map((sub: any) => ({
-          id: sub.id,
-          name: sub.name,
-          description: sub.definition,
-          parentId: injuryId,
-        }))
-      );
-      injuryList.setOptions(flatSubcats);
+      injuryList.setOptions(taxonomy.injuries, taxonomy.injurySubcategories);
       const adultSensitiveConsentGranted =
         creditType === 'adult'
           ? Boolean(snapshot?.consents?.sensitive_health_processing?.granted)

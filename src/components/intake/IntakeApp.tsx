@@ -148,6 +148,8 @@ type IntakePrefillResponse = {
   sources?: Record<string, unknown>;
 };
 
+type PrefillPhase = "idle" | "loading" | "applied" | "failed";
+
 type IntakeAppProps = {
   mode: IntakeMode;
 };
@@ -184,6 +186,9 @@ const IntakeApp: FunctionalComponent<IntakeAppProps> = ({ mode }) => {
   >({});
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [prefillPhase, setPrefillPhase] = useState<PrefillPhase>("idle");
+  const [prefillError, setPrefillError] = useState<string | null>(null);
+  const [prefillPayload, setPrefillPayload] = useState<IntakePrefillResponse | null>(null);
   const [consentGiven, setConsentGiven] = useState(false);
   const consentIntentRef = useRef(false);
   const [consentSaving, setConsentSaving] = useState(false);
@@ -376,7 +381,8 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
   }, [sensitiveConsentSaving, sportySnapshot.user]);
 
   const currentStepIndexRef = useRef(currentStepIndex);
-  const prefillAppliedUserIdRef = useRef<string | null>(null);
+  const prefillAppliedKeyRef = useRef<string | null>(null);
+  const prefillRequestKeyRef = useRef<string | null>(null);
   const basicsTouchedRef = useRef<Set<string>>(new Set());
   const measurementsTouchedRef = useRef<Set<string>>(new Set());
   const traitsTouchedRef = useRef<Set<string>>(new Set());
@@ -388,11 +394,15 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
 
   useEffect(() => {
     if (!sportySnapshot.user?.id) {
-      prefillAppliedUserIdRef.current = null;
+      prefillAppliedKeyRef.current = null;
+      prefillRequestKeyRef.current = null;
       basicsTouchedRef.current.clear();
       measurementsTouchedRef.current.clear();
       traitsTouchedRef.current.clear();
       pastSportsTouchedRef.current = false;
+      setPrefillPhase("idle");
+      setPrefillError(null);
+      setPrefillPayload(null);
     }
   }, [sportySnapshot.user?.id]);
 
@@ -400,90 +410,142 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
     if (typeof window === "undefined") return;
     if (!sportySnapshot.user?.id) return;
     const userId = sportySnapshot.user.id;
-    if (prefillAppliedUserIdRef.current === userId) return;
-
-    prefillAppliedUserIdRef.current = userId;
+    const prefillKey = `${mode}:${userId}`;
+    if (
+      prefillAppliedKeyRef.current === prefillKey ||
+      prefillRequestKeyRef.current === prefillKey
+    ) {
+      return;
+    }
     const sportyApp = (window as any).SportyApp;
+    let cancelled = false;
 
     (async () => {
       try {
-        const payload = await sportyApp?.fetchIntakePrefill?.();
-        const prefill = payload?.prefill || {};
-        const basicPrefill = prefill?.basics || {};
-        const measurementPrefill = prefill?.measurements || {};
-        const traitsPrefill = prefill?.traits || {};
-        const pastSportsPrefill = Array.isArray(prefill?.past_sports) ? prefill.past_sports : [];
-        const premiumPrefill = {
-          preferences: Array.isArray(prefill?.preferences) ? prefill.preferences : [],
-          goals: Array.isArray(prefill?.goals) ? prefill.goals : [],
-          injuries: Array.isArray(prefill?.injuries) ? prefill.injuries : [],
-        };
-
-        setBasics((prev) => {
-          const next = { ...prev };
-          if (!basicsTouchedRef.current.has("birthday")) {
-            const birthday = typeof basicPrefill?.birthday === "string" ? basicPrefill.birthday : "";
-            if (birthday) next.birthday = birthday;
-          }
-          if (!basicsTouchedRef.current.has("sex")) {
-            const sex = typeof basicPrefill?.sex === "string" ? basicPrefill.sex : "";
-            if (sex && isSexOption(sex)) next.sex = sex as Sex;
-          }
-          return next;
-        });
-
-        setMeasurements((prev) => {
-          const next = { ...prev };
-          measurementKeys.forEach((id) => {
-            if (measurementsTouchedRef.current.has(id)) return;
-            const raw = (measurementPrefill as any)?.[id];
-            if (raw === null || raw === undefined || raw === "") return;
-            const num = Number(raw);
-            if (Number.isFinite(num)) next[id] = num;
-          });
-          return next;
-        });
-
-        setTraits((prev) => {
-          const next = { ...prev };
-          traitFieldNames.forEach((fieldName) => {
-            if (traitsTouchedRef.current.has(fieldName)) return;
-            const value = (traitsPrefill as any)?.[fieldName];
-            if (typeof value === "string" && value.trim()) {
-              next[fieldName as keyof TraitAnswers] = value.trim();
-            }
-          });
-          return next;
-        });
-
-        if (!pastSportsTouchedRef.current && pastSportsPrefill.length) {
-          const entries = pastSportsPrefill.map((row: any, idx: number) => ({
-            id: `prefill-${idx}-${Date.now()}`,
-            sport_subcategory_id: row?.sport_subcategory_id || null,
-            sport_label: row?.sport_label || "",
-            years_played:
-              row?.years_played === null || row?.years_played === undefined
-                ? null
-                : Number(row.years_played),
-            age_started_years:
-              row?.age_started_years === null || row?.age_started_years === undefined
-                ? null
-                : Number(row.age_started_years),
-            intensity: row?.intensity || null,
-            liked: typeof row?.liked === "boolean" ? row.liked : null,
-            had_flair: typeof row?.had_flair === "boolean" ? row.had_flair : null,
-            achieved_skill:
-              typeof row?.achieved_skill === "boolean" ? row.achieved_skill : null,
-          }));
-          setPastSports((prev) => (prev.length ? prev : entries));
-        }
-
-        premiumControllerRef.current?.prefill?.(premiumPrefill);
+        prefillRequestKeyRef.current = prefillKey;
+        setPrefillPhase("loading");
+        setPrefillError(null);
+        setPrefillPayload(null);
+        const payload = (await sportyApp?.fetchIntakePrefill?.({
+          subject: "adult",
+        })) as IntakePrefillResponse | null;
+        if (cancelled || prefillRequestKeyRef.current !== prefillKey) return;
+        setPrefillPayload(payload || { prefill: {} });
       } catch (error) {
+        if (cancelled || prefillRequestKeyRef.current !== prefillKey) return;
         console.warn("[Intake] Unable to prefill from canonical saved-analysis prefill endpoint", error);
+        setPrefillPhase("failed");
+        setPrefillError("Saved answers could not be loaded right now.");
+        setPrefillPayload(null);
+        prefillRequestKeyRef.current = null;
       }
     })();
-  }, [measurementKeys, sportySnapshot.user?.id, traitFieldNames]);
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, sportySnapshot.user?.id]);
+
+  useEffect(() => {
+    if (!sportySnapshot.user?.id) return;
+    if (!prefillPayload) return;
+    if (catalogLoading) return;
+    if (catalogError) return;
+    const userId = sportySnapshot.user.id;
+    const prefillKey = `${mode}:${userId}`;
+    if (prefillAppliedKeyRef.current === prefillKey) return;
+
+    const prefill = prefillPayload?.prefill || {};
+    const basicPrefill = prefill?.basics || {};
+    const measurementPrefill = prefill?.measurements || {};
+    const traitsPrefill = prefill?.traits || {};
+    const pastSportsPrefill = Array.isArray(prefill?.past_sports) ? prefill.past_sports : [];
+    const premiumPrefill = {
+      preferences: Array.isArray(prefill?.preferences) ? prefill.preferences : [],
+      goals: Array.isArray(prefill?.goals) ? prefill.goals : [],
+      injuries: Array.isArray(prefill?.injuries) ? prefill.injuries : [],
+    };
+
+    setBasics((prev) => {
+      const next = { ...prev };
+      if (!basicsTouchedRef.current.has("birthday")) {
+        const birthday = typeof basicPrefill?.birthday === "string" ? basicPrefill.birthday : "";
+        if (birthday) next.birthday = birthday;
+      }
+      if (!basicsTouchedRef.current.has("sex")) {
+        const sex = typeof basicPrefill?.sex === "string" ? basicPrefill.sex : "";
+        if (sex && isSexOption(sex)) next.sex = sex as Sex;
+      }
+      return next;
+    });
+
+    setMeasurements((prev) => {
+      const next = { ...prev };
+      measurementKeys.forEach((id) => {
+        if (measurementsTouchedRef.current.has(id)) return;
+        const raw = (measurementPrefill as any)?.[id];
+        if (raw === null || raw === undefined || raw === "") return;
+        const num = Number(raw);
+        if (Number.isFinite(num)) next[id] = num;
+      });
+      return next;
+    });
+
+    setTraits((prev) => {
+      const next = { ...prev };
+      traitFieldNames.forEach((fieldName) => {
+        if (traitsTouchedRef.current.has(fieldName)) return;
+        const value = (traitsPrefill as any)?.[fieldName];
+        if (typeof value === "string" && value.trim()) {
+          next[fieldName as keyof TraitAnswers] = value.trim();
+        }
+      });
+      return next;
+    });
+
+    if (!pastSportsTouchedRef.current && pastSportsPrefill.length) {
+      const entries = pastSportsPrefill.map((row: any, idx: number) => ({
+        id: `prefill-${idx}-${Date.now()}`,
+        sport_subcategory_id: row?.sport_subcategory_id || null,
+        sport_label: row?.sport_label || "",
+        years_played:
+          row?.years_played === null || row?.years_played === undefined
+            ? null
+            : Number(row.years_played),
+        age_started_years:
+          row?.age_started_years === null || row?.age_started_years === undefined
+            ? null
+            : Number(row.age_started_years),
+        intensity: row?.intensity || null,
+        liked: typeof row?.liked === "boolean" ? row.liked : null,
+        had_flair: typeof row?.had_flair === "boolean" ? row.had_flair : null,
+        achieved_skill:
+          typeof row?.achieved_skill === "boolean" ? row.achieved_skill : null,
+      }));
+      setPastSports((prev) => (prev.length ? prev : entries));
+    }
+
+    premiumControllerRef.current?.prefill?.(premiumPrefill);
+    prefillAppliedKeyRef.current = prefillKey;
+    prefillRequestKeyRef.current = null;
+    setPrefillPhase("applied");
+    setPrefillError(null);
+  }, [
+    catalogError,
+    catalogLoading,
+    measurementKeys,
+    mode,
+    prefillPayload,
+    sportySnapshot.user?.id,
+    traitFieldNames,
+  ]);
+
+  useEffect(() => {
+    if (catalogError && prefillPhase === "loading") {
+      setPrefillPhase("failed");
+      setPrefillPayload(null);
+      prefillRequestKeyRef.current = null;
+    }
+  }, [catalogError, prefillPhase]);
 
   const validateBasics = useCallback((): StepValidationResult<
     Pick<FreeIntakeData, "birthday" | "sex">
@@ -994,6 +1056,11 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
 
   const isFirstStep = currentStepIndex === 0;
   const isFinalStep = currentStepIndex === stepDefinitions.length - 1;
+  const isInitialPrefillBlocked = Boolean(
+    sportySnapshot.user?.id &&
+    currentStepIndex === 0 &&
+    prefillPhase === "loading"
+  );
 
   const renderStepperActions = () => (
     <div
@@ -1022,7 +1089,9 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
           <button
             type="button"
             className="btn-pill btn-pill-primary btn-pill-sm"
+            disabled={isInitialPrefillBlocked}
             onClick={() => {
+              if (isInitialPrefillBlocked) return;
               if (currentStepIndex === 0) {
                 const result = validateBasics();
                 if (!result.ok) {
@@ -1048,7 +1117,7 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
               setMaxVisitedIndex((prev) => Math.max(prev, nextIndex));
             }}
           >
-            Continue
+            {isInitialPrefillBlocked ? "Loading saved answers…" : "Continue"}
           </button>
         )}
         {isFinalStep && (() => {
@@ -1169,8 +1238,29 @@ const premiumControllerRef = useRef<PremiumController | null>(null);
           })();
           if (!inner) return null;
           return (
-            <div key={step.key} hidden={!isActive}>
+            <div key={step.key} hidden={!isActive} className="relative">
               {inner}
+              {isActive && idx === 0 && isInitialPrefillBlocked && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[2rem] bg-white/92 px-6 text-center backdrop-blur-sm">
+                  <div className="card-shell flex min-h-[16rem] w-full max-w-xl flex-col items-center justify-center gap-4">
+                    <div
+                      className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-teal-600"
+                      aria-hidden="true"
+                    />
+                    <div className="space-y-1">
+                      <p className="font-semibold text-slate-900">Loading saved answers…</p>
+                      <p className="text-sm text-slate-500">
+                        We are checking your latest saved intake so nothing jumps underneath you.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {isActive && idx === 0 && prefillPhase === "failed" && prefillError && (
+                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-slate-700">
+                  {prefillError}
+                </div>
+              )}
             </div>
           );
         })}

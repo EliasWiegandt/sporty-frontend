@@ -25,6 +25,11 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 
   const upstream = new URL('/v1/intake-prefill', backendUrl);
+  const incomingUrl = new URL(request.url);
+  const subject = incomingUrl.searchParams.get('subject');
+  const childId = incomingUrl.searchParams.get('child_id');
+  if (subject) upstream.searchParams.set('subject', subject);
+  if (childId) upstream.searchParams.set('child_id', childId);
   try {
     const upstreamResp = await fetch(upstream.toString(), {
       method: 'GET',

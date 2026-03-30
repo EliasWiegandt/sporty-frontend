@@ -1,4 +1,9 @@
 (function () {
+  if (window.__SPORTY_APP_RUNTIME_INITIALIZED__) {
+    return;
+  }
+  window.__SPORTY_APP_RUNTIME_INITIALIZED__ = true;
+
   const SUPABASE_JS = window.supabase;
   const CONFIG = window.SPORTY_CONFIG || {};
   const SUPABASE_URL = CONFIG.SUPABASE_URL || window.SUPABASE_URL || '';
@@ -17,6 +22,7 @@
   ]);
   const MODEL_VERSION = 'free-adult-v1';
   const SUPABASE_AUTH_TOKEN_SUFFIX = '-auth-token';
+  const DEFAULT_INTAKE_PREFILL_TIMEOUT_MS = 12000;
 
   const state = {
     client: null,
@@ -37,6 +43,14 @@
     authMode: 'signin',
     authStatusEl: null,
     postAuthRedirectPath: null,
+    accountStateLoading: false,
+    accountStateHydrated: false,
+    accountStateHydrationPromise: null,
+    accountStateHydrationUserId: null,
+    consentStatusPromise: null,
+    consentStatusPromiseUserId: null,
+    accountDeleteStatusPromise: null,
+    accountDeleteStatusPromiseUserId: null,
     readyResolve: null,
   };
 
@@ -53,6 +67,7 @@
 
   const api = {
     ready,
+    __runtimeVersion: 'app-v13',
     getClient: () => state.client,
     getUser: () => state.user,
     getSession: () => state.session,
@@ -66,14 +81,14 @@
     openAuth: () => openAuthOverlay(),
     closeAuth: () => closeAuthOverlay(),
     setAuthMode: (mode) => setAuthMode(mode),
-    signOut: () => signOut(),
+    signOut: (options) => signOut(options),
     ensureConsent: (consentType) => ensureConsent(consentType),
     saveRecommendation: (formPayload, resultPayload, extras) =>
       saveRecommendation(formPayload, resultPayload, extras),
     fetchRecommendations: (limit) => fetchRecommendations(limit),
     refreshConsent: () => loadConsent(),
     getConsentStatus: () => fetchConsentStatus(),
-    fetchIntakePrefill: () => fetchIntakePrefill(),
+    fetchIntakePrefill: (options) => fetchIntakePrefill(options),
     grantConsent: (consentType, policyVersion, jurisdiction) =>
       grantConsent(consentType, policyVersion, jurisdiction),
     fetchConsents: () => fetchConsents(),
@@ -102,6 +117,8 @@
       session: state.session,
       user: state.user,
       consents: state.consents,
+      accountStateLoading: state.accountStateLoading,
+      accountStateHydrated: state.accountStateHydrated,
       purgeStatus: state.purgeStatus,
       purgeRequestedAt: state.purgeRequestedAt,
       purgeCompletedAt: state.purgeCompletedAt,
@@ -145,6 +162,46 @@
     state.purgeStatus = basic.purge_status || null;
     state.purgeRequestedAt = basic.purge_requested_at || null;
     state.purgeCompletedAt = basic.purge_completed_at || null;
+  }
+
+  function applyAccountDeletePayload(payload) {
+    state.accountDeleteStatus = payload?.status || null;
+    state.accountDeleteRequestedAt = payload?.requested_at || null;
+    state.accountDeleteCompletedAt = payload?.finished_at || null;
+  }
+
+  function currentUserId() {
+    return state.user && state.user.id ? state.user.id : null;
+  }
+
+  function resetAccountState() {
+    state.consents = emptyConsentMap();
+    state.purgeStatus = null;
+    state.purgeRequestedAt = null;
+    state.purgeCompletedAt = null;
+    state.accountDeleteStatus = null;
+    state.accountDeleteRequestedAt = null;
+    state.accountDeleteCompletedAt = null;
+    state.accountStateLoading = false;
+    state.accountStateHydrated = false;
+    state.accountStateHydrationPromise = null;
+    state.accountStateHydrationUserId = null;
+    state.consentStatusPromise = null;
+    state.consentStatusPromiseUserId = null;
+    state.accountDeleteStatusPromise = null;
+    state.accountDeleteStatusPromiseUserId = null;
+  }
+
+  function buildConsentStatusPayload() {
+    return { consents: state.consents };
+  }
+
+  function buildAccountDeleteStatusPayload() {
+    return {
+      status: state.accountDeleteStatus,
+      requested_at: state.accountDeleteRequestedAt,
+      finished_at: state.accountDeleteCompletedAt,
+    };
   }
 
   function hasConsentType(consentType) {
@@ -254,8 +311,10 @@
 
   function updateSession(session) {
     const hadUser = Boolean(state.user);
+    const previousUserId = state.user && state.user.id ? state.user.id : null;
     state.session = session;
     state.user = session && session.user ? session.user : null;
+    const nextUserId = state.user && state.user.id ? state.user.id : null;
 
     updateAuthControls();
 
@@ -268,20 +327,22 @@
     }
 
     if (state.user) {
-      loadConsent();
+      const isNewUser = previousUserId !== nextUserId;
+      if (isNewUser) {
+        state.accountStateLoading = true;
+        state.accountStateHydrated = false;
+      }
+      notifyListeners();
+
+      if (isNewUser) {
+        hydrateAccountState({ force: false }).catch((error) => {
+          console.error('[Sporty] Failed to hydrate account state', error);
+        });
+      }
     } else {
-      state.consents = emptyConsentMap();
-      state.purgeStatus = null;
-      state.purgeRequestedAt = null;
-      state.purgeCompletedAt = null;
-      state.accountDeleteStatus = null;
-      state.accountDeleteRequestedAt = null;
-      state.accountDeleteCompletedAt = null;
+      resetAccountState();
       hideConsentBanner();
       resolveConsentPromises(false);
-      notifyListeners();
-    }
-    if (state.user) {
       notifyListeners();
     }
   }
@@ -631,7 +692,7 @@
 
   async function handleSignupLegalAcceptance(session, payload) {
     if (!session || !session.access_token) {
-      await signOut();
+      await signOut({ redirectToLanding: false });
       throw new Error('Signup could not be finalized. Please log in and retry.');
     }
     try {
@@ -649,17 +710,18 @@
           const parsed = await response.json();
           detail = parsed?.detail?.message || parsed?.detail || detail;
         } catch (_) { }
-        await signOut();
+        await signOut({ redirectToLanding: false });
         throw new Error(detail);
       }
     } catch (error) {
       console.error('[Sporty] Unable to save legal acceptance during signup', error);
-      await signOut();
+      await signOut({ redirectToLanding: false });
       throw error;
     }
   }
 
-  async function signOut() {
+  async function signOut(options = {}) {
+    const redirectToLanding = options.redirectToLanding !== false;
     if (!state.client) return;
     try {
       await state.client.auth.signOut();
@@ -675,6 +737,9 @@
     // Ensure UI/state resets even if supabase fails to emit an auth change
     updateSession(null);
     notifyListeners();
+    if (redirectToLanding) {
+      window.location.assign('/');
+    }
   }
 
   function updateAuthControls() {
@@ -701,22 +766,15 @@
   }
 
   async function loadConsent() {
-    if (!state.client || !state.user) {
-      console.log('[Sporty] loadConsent: No client or user, skipping');
-      return;
+    if (!state.user) return null;
+    const payload = await fetchConsentStatus({ force: true });
+    if (!payload) return null;
+    applyConsentPayload(payload);
+    if (!hasConsentType(BASIC_CONSENT_TYPE)) {
+      resolveConsentPromises(false);
     }
-
-    try {
-      const status = await fetchConsentStatus();
-      applyConsentPayload(status);
-      if (!hasConsentType(BASIC_CONSENT_TYPE)) {
-        resolveConsentPromises(false);
-      }
-      await refreshAccountDelete();
-      notifyListeners();
-    } catch (error) {
-      console.error('[Sporty] Failed to load consent', error);
-    }
+    notifyListeners();
+    return buildConsentStatusPayload();
   }
 
   async function authFetch(path, options = {}) {
@@ -731,52 +789,167 @@
     return fetch(path, { ...options, headers });
   }
 
-  async function fetchConsentStatus() {
-    if (!state.user) return null;
-    const response = await authFetch('/api/consent/status', {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-    });
-    if (!response.ok) {
-      throw new Error('Unable to fetch consent status');
+  async function fetchConsentStatus({ force = false, userId = currentUserId() } = {}) {
+    if (!userId) return null;
+    if (!force && userId === currentUserId() && state.accountStateHydrated) {
+      return buildConsentStatusPayload();
     }
-    return response.json();
+    if (state.consentStatusPromise && state.consentStatusPromiseUserId === userId) {
+      return state.consentStatusPromise;
+    }
+
+    const promise = (async () => {
+      const response = await authFetch('/api/consent/status', {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) {
+        throw new Error('Unable to fetch consent status');
+      }
+      return response.json();
+    })();
+
+    state.consentStatusPromise = promise;
+    state.consentStatusPromiseUserId = userId;
+
+    try {
+      return await promise;
+    } finally {
+      if (state.consentStatusPromise === promise) {
+        state.consentStatusPromise = null;
+        state.consentStatusPromiseUserId = null;
+      }
+    }
   }
 
-  async function fetchAccountDeleteStatus() {
-    if (!state.user) return null;
-    const response = await authFetch('/api/account/delete-status', {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-    });
-    if (response.status === 401) {
-      return { status: 'done' };
+  async function fetchAccountDeleteStatus({ force = false, userId = currentUserId() } = {}) {
+    if (!userId) return null;
+    if (!force && userId === currentUserId() && state.accountStateHydrated) {
+      return buildAccountDeleteStatusPayload();
     }
-    if (!response.ok) {
-      throw new Error('Unable to fetch account deletion status');
+    if (state.accountDeleteStatusPromise && state.accountDeleteStatusPromiseUserId === userId) {
+      return state.accountDeleteStatusPromise;
     }
-    return response.json();
+
+    const promise = (async () => {
+      const response = await authFetch('/api/account/delete-status', {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      });
+      if (response.status === 401) {
+        return { status: 'done' };
+      }
+      if (!response.ok) {
+        throw new Error('Unable to fetch account deletion status');
+      }
+      return response.json();
+    })();
+
+    state.accountDeleteStatusPromise = promise;
+    state.accountDeleteStatusPromiseUserId = userId;
+
+    try {
+      return await promise;
+    } finally {
+      if (state.accountDeleteStatusPromise === promise) {
+        state.accountDeleteStatusPromise = null;
+        state.accountDeleteStatusPromiseUserId = null;
+      }
+    }
   }
 
-  async function fetchIntakePrefill() {
-    if (!state.user) return null;
-    const response = await authFetch('/api/intake/prefill', {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-    });
-    if (!response.ok) {
-      throw new Error(`Unable to fetch intake prefill (${response.status})`);
+  async function hydrateAccountState({ force = false } = {}) {
+    if (!state.client || !state.user) {
+      return snapshot();
     }
-    return response.json();
+
+    const userId = currentUserId();
+    if (!userId) return snapshot();
+    if (state.accountStateHydrationPromise && state.accountStateHydrationUserId === userId) {
+      return state.accountStateHydrationPromise;
+    }
+    if (!force && state.accountStateHydrated && !state.accountStateLoading) {
+      return snapshot();
+    }
+
+    state.accountStateLoading = true;
+    const hydrationPromise = (async () => {
+      const [consentPayload, accountDeletePayload] = await Promise.all([
+        fetchConsentStatus({ force, userId }),
+        fetchAccountDeleteStatus({ force, userId }),
+      ]);
+
+      if (currentUserId() !== userId) {
+        return snapshot();
+      }
+
+      applyConsentPayload(consentPayload);
+      applyAccountDeletePayload(accountDeletePayload);
+      if (!hasConsentType(BASIC_CONSENT_TYPE)) {
+        resolveConsentPromises(false);
+      }
+      state.accountStateLoading = false;
+      state.accountStateHydrated = true;
+      notifyListeners();
+      return snapshot();
+    })().catch((error) => {
+      if (currentUserId() === userId) {
+        state.accountStateLoading = false;
+        state.accountStateHydrated = false;
+        notifyListeners();
+      }
+      throw error;
+    }).finally(() => {
+      if (state.accountStateHydrationPromise === hydrationPromise) {
+        state.accountStateHydrationPromise = null;
+        state.accountStateHydrationUserId = null;
+      }
+    });
+
+    state.accountStateHydrationPromise = hydrationPromise;
+    state.accountStateHydrationUserId = userId;
+    return hydrationPromise;
+  }
+
+  async function fetchIntakePrefill(options = {}) {
+    if (!state.user) return null;
+    const params = new URLSearchParams();
+    const subject = typeof options.subject === 'string' && options.subject.trim()
+      ? options.subject.trim().toLowerCase()
+      : 'adult';
+    params.set('subject', subject);
+    if (subject === 'child' && typeof options.childId === 'string' && options.childId.trim()) {
+      params.set('child_id', options.childId.trim());
+    }
+    const url = params.toString() ? `/api/intake/prefill?${params.toString()}` : '/api/intake/prefill';
+    const timeoutMs =
+      typeof options.timeoutMs === 'number' && Number.isFinite(options.timeoutMs) && options.timeoutMs > 0
+        ? Number(options.timeoutMs)
+        : DEFAULT_INTAKE_PREFILL_TIMEOUT_MS;
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      const response = await authFetch(url, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        signal: timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined,
+      });
+      if (response.ok) {
+        return response.json();
+      }
+      if (response.status !== 503 || attempt >= 3) {
+        throw new Error(`Unable to fetch intake prefill (${response.status})`);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+    }
+    throw new Error('Unable to fetch intake prefill (retry exhausted)');
   }
 
   async function refreshAccountDelete() {
     if (!state.user) return null;
-    const payload = await fetchAccountDeleteStatus();
-    state.accountDeleteStatus = payload?.status || null;
-    state.accountDeleteRequestedAt = payload?.requested_at || null;
-    state.accountDeleteCompletedAt = payload?.finished_at || null;
-    return payload;
+    const payload = await fetchAccountDeleteStatus({ force: true });
+    if (!payload) return null;
+    applyAccountDeletePayload(payload);
+    notifyListeners();
+    return buildAccountDeleteStatusPayload();
   }
 
   async function grantConsent(consentType, policyVersion = CONSENT_VERSION, jurisdiction = 'EU') {
@@ -800,10 +973,24 @@
     return payload;
   }
 
-  function ensureConsent(consentType) {
-    if (!consentType) return Promise.resolve(false);
-    if (!state.client || !state.user) return Promise.resolve(false);
-    if (hasConsentType(consentType)) return Promise.resolve(true);
+  async function ensureConsent(consentType) {
+    if (!consentType) return false;
+    if (!state.client || !state.user) return false;
+    if (hasConsentType(consentType)) return true;
+
+    try {
+      const payload = await fetchConsentStatus({ force: true, userId: currentUserId() });
+      if (payload) {
+        applyConsentPayload(payload);
+        state.accountStateHydrated = true;
+        notifyListeners();
+        if (hasConsentType(consentType)) {
+          return true;
+        }
+      }
+    } catch (error) {
+      console.warn('[Sporty] Failed to refresh consent before prompting', error);
+    }
 
     openConsentModal(consentType);
 
@@ -932,7 +1119,7 @@
     }
     if (!hasConsentType(BASIC_CONSENT_TYPE)) {
       try {
-        const status = await fetchConsentStatus();
+        const status = await fetchConsentStatus({ force: true });
         applyConsentPayload(status);
       } catch (error) {
         console.warn('[Sporty] Failed to refresh consent before save', error);

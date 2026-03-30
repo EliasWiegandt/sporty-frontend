@@ -60,7 +60,6 @@
     uniqueSports: true,
     direction: 'top',
     includedSports: new Set(),
-    focusSport: '',
     availableSports: [],
     loadedMatches: [],
     totalRankedCount: 0,
@@ -156,27 +155,33 @@
       <div class="premium-browser__toolbar">
         <div class="premium-browser__headline">
           <p class="premium-browser__summary" data-premium-summary>Loading premium ranking…</p>
-          <label class="premium-browser__toggle">
-            <input type="checkbox" data-unique-toggle checked />
-            <span>One best subcategory per sport</span>
-          </label>
         </div>
         <div class="premium-browser__actions">
-          <label class="premium-browser__focus">
-            <span>Focus sport</span>
-            <select class="input-field input-select-pill" data-focus-select>
-              <option value="">All sports</option>
-            </select>
-          </label>
-          <button type="button" class="btn-pill btn-pill-secondary btn-pill-sm" data-jump-top>Top matches</button>
-          <button type="button" class="btn-pill btn-pill-secondary btn-pill-sm" data-jump-bottom>Worst matches</button>
+          <div class="premium-browser__toggle-row">
+            <span class="premium-browser__toggle-copy">One best subcategory per sport</span>
+            <label class="toggle" aria-label="One best subcategory per sport">
+              <input type="checkbox" data-unique-toggle checked />
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+          <details class="premium-browser__sport-menu" data-sport-menu>
+            <summary class="btn-pill btn-pill-secondary btn-pill-sm" data-sport-menu-summary>Filter sports</summary>
+            <div class="premium-browser__sport-menu-panel">
+              <div class="premium-browser__sport-menu-actions">
+                <button type="button" class="btn-pill btn-pill-secondary btn-pill-sm" data-include-sports>Include all</button>
+                <button type="button" class="btn-pill btn-pill-secondary btn-pill-sm" data-clear-sports>Remove all</button>
+              </div>
+              <div class="premium-browser__sport-options" data-sport-options></div>
+            </div>
+          </details>
         </div>
       </div>
-      <div class="premium-browser__filters" data-sport-filters></div>
       <div class="premium-browser__nav">
-        <button type="button" class="btn-pill btn-pill-secondary btn-pill-sm" data-nav-prev>Previous</button>
+        <button type="button" class="premium-browser__nav-btn" data-nav-first aria-label="First matches">«</button>
+        <button type="button" class="premium-browser__nav-btn" data-nav-prev aria-label="Previous matches">‹</button>
         <div class="premium-browser__position" data-position-label></div>
-        <button type="button" class="btn-pill btn-pill-secondary btn-pill-sm" data-nav-next>Next</button>
+        <button type="button" class="premium-browser__nav-btn" data-nav-next aria-label="Next matches">›</button>
+        <button type="button" class="premium-browser__nav-btn" data-nav-last aria-label="Last matches">»</button>
       </div>
     `;
     container.parentNode.insertBefore(shell, container);
@@ -186,14 +191,49 @@
       shell,
       summary: shell.querySelector('[data-premium-summary]'),
       uniqueToggle: shell.querySelector('[data-unique-toggle]'),
-      focusSelect: shell.querySelector('[data-focus-select]'),
-      sportFilters: shell.querySelector('[data-sport-filters]'),
+      sportMenu: shell.querySelector('[data-sport-menu]'),
+      sportMenuSummary: shell.querySelector('[data-sport-menu-summary]'),
+      sportOptions: shell.querySelector('[data-sport-options]'),
+      includeSportsBtn: shell.querySelector('[data-include-sports]'),
+      clearSportsBtn: shell.querySelector('[data-clear-sports]'),
+      firstBtn: shell.querySelector('[data-nav-first]'),
       prevBtn: shell.querySelector('[data-nav-prev]'),
       nextBtn: shell.querySelector('[data-nav-next]'),
-      jumpTopBtn: shell.querySelector('[data-jump-top]'),
-      jumpBottomBtn: shell.querySelector('[data-jump-bottom]'),
+      lastBtn: shell.querySelector('[data-nav-last]'),
       positionLabel: shell.querySelector('[data-position-label]'),
     };
+    const closeSportMenu = ({ restoreFocus = false } = {}) => {
+      if (!ui.sportMenu || !ui.sportMenu.open) return;
+      ui.sportMenu.open = false;
+      if (restoreFocus && ui.sportMenuSummary instanceof HTMLElement) {
+        ui.sportMenuSummary.focus();
+      }
+    };
+    document.addEventListener(
+      'pointerdown',
+      (event) => {
+        if (!ui.sportMenu || !ui.sportMenu.open) return;
+        if (ui.sportMenu.contains(event.target)) return;
+        closeSportMenu();
+        event.preventDefault();
+        event.stopPropagation();
+        if (typeof event.stopImmediatePropagation === 'function') {
+          event.stopImmediatePropagation();
+        }
+      },
+      true
+    );
+    document.addEventListener(
+      'keydown',
+      (event) => {
+        if (!ui.sportMenu || !ui.sportMenu.open) return;
+        if (event.key !== 'Escape') return;
+        closeSportMenu({ restoreFocus: true });
+        event.preventDefault();
+        event.stopPropagation();
+      },
+      true
+    );
 
     ui.uniqueToggle.addEventListener('change', async () => {
       try {
@@ -203,13 +243,28 @@
         console.error('[Sporty] Failed to reload premium browser after unique toggle', error);
       }
     });
-    ui.focusSelect.addEventListener('change', async () => {
+    ui.includeSportsBtn.addEventListener('click', async () => {
       try {
-        state.focusSport = String(ui.focusSelect.value || '');
+        state.availableSports.forEach((option) => {
+          if (option && option.sport_slug) state.includedSports.add(option.sport_slug);
+        });
         await reloadBrowser({ direction: state.direction });
       } catch (error) {
-        console.error('[Sporty] Failed to reload premium browser after focus change', error);
+        console.error('[Sporty] Failed to include all sport filters', error);
       }
+    });
+    ui.clearSportsBtn.addEventListener('click', async () => {
+      try {
+        state.includedSports.clear();
+        await reloadBrowser({ direction: state.direction });
+      } catch (error) {
+        console.error('[Sporty] Failed to clear sport filters', error);
+      }
+    });
+    ui.firstBtn.addEventListener('click', () => {
+      if (state.currentStart <= 0) return;
+      state.currentStart = 0;
+      renderVisibleMatches();
     });
     ui.prevBtn.addEventListener('click', async () => {
       if (state.currentStart <= 0) return;
@@ -226,18 +281,13 @@
         console.error('[Sporty] Failed to advance premium browser', error);
       }
     });
-    ui.jumpTopBtn.addEventListener('click', async () => {
+    ui.lastBtn.addEventListener('click', async () => {
       try {
-        await reloadBrowser({ direction: 'top' });
+        await ensureLoadedThrough(state.totalFilteredCount);
+        state.currentStart = Math.max(0, state.totalFilteredCount - VISIBLE_CARD_COUNT);
+        renderVisibleMatches();
       } catch (error) {
-        console.error('[Sporty] Failed to load top premium view', error);
-      }
-    });
-    ui.jumpBottomBtn.addEventListener('click', async () => {
-      try {
-        await reloadBrowser({ direction: 'bottom' });
-      } catch (error) {
-        console.error('[Sporty] Failed to load worst premium view', error);
+        console.error('[Sporty] Failed to jump to end of premium browser', error);
       }
     });
     return ui;
@@ -273,10 +323,11 @@
   }
 
   function activeSportFilters() {
-    if (state.focusSport) return [state.focusSport];
     const allSlugs = state.availableSports.map((option) => option.sport_slug);
+    if (!allSlugs.length) return [];
     const included = allSlugs.filter((slug) => state.includedSports.has(slug));
-    if (!included.length || included.length === allSlugs.length) return [];
+    if (!included.length) return null;
+    if (included.length === allSlugs.length) return [];
     return included;
   }
 
@@ -288,8 +339,10 @@
     params.set('limit', String(limit));
     params.set('unique_sports', (uniqueSports === null ? state.uniqueSports : uniqueSports) ? 'true' : 'false');
     params.set('direction', direction);
-    const filterValues = Array.isArray(sportSlugs) ? sportSlugs : activeSportFilters();
-    filterValues.forEach((slug) => params.append('sport_slug', slug));
+    const filterValues = Array.isArray(sportSlugs) || sportSlugs === null ? sportSlugs : activeSportFilters();
+    if (Array.isArray(filterValues)) {
+      filterValues.forEach((slug) => params.append('sport_slug', slug));
+    }
     return authFetchJson(`/api/premium-results?${params.toString()}`);
   }
 
@@ -297,7 +350,14 @@
     state.direction = direction;
     state.currentStart = 0;
     state.loadedMatches = [];
-    const payload = await fetchPremiumSlice({ offset: 0, limit: PAGE_FETCH_LIMIT, direction });
+    const activeFilters = activeSportFilters();
+    if (activeFilters === null) {
+      state.totalFilteredCount = 0;
+      renderBrowserControls();
+      renderVisibleMatches();
+      return;
+    }
+    const payload = await fetchPremiumSlice({ offset: 0, limit: PAGE_FETCH_LIMIT, direction, sportSlugs: activeFilters });
     applyPayload(payload, { reset: true });
     renderBrowserControls();
     renderVisibleMatches();
@@ -348,52 +408,53 @@
   function renderBrowserControls() {
     if (!browserUi) return;
     if (browserUi.summary) {
-      const viewLabel = state.direction === 'bottom' ? 'worst' : 'top';
-      browserUi.summary.textContent = `Showing ${viewLabel} premium ranking. ${state.totalFilteredCount} matches in this view, ${state.totalRankedCount} total in the run.`;
+      browserUi.summary.textContent = `Showing ${state.totalFilteredCount} matches in this view, ${state.totalRankedCount} total in the run.`;
     }
-    if (browserUi.focusSelect) {
-      const current = state.focusSport;
-      browserUi.focusSelect.innerHTML = '<option value="">All sports</option>';
-      state.availableSports.forEach((option) => {
-        const opt = document.createElement('option');
-        opt.value = option.sport_slug;
-        opt.textContent = option.label || option.sport_slug;
-        if (option.sport_slug === current) opt.selected = true;
-        browserUi.focusSelect.appendChild(opt);
-      });
+    if (browserUi.uniqueToggle) {
+      browserUi.uniqueToggle.checked = state.uniqueSports;
     }
-    if (browserUi.sportFilters) {
-      browserUi.sportFilters.innerHTML = '';
+    if (browserUi.sportMenuSummary) {
+      browserUi.sportMenuSummary.textContent = 'Filter sports';
+    }
+    if (browserUi.sportOptions) {
+      browserUi.sportOptions.innerHTML = '';
       state.availableSports.forEach((option) => {
         const slug = String(option.sport_slug || '');
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        const included = state.focusSport ? state.focusSport === slug : state.includedSports.has(slug);
-        btn.className = `btn-pill btn-pill-sm ${included ? 'btn-pill-primary' : 'btn-pill-secondary'}`;
-        btn.textContent = option.label || slug;
-        btn.addEventListener('click', async () => {
+        const label = document.createElement('label');
+        label.className = 'premium-browser__sport-option';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = state.includedSports.has(slug);
+        checkbox.addEventListener('change', async () => {
           try {
-            if (state.focusSport) {
-              state.focusSport = slug;
-            } else if (state.includedSports.has(slug)) {
-              if (state.includedSports.size === 1) return;
-              state.includedSports.delete(slug);
-            } else {
+            if (checkbox.checked) {
               state.includedSports.add(slug);
+            } else {
+              state.includedSports.delete(slug);
             }
             await reloadBrowser({ direction: state.direction });
           } catch (error) {
             console.error('[Sporty] Failed to reload premium browser after sport filter change', error);
           }
         });
-        browserUi.sportFilters.appendChild(btn);
+        const text = document.createElement('span');
+        text.textContent = option.label || slug;
+        label.appendChild(checkbox);
+        label.appendChild(text);
+        browserUi.sportOptions.appendChild(label);
       });
+    }
+    if (browserUi.firstBtn) {
+      browserUi.firstBtn.disabled = state.currentStart <= 0;
     }
     if (browserUi.prevBtn) {
       browserUi.prevBtn.disabled = state.currentStart <= 0;
     }
     if (browserUi.nextBtn) {
       browserUi.nextBtn.disabled = state.currentStart + VISIBLE_CARD_COUNT >= state.totalFilteredCount;
+    }
+    if (browserUi.lastBtn) {
+      browserUi.lastBtn.disabled = state.currentStart + VISIBLE_CARD_COUNT >= state.totalFilteredCount;
     }
     if (browserUi.positionLabel) {
       if (!state.totalFilteredCount) {

@@ -68,6 +68,10 @@
   let measurementSystemRequestId = 0;
   const MEASUREMENT_SYSTEM_STORAGE_KEY = 'sporty:measurement-system:v1';
 
+  function pollingAllowed() {
+    return typeof document === 'undefined' || document.visibilityState === 'visible';
+  }
+
   function isMeasurementSystem(value) {
     return value === 'metric' || value === 'imperial';
   }
@@ -180,6 +184,12 @@
     }
   });
 
+  document.addEventListener('visibilitychange', () => {
+    if (!pollingAllowed()) {
+      stopAccountDeletePolling();
+    }
+  });
+
   if (familyAddOpen && familyAddForm) {
     familyAddOpen.addEventListener('click', () => {
       familyAddForm.hidden = !familyAddForm.hidden;
@@ -284,6 +294,8 @@
 
   function handleSnapshot(snapshot) {
     const signedIn = Boolean(snapshot && snapshot.user);
+    const userId = signedIn && snapshot.user ? snapshot.user.id : null;
+    const isNewUser = Boolean(userId && userId !== lastUserId);
     if (signedOutBlock) signedOutBlock.hidden = signedIn;
     if (signedInBlock) signedInBlock.hidden = !signedIn;
     consentToggles.forEach((toggle) => {
@@ -323,11 +335,11 @@
     }
 
     // Account updates
+    lastUserId = userId;
+    lastUserEmail = snapshot.user.email || null;
     if (emailEl) {
       emailEl.textContent = snapshot.user.email || '';
     }
-    lastUserId = snapshot.user.id;
-    lastUserEmail = snapshot.user.email || null;
     clearConsentActionStatus();
     updateAccountDeleteStatus(snapshot);
     syncConsentToggles(snapshot);
@@ -338,6 +350,10 @@
     }
     updateToggleHelp(snapshot);
 
+    if (!isNewUser) {
+      return;
+    }
+
     setCredits('...', '...');
     updateRunButtons(null, null); // loading state
     const creditSnapshot = readCreditSnapshot();
@@ -346,11 +362,11 @@
       updateRunButtons(creditSnapshot.adult, creditSnapshot.child);
       latestChildCredits = Number(creditSnapshot.child) || 0;
     }
-    loadCredits(snapshot.user.id);
-    loadHistory(snapshot.user.id);
+    loadCredits(userId);
+    loadHistory(userId);
     loadInviteInbox(snapshot.user);
-    loadFamily(snapshot.user.id);
-    hydrateMeasurementSystem(snapshot.user.id);
+    loadFamily(userId);
+    hydrateMeasurementSystem(userId);
     renderLocker([]);
   }
 
@@ -966,6 +982,9 @@
     let lastSnapshot = null;
 
     while (Date.now() - startedAt < timeoutMs) {
+      if (!pollingAllowed()) {
+        return { done: false, snapshot: lastSnapshot, purgeStatus: String(lastSnapshot?.consents?.[consentType]?.purge_status || '').toLowerCase() };
+      }
       await new Promise((resolve) => setTimeout(resolve, intervalMs));
       try {
         if (typeof sportyApp.refreshConsent === 'function') {
@@ -976,6 +995,9 @@
         if (status && typeof status === 'object') {
           lastSnapshot = status;
           const purgeStatus = String(status?.consents?.[consentType]?.purge_status || '').toLowerCase();
+          if (!purgeStatus || (purgeStatus !== 'pending' && purgeStatus !== 'running' && purgeStatus !== 'done' && purgeStatus !== 'failed')) {
+            return { done: false, snapshot: status, purgeStatus };
+          }
           if (purgeStatus === 'done' || purgeStatus === 'failed') {
             return { done: true, snapshot: status, purgeStatus };
           }
@@ -1080,8 +1102,13 @@
 
   function startAccountDeletePolling() {
     if (accountDeletePollTimer) return;
+    if (!pollingAllowed()) return;
     const poll = async () => {
       if (!sportyApp?.getUser?.()) return;
+      if (!pollingAllowed()) {
+        stopAccountDeletePolling();
+        return;
+      }
       try {
         const statusPayload =
           typeof sportyApp.refreshAccountDelete === 'function'
@@ -1093,8 +1120,12 @@
         updateAccountDeleteStatus({ accountDeleteStatus: status });
         if (status === 'done') {
           clearAllResultCaches();
-          await sportyApp.signOut();
+          await sportyApp.signOut({ redirectToLanding: false });
           window.location.assign('/?account_deleted=1');
+          return;
+        }
+        if (status !== 'pending' && status !== 'running') {
+          stopAccountDeletePolling();
           return;
         }
       } catch (error) {

@@ -49,6 +49,36 @@ type ChildRow = {
 
 type MeasurementValues = Record<string, number | null>;
 
+type ChildPastSportPrefill = {
+  sport_subcategory_id?: string | null;
+  sport_label?: string | null;
+  years_played?: number | null;
+  age_started_years?: number | null;
+  intensity?: string | null;
+  liked?: boolean | null;
+  had_flair?: boolean | null;
+  achieved_skill?: boolean | null;
+};
+
+type ChildIntakePrefillResponse = {
+  prefill?: {
+    basics?: Partial<{ birthday: string; sex: string }>;
+    child_measurements?: Record<string, number | null>;
+    mother_measurements?: Record<string, number | null>;
+    father_measurements?: Record<string, number | null>;
+    traits?: Record<string, string>;
+    past_sports?: ChildPastSportPrefill[] | null;
+    premium?: {
+      preferences?: Array<Record<string, unknown>>;
+      goals?: Array<Record<string, unknown>>;
+      injuries?: Array<Record<string, unknown>>;
+    } | null;
+  };
+  sources?: Record<string, unknown>;
+};
+
+type PrefillPhase = "idle" | "loading" | "applied" | "failed";
+
 type Props = {
   adultAgeGroups: string[];
 };
@@ -107,7 +137,32 @@ const formatChildTitle = (child: ChildRow | null) => {
   return name;
 };
 
-const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
+const hasMeasurementValues = (row: Record<string, number | null> | null | undefined) =>
+  Boolean(
+    row &&
+      Object.values(row).some((value) => value !== null && value !== undefined && Number.isFinite(Number(value)))
+  );
+
+const toPastSportEntries = (rows: ChildPastSportPrefill[] | null | undefined): PastSportsEntry[] =>
+  Array.isArray(rows)
+    ? rows.map((row, idx) => ({
+        id: `child-prefill-${idx}`,
+        sport_subcategory_id: row?.sport_subcategory_id || null,
+        sport_label: row?.sport_label || "",
+        years_played:
+          row?.years_played === null || row?.years_played === undefined ? null : Number(row.years_played),
+        age_started_years:
+          row?.age_started_years === null || row?.age_started_years === undefined
+            ? null
+            : Number(row.age_started_years),
+        intensity: row?.intensity || null,
+        liked: typeof row?.liked === "boolean" ? row.liked : null,
+        had_flair: typeof row?.had_flair === "boolean" ? row.had_flair : null,
+        achieved_skill: typeof row?.achieved_skill === "boolean" ? row.achieved_skill : null,
+      }))
+    : [];
+
+const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups: _adultAgeGroups }) => {
   const [stepIndex, setStepIndex] = useState(0);
   const [statusHtml, setStatusHtml] = useState<{
     html: string;
@@ -124,9 +179,6 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
   const [birthdate, setBirthdate] = useState<string>("");
   const [sex, setSex] = useState<Sex>("female");
   const [race, setRace] = useState<string>("");
-  const [adultAgeGroup, setAdultAgeGroup] = useState<string>(
-    adultAgeGroups[2] || adultAgeGroups[0] || "25-35 years",
-  );
   const [childNoticeAccepted, setChildNoticeAccepted] = useState(false);
   const [measurementFields, setMeasurementFields] = useState<MeasurementFieldConfig[]>([]);
 
@@ -155,11 +207,18 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
   const [catalogError, setCatalogError] = useState<string | null>(
     null,
   );
+  const [prefillPhase, setPrefillPhase] = useState<PrefillPhase>("idle");
+  const [prefillError, setPrefillError] = useState<string | null>(null);
+  const [prefillPayload, setPrefillPayload] =
+    useState<ChildIntakePrefillResponse | null>(null);
 
   const currentStep: StepKey =
     STEP_KEYS[Math.max(0, Math.min(STEP_KEYS.length - 1, stepIndex))];
   const isFirstStep = stepIndex === 0;
   const isFinalStep = stepIndex === STEP_KEYS.length - 1;
+  const childDataConsentGranted = Boolean(
+    snapshot?.consents?.child_data_processing?.granted,
+  );
   const activePremiumSection = PREMIUM_SECTION_KEYS.includes(
     currentStep as PremiumSectionKey,
   )
@@ -169,6 +228,8 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
 
   const sportyAppRef = useRef<any>(null);
   const premiumControllerRef = useRef<PremiumController | null>(null);
+  const prefillAppliedKeyRef = useRef<string | null>(null);
+  const prefillRequestKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -269,83 +330,6 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
     return (kids || []) as ChildRow[];
   }, []);
 
-  const loadChild = useCallback(async (client: any, id: string) => {
-    const { data, error } = await client
-      .from("children")
-      .select("id,name,birthdate,sex")
-      .eq("id", id)
-      .maybeSingle();
-    if (error) throw error;
-    return (data || null) as ChildRow | null;
-  }, []);
-
-  const loadLatestChildMeasurement = useCallback(
-    async (client: any, id: string) => {
-      const { data, error } = await client
-        .from("measurements")
-        .select("*")
-        .eq("subject_type", "child")
-        .eq("subject_child_id", id)
-        .order("measured_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return data || null;
-    },
-    [],
-  );
-
-  const loadLatestAdultMeasurement = useCallback(
-    async (client: any, userId: string) => {
-      const { data, error } = await client
-        .from("measurements")
-        .select("*")
-        .eq("subject_type", "adult")
-        .eq("subject_user_id", userId)
-        .order("measured_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return data || null;
-    },
-    [],
-  );
-
-  const loadMyBiologicalRole = useCallback(
-    async (client: any, userId: string, id: string) => {
-      const { data, error } = await client
-        .from("guardianships")
-        .select("biological_role")
-        .eq("guardian_user_id", userId)
-        .eq("child_id", id)
-        .eq("status", "active")
-        .maybeSingle();
-      if (error) throw error;
-      return (data && data.biological_role) || null;
-    },
-    [],
-  );
-
-  const loadSharedParentMeasurements = useCallback(
-    async (client: any, id: string) => {
-      try {
-        const { data, error } = await client.rpc(
-          "get_child_parent_measurements",
-          { p_child_id: id },
-        );
-        if (error) throw error;
-        return data || null;
-      } catch (err) {
-        console.warn(
-          "[ChildIntake] Shared parent measurements unavailable",
-          err,
-        );
-        return null;
-      }
-    },
-    [],
-  );
-
   const applyMeasurementRow = useCallback(
     (
       row: any,
@@ -363,7 +347,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
         return next;
       });
     },
-    [],
+    [measurementFields],
   );
 
   // Wire SportyApp snapshot.
@@ -422,6 +406,16 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
   }, [snapshot.user?.id, snapshot?.consents?.child_data_processing?.granted]);
 
   useEffect(() => {
+    if (!snapshot.user?.id || !childId) {
+      prefillAppliedKeyRef.current = null;
+      prefillRequestKeyRef.current = null;
+      setPrefillPhase("idle");
+      setPrefillError(null);
+      setPrefillPayload(null);
+    }
+  }, [childId, snapshot.user?.id]);
+
+  useEffect(() => {
     const resolved = resolveMeasurementSystemOnClient();
     setMeasurementSystem(resolved);
     if (import.meta.env.DEV) {
@@ -470,59 +464,152 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [snapshot.user?.id]);
 
-  // When a child is selected: prefill basics + measurements + parent shares.
+  // When a child is selected: fetch prefill as soon as identity is known.
   useEffect(() => {
     const user = snapshot.user;
     const sportyApp = sportyAppRef.current;
-    const client = sportyApp?.getClient?.();
-    if (!user || !client || !childId) return;
+    if (!user || !sportyApp || !childId) return;
+    const prefillKey = `child:${user.id}:${childId}`;
+    if (
+      prefillAppliedKeyRef.current === prefillKey ||
+      prefillRequestKeyRef.current === prefillKey
+    ) {
+      return;
+    }
+    let cancelled = false;
 
     (async () => {
-      setStatus("");
       try {
-        const child = await loadChild(client, childId);
-        setChildRecord(child);
-        if (child?.birthdate) setBirthdate(child.birthdate);
-        if (child?.sex) setSex(normalizeSex(child.sex));
-
-        const m = await loadLatestChildMeasurement(client, childId);
-        applyMeasurementRow(m, setChildMeasurements);
-
-        const shared = await loadSharedParentMeasurements(client, childId);
-        if (shared?.mother) {
-          setIncludeMother(true);
-          applyMeasurementRow(shared.mother, setMotherMeasurements);
-        }
-        if (shared?.father) {
-          setIncludeFather(true);
-          applyMeasurementRow(shared.father, setFatherMeasurements);
-        }
-
-        const role = await loadMyBiologicalRole(client, user.id, childId);
-        if (role === "mother") {
-          setIncludeMother(true);
-          const mine = await loadLatestAdultMeasurement(client, user.id);
-          applyMeasurementRow(mine, setMotherMeasurements);
-        } else if (role === "father") {
-          setIncludeFather(true);
-          const mine = await loadLatestAdultMeasurement(client, user.id);
-          applyMeasurementRow(mine, setFatherMeasurements);
-        }
+        prefillRequestKeyRef.current = prefillKey;
+        setPrefillPhase("loading");
+        setPrefillError(null);
+        setPrefillPayload(null);
+        const payload = (await sportyApp.fetchIntakePrefill?.({
+          subject: "child",
+          childId,
+        })) as ChildIntakePrefillResponse | null;
+        if (cancelled || prefillRequestKeyRef.current !== prefillKey) return;
+        setPrefillPayload(payload || { prefill: {} });
       } catch (err) {
+        if (cancelled || prefillRequestKeyRef.current !== prefillKey) return;
         console.error("[ChildIntake] Failed to prefill child intake", err);
+        setPrefillPhase("failed");
+        setPrefillError("Saved child answers could not be loaded right now.");
+        setPrefillPayload(null);
+        prefillRequestKeyRef.current = null;
       }
     })();
+    return () => {
+      cancelled = true;
+    };
+  }, [childId, snapshot.user?.id]);
+
+  // Apply child prefill only once the field catalog is ready.
+  useEffect(() => {
+    const user = snapshot.user;
+    if (!user || !childId) return;
+    if (!prefillPayload) return;
+    if (catalogLoading) return;
+    if (catalogError) return;
+    const prefillKey = `child:${user.id}:${childId}`;
+    if (prefillAppliedKeyRef.current === prefillKey) return;
+
+    setStatus("");
+    const selectedChild =
+      availableChildren.find((child) => child.id === childId) || null;
+    setChildRecord(selectedChild);
+    setBirthdate(selectedChild?.birthdate || "");
+    setSex(selectedChild?.sex ? normalizeSex(selectedChild.sex) : "female");
+    setChildMeasurements(buildEmptyMeasurements(measurementFields));
+    setMotherMeasurements(buildEmptyMeasurements(measurementFields));
+    setFatherMeasurements(buildEmptyMeasurements(measurementFields));
+    setIncludeMother(false);
+    setIncludeFather(false);
+    setTraits({});
+    setPastSports([]);
+    premiumControllerRef.current?.prefill?.({
+      preferences: [],
+      goals: [],
+      injuries: [],
+    });
+
+    const prefill = prefillPayload?.prefill || {};
+    const basicPrefill = prefill?.basics || {};
+    const childMeasurementPrefill = prefill?.child_measurements || {};
+    const motherMeasurementPrefill = prefill?.mother_measurements || {};
+    const fatherMeasurementPrefill = prefill?.father_measurements || {};
+    const traitPrefill = prefill?.traits || {};
+    const pastSportsPrefill = toPastSportEntries(prefill?.past_sports);
+    const premiumPrefill = {
+      preferences: Array.isArray(prefill?.premium?.preferences)
+        ? (prefill.premium.preferences as any)
+        : [],
+      goals: Array.isArray(prefill?.premium?.goals)
+        ? (prefill.premium.goals as any)
+        : [],
+      injuries: Array.isArray(prefill?.premium?.injuries)
+        ? (prefill.premium.injuries as any)
+        : [],
+    };
+
+    if (typeof basicPrefill?.birthday === "string" && basicPrefill.birthday) {
+      setBirthdate(basicPrefill.birthday);
+    }
+    if (typeof basicPrefill?.sex === "string" && basicPrefill.sex) {
+      setSex(normalizeSex(basicPrefill.sex));
+    }
+
+    applyMeasurementRow(childMeasurementPrefill, setChildMeasurements);
+
+    if (hasMeasurementValues(motherMeasurementPrefill)) {
+      setIncludeMother(true);
+      applyMeasurementRow(motherMeasurementPrefill, setMotherMeasurements);
+    }
+    if (hasMeasurementValues(fatherMeasurementPrefill)) {
+      setIncludeFather(true);
+      applyMeasurementRow(fatherMeasurementPrefill, setFatherMeasurements);
+    }
+
+    if (traitPrefill && typeof traitPrefill === "object") {
+      setTraits((prev) => {
+        const next = { ...prev };
+        traitQuestions.forEach((question) => {
+          const field = question.field;
+          const value = (traitPrefill as any)?.[field];
+          if (typeof value === "string" && value.trim()) {
+            next[field] = value.trim();
+          }
+        });
+        return next;
+      });
+    }
+
+    setPastSports(pastSportsPrefill);
+    premiumControllerRef.current?.prefill?.(premiumPrefill);
+    prefillAppliedKeyRef.current = prefillKey;
+    prefillRequestKeyRef.current = null;
+    setPrefillPhase("applied");
+    setPrefillError(null);
   }, [
     applyMeasurementRow,
+    availableChildren,
+    catalogError,
+    catalogLoading,
     childId,
-    loadChild,
-    loadLatestAdultMeasurement,
-    loadLatestChildMeasurement,
-    loadMyBiologicalRole,
-    loadSharedParentMeasurements,
+    measurementFields,
+    prefillPayload,
     setStatus,
     snapshot.user,
+    traitQuestions,
   ]);
+
+  useEffect(() => {
+    if (catalogError && prefillPhase === "loading") {
+      setPrefillPhase("failed");
+      setPrefillPayload(null);
+      prefillRequestKeyRef.current = null;
+    }
+  }, [catalogError, prefillPhase]);
 
   const validateAllMeasurements = useCallback(
     (values: MeasurementValues, fields = measurementFields) => {
@@ -649,30 +736,13 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
       setStatus("Add a child analysis credit to continue.", "error");
       return;
     }
-    if (
-      sportyAppRef.current &&
-      typeof sportyAppRef.current.ensureConsent === "function" &&
-      !Boolean(snapshot?.consents?.child_data_processing?.granted)
-    ) {
-      const accepted = await sportyAppRef.current.ensureConsent(
-        "child_data_processing",
-      );
-      if (!accepted) {
-        setStatus(
-          "Child analysis needs explicit child-data consent before processing.",
-          "error",
-        );
-        return;
-      }
-    }
-
     const payload: any = {
       child_id: childId,
       guardian_user_id: user.id,
       birthdate,
       sex,
       race,
-      adult_age_group: adultAgeGroup,
+      adult_age_group: "25-35 years",
       measurements: { ...childMeasurements },
       traits: { ...traits },
       child_notice_acknowledged: childNoticeAccepted,
@@ -754,7 +824,6 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
       setSubmitting(false);
     }
   }, [
-    adultAgeGroup,
     birthdate,
     childNoticeAccepted,
     measurementFields,
@@ -847,7 +916,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
 
   const headerTitle = STEP_DEFINITIONS[stepIndex]?.title || "";
 
-  const validateCurrentStepAndAdvance = useCallback(() => {
+  const validateCurrentStepAndAdvance = useCallback(async () => {
     if (currentStep === "child") {
       if (!childId) {
         setStatus("Choose a child before continuing.", "error");
@@ -867,6 +936,27 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
       if (!sex) {
         setStatus("Sex is required.", "error");
         return;
+      }
+      if (!childDataConsentGranted) {
+        const sportyApp = sportyAppRef.current;
+        if (!sportyApp || typeof sportyApp.grantConsent !== "function") {
+          setStatus(
+            "Unable to record child-data consent right now. Please try again.",
+            "error",
+          );
+          return;
+        }
+        try {
+          setStatus("Recording child-data consent…", "info");
+          await sportyApp.grantConsent("child_data_processing");
+        } catch (error) {
+          console.error("[ChildIntake] Failed to record child-data consent", error);
+          setStatus(
+            "Unable to record child-data consent right now. Please try again.",
+            "error",
+          );
+          return;
+        }
       }
     } else if (currentStep === "measurements") {
       const res = validateAllMeasurements(childMeasurements, measurementFields);
@@ -905,6 +995,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
     setStepIndex(nextIndex);
   }, [
     birthdate,
+    childDataConsentGranted,
     measurementFields,
     childId,
     childMeasurements,
@@ -955,7 +1046,7 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
       </div>
 
       <div className="space-y-6" data-stepper-content>
-        <div hidden={currentStep !== "child"}>
+        <div hidden={currentStep !== "child"} className="relative">
           <div className="card-shell space-y-6">
             <header className="space-y-2">
               <h2 className="type-title text-slate-900">
@@ -1048,8 +1139,9 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
                   }
                 />
                 <span className="text-sm text-slate-800">
-                  I confirm I am the guardian and acknowledge this child data
-                  notice.
+                  {childDataConsentGranted
+                    ? "I confirm I am the guardian and acknowledge this child data notice."
+                    : "I confirm I am the guardian, acknowledge this child data notice, and allow child-data processing."}
                 </span>
               </label>
             </section>
@@ -1098,26 +1190,29 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
                   ))}
                 </select>
               </label>
-              <label className="space-y-2">
-                <div className="text-sm font-semibold text-slate-800">
-                  Target adult cohort
-                </div>
-                <select
-                  className="input-field input-select-pill"
-                  value={adultAgeGroup}
-                  onChange={(e) =>
-                    setAdultAgeGroup((e.target as HTMLSelectElement).value)
-                  }
-                >
-                  {adultAgeGroups.map((group) => (
-                    <option key={group} value={group}>
-                      {group}
-                    </option>
-                  ))}
-                </select>
-              </label>
             </div>
           </div>
+          {isFirstStep && snapshot.user?.id && prefillPhase === "loading" && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[2rem] bg-white/92 px-6 text-center backdrop-blur-sm">
+              <div className="card-shell flex min-h-[16rem] w-full max-w-xl flex-col items-center justify-center gap-4">
+                <div
+                  className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-teal-600"
+                  aria-hidden="true"
+                />
+                <div className="space-y-1">
+                  <p className="font-semibold text-slate-900">Loading saved answers…</p>
+                  <p className="text-sm text-slate-500">
+                    We are checking the latest child analysis so the form does not shift underneath you.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          {isFirstStep && prefillPhase === "failed" && prefillError && (
+            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-slate-700">
+              {prefillError}
+            </div>
+          )}
         </div>
 
         <div hidden={currentStep !== "measurements"}>
@@ -1346,10 +1441,12 @@ const ChildForecastApp: FunctionalComponent<Props> = ({ adultAgeGroups }) => {
             <button
               type="button"
               className="btn-pill btn-pill-primary btn-pill-sm"
-              disabled={submitting}
+              disabled={submitting || (isFirstStep && prefillPhase === "loading")}
               onClick={() => validateCurrentStepAndAdvance()}
             >
-              Continue
+              {isFirstStep && prefillPhase === "loading"
+                ? "Loading saved answers…"
+                : "Continue"}
             </button>
           )}
           {isFinalStep && (

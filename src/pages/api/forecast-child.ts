@@ -4,6 +4,7 @@ import { verifySupabaseToken } from './_auth';
 const JSON_HEADERS = {
   'Content-Type': 'application/json',
 } as const;
+const CHILD_FORECAST_UPSTREAM_TIMEOUT_MS = 30_000;
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const env = locals.runtime.env;
@@ -70,7 +71,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         'X-User-ID': user.id,
       },
       body,
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(CHILD_FORECAST_UPSTREAM_TIMEOUT_MS),
     });
 
     const text = await upstreamResp.text();
