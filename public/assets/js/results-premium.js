@@ -66,6 +66,7 @@
     totalFilteredCount: 0,
     currentStart: 0,
     loading: false,
+    currentVisibleMatches: [],
   };
   let browserUi = null;
 
@@ -472,6 +473,7 @@
       state.currentStart,
       state.currentStart + VISIBLE_CARD_COUNT
     );
+    state.currentVisibleMatches = visibleMatches;
     renderMatches(visibleMatches, {
       resultId: state.runId,
       startIndex: state.currentStart,
@@ -735,6 +737,10 @@
     return span;
   }
 
+  function getDisplayRank(context, index) {
+    return Number(context.startIndex || 0) + index + 1;
+  }
+
   function renderMatches(matches, context = {}) {
     if (!container) return;
     container.innerHTML = '';
@@ -750,7 +756,7 @@
       matches
         .forEach((match, index) => {
           try {
-            const rank = Number(match?.canonical_rank || 0) || (Number(context.startIndex || 0) + index + 1);
+            const rank = getDisplayRank(context, index);
             const card = buildMatchCard(match, rank);
             container.appendChild(card);
             renderedCount += 1;
@@ -774,22 +780,15 @@
       return;
     }
     initCardAlignment();
-    setChildExportState(state.totalFilteredCount);
+    setChildExportState(renderedCount);
   }
 
   function setupChildPdfExport() {
     if (!isChildResults || !exportPdfButton) return;
-    exportPdfButton.addEventListener('click', async () => {
+    exportPdfButton.addEventListener('click', () => {
       if (exportPdfButton.disabled) return;
       try {
-        const payload = await fetchPremiumSlice({
-          offset: 0,
-          limit: 10,
-          direction: 'top',
-          sportSlugs: [],
-          uniqueSports: true,
-        });
-        renderChildPrintReport(Array.isArray(payload?.matches) ? payload.matches : []);
+        renderChildPrintReport(state.currentVisibleMatches, { startIndex: state.currentStart });
         window.print();
       } catch (error) {
         console.error('[Sporty] Failed to build child premium PDF', error);
@@ -803,7 +802,7 @@
     exportPdfButton.disabled = available < 1;
     if (available < 1) {
       exportPdfButton.setAttribute('aria-disabled', 'true');
-      exportPdfButton.title = 'Run a child analysis first to export PDF results.';
+      exportPdfButton.title = 'Adjust the view until at least one child match card is visible.';
       clearPrintReport();
       return;
     }
@@ -817,55 +816,323 @@
     printReportRoot.innerHTML = '';
   }
 
-  function getTopMatches(matches, limit = 10) {
-    if (!Array.isArray(matches)) return [];
-    return matches.slice(0, limit);
-  }
-
-  function renderChildPrintReport(matches) {
+  function renderChildPrintReport(matches, context = {}) {
     if (!printReportRoot) return;
-    const topMatches = getTopMatches(matches, 10);
-    if (!topMatches.length) {
+    const visibleMatches = Array.isArray(matches) ? matches : [];
+    if (!visibleMatches.length) {
       clearPrintReport();
       return;
     }
-    const generatedAt = new Date().toLocaleString();
-    const cardsHtml = topMatches
+    const cardsHtml = visibleMatches
       .map((match, index) => {
         const body = match?.optimal_body || {};
         const sport = body?.sport || {};
         const subcategory = body?.subcategory || {};
+        const spec = body?.spec || {};
         const title =
           subcategory.name || body.category_slug || sport.name || body.sport_slug || 'Sport match';
         const scoreRaw = match?.score ?? match?.fit_score ?? 0;
         const scorePercent = Math.round(Number(scoreRaw || 0) * 100);
+        const rank = getDisplayRank(context, index);
+        const cardMedia = match?.media?.card || spec?.media?.card || null;
+        const imageUrl = resolveMediaUrl(cardMedia, resolveStorageBase());
+        const imageAlt =
+          cardMedia && typeof cardMedia.alt === 'string' && cardMedia.alt.trim()
+            ? cardMedia.alt
+            : title;
+        const hierarchy = Array.isArray(subcategory.hierarchy) ? subcategory.hierarchy : [];
+        const hierarchyRows = hierarchy
+          .filter((entry) => entry && entry.key && entry.name)
+          .map((entry) => `
+            <tr>
+              <th scope="row">${escapeHtml(String(entry.key).replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()))}</th>
+              <td>${escapeHtml(entry.name)}</td>
+              <td>${entry.description ? escapeHtml(entry.description) : '—'}</td>
+            </tr>
+          `)
+          .join('');
+        const summaryRows = [['Match score', `${scorePercent}%`]]
+          .map(
+            ([label, value]) => `
+              <tr>
+                <th scope="row">${escapeHtml(label)}</th>
+                <td>${escapeHtml(String(value || '—'))}</td>
+              </tr>
+            `
+          )
+          .join('');
+        const bodyProfileTable = buildPrintBodyProfileTable(match);
+        const sectionTables = buildPrintFactorSections(match);
         const sportDesc = subcategory.description || sport.description || '';
-        const bodyDesc = body?.spec?.rationale || body?.spec?.overall_description || '';
+        const bodyDesc = spec?.rationale || spec?.overall_description || '';
         return `
           <article class="child-results-print-card">
-            <h3>#${index + 1} ${escapeHtml(title)}</h3>
-            <p><strong>Match score:</strong> ${scorePercent}%</p>
-            ${sportDesc ? `<p>${escapeHtml(sportDesc)}</p>` : ''}
-            ${bodyDesc ? `<p>${escapeHtml(bodyDesc)}</p>` : ''}
+            <header class="child-results-print-card__header">
+              <h2>#${rank} ${escapeHtml(title)}</h2>
+              <p>${escapeHtml('Child premium match report')}</p>
+            </header>
+
+            ${
+              imageUrl
+                ? `
+                  <figure class="child-results-print-image">
+                    <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" />
+                  </figure>
+                `
+                : ''
+            }
+
+            <section class="child-results-print-section">
+              <h3>Match summary</h3>
+              <table class="child-results-print-table child-results-print-table--summary">
+                <tbody>${summaryRows}</tbody>
+              </table>
+            </section>
+
+            ${
+              hierarchyRows
+                ? `
+                  <section class="child-results-print-section">
+                    <h3>Sport hierarchy</h3>
+                    <table class="child-results-print-table">
+                      <thead>
+                        <tr>
+                          <th scope="col">Field</th>
+                          <th scope="col">Value</th>
+                          <th scope="col">Description</th>
+                        </tr>
+                      </thead>
+                      <tbody>${hierarchyRows}</tbody>
+                    </table>
+                  </section>
+                `
+                : ''
+            }
+
+            ${sportDesc ? buildPrintTextSection('The sport', sportDesc) : ''}
+
+            ${bodyDesc ? buildPrintTextSection("Athletes' bodies", bodyDesc) : ''}
+
+            ${bodyProfileTable}
+
+            ${sectionTables}
           </article>
         `;
       })
       .join('');
 
     printReportRoot.innerHTML = `
-      <header class="child-results-print-header">
-        <h1>Sporty Child Match Summary (Top 10)</h1>
-        <p>Generated: ${escapeHtml(generatedAt)}</p>
-        <p>Operational copy. Child results are deleted after 7 days.</p>
-      </header>
       <section class="child-results-print-cards">
         ${cardsHtml}
       </section>
-      <footer class="child-results-print-footer">
-        Guardian-managed minor flow. Keep this PDF if you need records beyond 7 days.
-      </footer>
     `;
     printReportRoot.hidden = false;
+  }
+
+  function buildPrintFactorSections(match) {
+    const sections = [];
+
+    const pastSports = (match.score_breakdown?.details?.past_sports || []).slice().sort(
+      (a, b) => (b.match_contribution || 0) - (a.match_contribution || 0)
+    );
+    if (pastSports.length) {
+      sections.push(
+        buildPrintTableSection('Past sport factors', ['Past sport', 'Profile', 'Contribution', 'Explanation'], pastSports.map((sport) => {
+          const name = sport.sport_subcategory_slug || sport.sport_label || sport.sport_subcategory_id || 'Past sport';
+          const profile = [
+            sport.years_played ? `Years: ${sport.years_played}` : null,
+            sport.intensity ? `Intensity: ${sport.intensity}` : null,
+            typeof sport.liked === 'boolean' ? (sport.liked ? 'Enjoyed' : 'Did not enjoy') : null,
+            typeof sport.had_flair === 'boolean' ? (sport.had_flair ? 'Felt natural' : 'Needs work') : null,
+            typeof sport.achieved_skill === 'boolean' ? (sport.achieved_skill ? 'Skillful' : 'Developing') : null,
+          ].filter(Boolean).join(' | ');
+          return [
+            name.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+            profile || '—',
+            sport.data_missing || sport.correlation === null ? 'N/A' : formatContributionPercent(sport.match_contribution),
+            sport.layman_reasoning || '—',
+          ];
+        }))
+      );
+    }
+
+    const traitFactors = extractTraitFactors(match);
+    if (traitFactors.length) {
+      sections.push(
+        buildPrintTableSection('Trait factors', ['Trait', 'Values', 'Contribution', 'Explanation'], traitFactors.map((factor) => [
+          factor.label || factor.key || 'Trait',
+          `${factor.user_value_label || factor.user_value || '—'}${factor.cohort_mean_label ? ` | Ideal: ${factor.cohort_mean_label}` : ''}`,
+          formatContributionPercent(factor.match_contribution),
+          factor.reasoning || '—',
+        ]))
+      );
+    }
+
+    const goalFactors = extractGoalFactors(match);
+    if (goalFactors.length) {
+      sections.push(
+        buildPrintTableSection('Goal factors', ['Goal', 'Selection', 'Contribution', 'Explanation'], goalFactors.map((factor) => [
+          factor.label || factor.key || 'Goal',
+          `Priority: ${String(factor.priority || '—').replace(/_/g, ' ')} | Alignment: ${String(factor.alignment || '—').replace(/_/g, ' ')}`,
+          formatContributionPercent(factor.match_contribution),
+          factor.reasoning || '—',
+        ]))
+      );
+    }
+
+    const preferenceFactors = extractPreferenceFactors(match);
+    if (preferenceFactors.length) {
+      sections.push(
+        buildPrintTableSection('Preference factors', ['Preference', 'Selection', 'Contribution', 'Explanation'], preferenceFactors.map((factor) => [
+          factor.label || factor.key || 'Preference',
+          `Priority: ${String(factor.priority || '—').replace(/_/g, ' ')} | Alignment: ${String(factor.alignment || '—').replace(/_/g, ' ')}`,
+          formatContributionPercent(factor.match_contribution),
+          factor.reasoning || '—',
+        ]))
+      );
+    }
+
+    const injuryEntries = (match.score_breakdown?.details?.injuries || []).slice().sort(
+      (a, b) => (b.match_contribution || 0) - (a.match_contribution || 0)
+    );
+    if (injuryEntries.length) {
+      sections.push(
+        buildPrintTableSection('Injury factors', ['Injury', 'Profile', 'Contribution', 'Explanation'], injuryEntries.map((entry) => {
+          const label = entry.injury_subcategory_name || entry.injury_subcategory_id || entry.injury_id || 'Injury';
+          const profile = [
+            entry.severity_label || entry.severity ? `Severity: ${entry.severity_label || entry.severity}` : null,
+            entry.risk ? `Risk: ${entry.risk}` : null,
+            entry.prevention ? `Prevention: ${entry.prevention}` : null,
+            entry.heal ? `Heal: ${entry.heal}` : null,
+          ].filter(Boolean).join(' | ');
+          const explanation = [
+            entry.risk_reasoning ? `Risk: ${entry.risk_reasoning}` : null,
+            entry.prevention_reasoning ? `Prevention: ${entry.prevention_reasoning}` : null,
+            entry.heal_reasoning ? `Heal: ${entry.heal_reasoning}` : null,
+          ].filter(Boolean).join(' ');
+          return [
+            String(label).replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+            profile || '—',
+            formatContributionPercent(entry.match_contribution),
+            explanation || '—',
+          ];
+        }))
+      );
+    }
+
+    return sections.join('');
+  }
+
+  function buildPrintTableSection(title, columns, rows) {
+    if (!Array.isArray(rows) || !rows.length) return '';
+    const headerHtml = columns.map((column) => `<th scope="col">${escapeHtml(column)}</th>`).join('');
+    const rowHtml = rows
+      .map(
+        (row) => `
+          <tr>
+            ${row
+              .map((value, index) => {
+                const safeValue = escapeHtml(String(value ?? '—'));
+                return index === 0
+                  ? `<th scope="row">${safeValue}</th>`
+                  : `<td>${safeValue}</td>`;
+              })
+              .join('')}
+          </tr>
+        `
+      )
+      .join('');
+
+    return `
+      <section class="child-results-print-section">
+        <h3>${escapeHtml(title)}</h3>
+        <table class="child-results-print-table">
+          <thead>
+            <tr>${headerHtml}</tr>
+          </thead>
+          <tbody>${rowHtml}</tbody>
+        </table>
+      </section>
+    `;
+  }
+
+  function formatContributionPercent(value) {
+    const numeric = Number(value || 0);
+    if (!Number.isFinite(numeric)) return '—';
+    return `${Math.round(numeric * 100)}%`;
+  }
+
+  function buildPrintTextSection(title, text) {
+    const safeTitle = escapeHtml(title);
+    const safeText = escapeHtml(String(text || ''));
+    return `
+      <section class="child-results-print-section">
+        <h3>${safeTitle}</h3>
+        <p>${safeText}</p>
+      </section>
+    `;
+  }
+
+  function buildPrintBodyProfileTable(match) {
+    const measurementEntries = resolveMeasurementDetailEntries(match);
+    const bodyFactors = extractFactors(match);
+    const factorMap = new Map(
+      bodyFactors.map((factor) => [String(factor?.key || '').trim(), factor])
+    );
+
+    const orderedMeasurements = measurementEntries.slice().sort((a, b) => {
+      const aFactor = factorMap.get(String(a?.key || '').trim());
+      const bFactor = factorMap.get(String(b?.key || '').trim());
+      const aContribution = Number(aFactor?.match_contribution ?? -1);
+      const bContribution = Number(bFactor?.match_contribution ?? -1);
+      if (aContribution !== bContribution) return bContribution - aContribution;
+      const aFit = Number(a?.fit_score ?? a?.fit ?? -1);
+      const bFit = Number(b?.fit_score ?? b?.fit ?? -1);
+      return bFit - aFit;
+    });
+
+    const topFive = orderedMeasurements.slice(0, 5);
+    const existingKeys = new Set(topFive.map((entry) => String(entry?.key || '').trim()));
+    const ratioExtras = orderedMeasurements.filter((entry) => {
+      const key = String(entry?.key || '').trim();
+      return RATIO_MEASUREMENT_KEYS.has(key) && !existingKeys.has(key);
+    });
+    const displayEntries = [...topFive, ...ratioExtras];
+    const seenKeys = new Set(displayEntries.map((entry) => String(entry?.key || '').trim()));
+
+    const rows = displayEntries.map((entry) => {
+      const key = String(entry?.key || '').trim();
+      const factor = factorMap.get(key);
+      const rawForecasted = entry.user_value ?? entry.user_value_display ?? factor?.user_value ?? '—';
+      const rawOptimal =
+        typeof entry.cohort_mean !== 'undefined' ? entry.cohort_mean : factor?.cohort_mean ?? '—';
+      return [
+        entry.label || entry.key || 'Measurement',
+        formatRatioDisplayValue(key, rawForecasted),
+        formatRatioDisplayValue(key, rawOptimal),
+        factor ? formatContributionPercent(factor.match_contribution) : '—',
+        entry.reasoning_short || factor?.reasoning || '—',
+      ];
+    });
+
+    bodyFactors
+      .filter((factor) => !seenKeys.has(String(factor?.key || '').trim()))
+      .forEach((factor) => {
+        const key = String(factor?.key || '').trim();
+        rows.push([
+          factor.label || factor.key || 'Measurement',
+          formatRatioDisplayValue(key, factor.user_value ?? '—'),
+          formatRatioDisplayValue(key, factor.cohort_mean ?? '—'),
+          formatContributionPercent(factor.match_contribution),
+          factor.reasoning || '—',
+        ]);
+      });
+
+    return buildPrintTableSection(
+      'Body measurements',
+      ['Measurement', 'Forecasted value', 'Optimal body', 'Contribution', 'Explanation'],
+      rows
+    );
   }
 
   function buildMatchCard(match, rank) {

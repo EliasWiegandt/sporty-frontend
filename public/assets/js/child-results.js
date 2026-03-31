@@ -181,8 +181,14 @@
 
     const detailsToggle = document.createElement("button");
     detailsToggle.type = "button";
-    detailsToggle.className = "btn-ghost btn-sm";
-    detailsToggle.textContent = "Hide details";
+    detailsToggle.className = "child-results__details-toggle";
+    detailsToggle.setAttribute("aria-label", "Hide details");
+    detailsToggle.setAttribute("aria-expanded", "true");
+    detailsToggle.innerHTML = `
+      <svg viewBox="0 0 20 20" fill="currentColor" class="child-results__details-chevron rotate-180" aria-hidden="true">
+        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
+      </svg>
+    `;
     left.appendChild(detailsToggle);
 
     header.appendChild(left);
@@ -285,7 +291,10 @@
 
     detailsToggle.addEventListener("click", () => {
       details.hidden = !details.hidden;
-      detailsToggle.textContent = details.hidden ? "Details" : "Hide details";
+      detailsToggle.setAttribute("aria-label", details.hidden ? "Show details" : "Hide details");
+      detailsToggle.setAttribute("aria-expanded", String(!details.hidden));
+      const chevron = detailsToggle.querySelector("svg");
+      if (chevron) chevron.classList.toggle("rotate-180", !details.hidden);
       card.classList.toggle("details-hidden", details.hidden);
     });
 
@@ -417,6 +426,7 @@
     forecastLabel.className = "forecast-bar__label forecast-bar__label--forecast";
     forecastLabel.style.left = `${markerPct}%`;
     forecastLabel.textContent = `Child forecasted: ${forecast.toFixed(digits)} ${unit}`;
+    applyEdgeAwareMarkerLabelPosition(forecastLabel, markerPct);
     bar.appendChild(forecastLabel);
 
     const forecastLine = document.createElement("div");
@@ -437,6 +447,7 @@
       childLabel.className = "forecast-bar__label forecast-bar__label--child";
       childLabel.style.left = `${clamp(childMarkerPct, 4, 96)}%`;
       childLabel.textContent = `Child currently: ${childValue.toFixed(digits)} ${unit}`;
+      applyEdgeAwareMarkerLabelPosition(childLabel, childMarkerPct);
       bar.appendChild(childLabel);
     }
 
@@ -449,5 +460,19 @@
     if (value < min) return min;
     if (value > max) return max;
     return value;
+  }
+
+  function applyEdgeAwareMarkerLabelPosition(label, markerPct) {
+    label.classList.remove(
+      "forecast-bar__label--edge-left",
+      "forecast-bar__label--edge-right",
+    );
+    if (markerPct <= 18) {
+      label.classList.add("forecast-bar__label--edge-left");
+      return;
+    }
+    if (markerPct >= 82) {
+      label.classList.add("forecast-bar__label--edge-right");
+    }
   }
 })();
